@@ -1,0 +1,17 @@
+# Environment variables
+.env
+.env.local
+
+# PostgreSQL data
+data/
+
+# Application logs
+logs/
+
+# Gradle
+.gradle/
+build/
+!gradle-wrapper.jar
+
+# IDE
+.idea/

@@ -1,0 +1,62 @@
+services:
+  org_service_db:
+    image: postgres:13.2
+    container_name: org_postgres_db
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - 127.0.0.1:${ORG_POSTGRES_PORT}:5432
+    volumes:
+      - ${DATA_PATH:-.}/data/postgres:/var/lib/postgresql/data
+      - ${DATA_PATH:-.}/logs/postgres:/var/log/postgresql
+    environment:
+      POSTGRES_DB: ${ORG_POSTGRES_DB}
+      POSTGRES_USER: ${ORG_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${ORG_POSTGRES_PASSWORD}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ORG_POSTGRES_USER} -d ${ORG_POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [ grade-net-network ]
+
+  org_service_app:
+    image: gradenet-org-service:${IMAGE_TAG:-latest}
+    build:
+      context: ./org-service
+      dockerfile: Dockerfile
+    container_name: org_service_app
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:${ORG_APP_PORT:-8081}:8081"
+      - "127.0.0.1:${ORG_DEBUG_PORT:-5006}:5005"
+    volumes:
+      - ${DATA_PATH:-.}/logs/app:/logs
+    depends_on:
+      org_service_db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://org_service_db:5432/${ORG_POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${ORG_POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${ORG_POSTGRES_PASSWORD}
+      SERVER_PORT: ${ORG_APP_PORT:-8081}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    tty: true
+    networks: [ grade-net-network ]
+
+networks:
+  grade-net-network:
+    driver: bridge
