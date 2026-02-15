@@ -24,14 +24,14 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     @Override
     public OrganizationDTO create(OrganizationRequestDTO dto) {
-        if (organizationRepository.findByName(dto.getName()).isPresent()) {
+        if (organizationRepository.findByName(dto.name()).isPresent()) {
             throw new EntityExistsException("Organization with this name already exists");
         }
 
         validateParentForDepartment(dto);
 
         Organization organization = organizationMapper.toEntity(dto);
-        organization.setParent(resolveParent(dto.getParentId(), dto.getOrgType(), null));
+        organization.setParent(resolveParent(dto.parentId(), dto.orgType(), null));
 
         return organizationMapper.toDto(organizationRepository.save(organization));
     }
@@ -41,16 +41,16 @@ public class OrganizationServiceImpl implements OrganizationService {
         Organization organization = organizationRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Organization not found"));
 
-        if (!organization.getName().equals(dto.getName())
-                && organizationRepository.findByName(dto.getName()).isPresent()) {
+        if (!organization.getName().equals(dto.name())
+                && organizationRepository.findByName(dto.name()).isPresent()) {
             throw new EntityExistsException("Organization with this name already exists");
         }
 
         validateParentForDepartment(dto);
 
-        organization.setName(dto.getName());
-        organization.setOrgType(dto.getOrgType());
-        organization.setParent(resolveParent(dto.getParentId(), dto.getOrgType(), id));
+        organization.setName(dto.name());
+        organization.setOrgType(dto.orgType());
+        organization.setParent(resolveParent(dto.parentId(), dto.orgType(), id));
 
         return organizationMapper.toDto(organizationRepository.save(organization));
     }
@@ -63,6 +63,10 @@ public class OrganizationServiceImpl implements OrganizationService {
 
         if (parent.getId().equals(currentOrgId)) {
             throw new RestException("Organization cannot be its own parent");
+        }
+
+        if (currentOrgId != null) {
+            checkCircularDependency(parent, currentOrgId);
         }
 
         if (orgType == OrgType.FACULTY && parent.getOrgType() == OrgType.DEPARTMENT) {
@@ -87,6 +91,11 @@ public class OrganizationServiceImpl implements OrganizationService {
     public void delete(Long id) {
         Organization organization = organizationRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Organization not found"));
+
+        if (organizationRepository.existsByParentId(id)) {
+            throw new RestException("Cannot delete organization with child organizations");
+        }
+
         organizationRepository.delete(organization);
     }
 
@@ -96,8 +105,18 @@ public class OrganizationServiceImpl implements OrganizationService {
     }
 
     private void validateParentForDepartment(OrganizationRequestDTO dto) {
-        if (dto.getOrgType() == OrgType.DEPARTMENT && dto.getParentId() == null) {
+        if (dto.orgType() == OrgType.DEPARTMENT && dto.parentId() == null) {
             throw new RestException("Department must have a parent organization");
+        }
+    }
+
+    private void checkCircularDependency(Organization parent, Long currentOrgId) {
+        Organization current = parent;
+        while (current != null) {
+            if (current.getId().equals(currentOrgId)) {
+                throw new RestException("Circular parent dependency detected");
+            }
+            current = current.getParent();
         }
     }
 }

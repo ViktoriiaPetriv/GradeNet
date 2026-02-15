@@ -10,8 +10,11 @@ import org.mapstruct.Mapping;
 public interface OrganizationMapper {
 
     @Mapping(target = "parentId", source = "parent.id")
+    @Mapping(target = "children", source = "children")
     OrganizationDTO toDto(Organization entity);
 
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "parent", ignore = true)
+    @Mapping(target = "children", ignore = true)
     Organization toEntity(OrganizationRequestDTO dto);
 }

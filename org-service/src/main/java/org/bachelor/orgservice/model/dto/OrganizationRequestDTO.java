@@ -1,14 +1,16 @@
 package org.bachelor.orgservice.model.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
+import jakarta.validation.constraints.NotNull;
 import org.bachelor.orgservice.model.entity.OrgType;
 
-@Data
-public class OrganizationRequestDTO {
+public record OrganizationRequestDTO (
 
     @NotBlank(message = "Name cannot be blank")
-    private String name;
-    private OrgType orgType;
-    private Long parentId;
-}
+    String name,
+
+    @NotNull(message = "Organization type is required")
+    OrgType orgType,
+
+    Long parentId
+) {}
