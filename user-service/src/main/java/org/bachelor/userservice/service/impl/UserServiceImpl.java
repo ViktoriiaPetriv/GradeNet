@@ -1,7 +1,7 @@
 package org.bachelor.userservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.bachelor.userservice.exception.UserNotFoundException;
+import org.bachelor.userservice.exception.NotFoundException;
 import org.bachelor.userservice.mapper.UserMapper;
 import org.bachelor.userservice.model.dto.UserDTO;
 import org.bachelor.userservice.model.dto.UserRequestDTO;
@@ -77,6 +77,6 @@ public class UserServiceImpl implements UserService {
 
     private User getUserOrThrow(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("User with %s not found".formatted(id)));
+                .orElseThrow(() -> new NotFoundException("User with %s not found".formatted(id)));
     }
 }

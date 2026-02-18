@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/specialties")
+@RequestMapping("/api/specialties")
 public class SpecialtyController {
 
     private final SpecialtyService specialtyService;

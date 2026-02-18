@@ -18,7 +18,7 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/orgs")
+@RequestMapping("/api/orgs")
 public class OrganizationController {
 
     private final OrganizationService organizationService;
