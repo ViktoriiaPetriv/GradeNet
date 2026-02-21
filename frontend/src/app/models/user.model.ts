@@ -1,0 +1,21 @@
+import { Role } from './role.enum';
+
+export interface User {
+  id: number;
+  firstName: string;
+  lastName: string;
+  patronymic?: string;
+  email: string;
+  birthDate: string;
+  role: Role;
+}
+
+export interface UserRequest {
+  firstName: string;
+  lastName: string;
+  patronymic?: string;
+  email: string;
+  password: string;
+  birthDate: string;
+  role: Role;
+}

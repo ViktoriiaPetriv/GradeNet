@@ -41,7 +41,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserDTO create(UserRequestDTO request) {
-        if (userRepository.existsByEmail(request.email())) {
+        if (userRepository.findByEmail(request.email()).isPresent()) {
             throw new IllegalArgumentException("Email already in use: " + request.email());
         }
         User user = userMapper.toEntity(request);
@@ -55,7 +55,7 @@ public class UserServiceImpl implements UserService {
         User user = getUserOrThrow(id);
 
         if (!user.getEmail().equals(request.email())
-                && userRepository.existsByEmail(request.email())) {
+                && userRepository.findByEmail(request.email()).isPresent()) {
             throw new IllegalArgumentException("Email already in use: " + request.email());
         }
 

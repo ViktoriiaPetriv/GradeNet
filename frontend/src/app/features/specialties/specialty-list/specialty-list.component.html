@@ -1,0 +1,191 @@
+<div class="page">
+    <div class="page-header">
+        <div>
+            <div class="page-title">Спеціальності</div>
+            <div class="page-subtitle">Освітні програми університету</div>
+        </div>
+        <button class="btn-primary" (click)="openCreate()">+ Додати спеціальність</button>
+    </div>
+
+    <div class="filters">
+        <select class="filter-select" (change)="onDegreeFilter($event)">
+            <option value="">Усі ступені</option>
+            @for (d of degrees; track d) {
+            <option [value]="d">{{ degreeLabel(d) }}</option>
+            }
+        </select>
+        <select class="filter-select" (change)="onEduTypeFilter($event)">
+            <option value="">Усі форми навчання</option>
+            @for (e of eduTypes; track e) {
+            <option [value]="e">{{ eduTypeLabel(e) }}</option>
+            }
+        </select>
+        <span class="total-info">Всього: {{ totalElements() }}</span>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Код</th>
+                    <th>Назва (UA)</th>
+                    <th>Організація</th>
+                    <th>Ступінь</th>
+                    <th>Форма навчання</th>
+                    <th>Дії</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (specialties().length === 0) {
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <div class="empty-icon">📚</div>
+                            <div>Спеціальностей не знайдено</div>
+                        </div>
+                    </td>
+                </tr>
+                }
+                @for (s of specialties(); track s.id) {
+                <tr>
+                    <td><span class="code-badge">{{ s.code }}</span></td>
+                    <td>
+                        <div class="full-name">{{ s.nameUA }}</div>
+                        <div class="text-muted">{{ s.nameEN }}</div>
+                    </td>
+                    <td class="text-muted">{{ getOrgName(s.orgId) }}</td>
+                    <td><span class="degree-badge degree-{{ s.degree }}">{{ degreeLabel(s.degree) }}</span></td>
+                    <td><span class="edutype-badge">{{ eduTypeLabel(s.eduType) }}</span></td>
+                    <td>
+                        <button class="action-btn edit" (click)="openEdit(s)">✎ Редагувати</button>
+                        <button class="action-btn delete" (click)="delete(s.id)">✕ Видалити</button>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+        <div class="pagination">
+            <div class="pagination-info">Сторінка {{ currentPage() + 1 }} з {{ totalPages() }}</div>
+            <div class="pagination-btns">
+                @for (p of pages; track p) {
+                <button class="page-btn" [class.active]="p - 1 === currentPage()" (click)="setPage(p - 1)">{{ p
+                    }}</button>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (modalOpen()) {
+<div class="modal-backdrop" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title">{{ isEdit() ? 'Редагувати спеціальність' : 'Нова спеціальність' }}</div>
+            <button class="modal-close" (click)="closeModal()">✕</button>
+        </div>
+        <form [formGroup]="form" (ngSubmit)="submit()">
+            <div class="form-grid">
+
+                <div class="form-group">
+                    <label class="form-label">Код *</label>
+                    <input class="form-input" formControlName="code" placeholder="122"
+                        [class.error]="isInvalid('code')" />
+                    @if (isInvalid('code')) { <span class="form-error">Обов'язкове поле (макс. 10 символів)</span> }
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Організація *</label>
+                    <select class="form-select" formControlName="orgId" [class.error]="isInvalid('orgId')">
+                        <option value="">— Оберіть —</option>
+                        @for (o of orgs(); track o.id) {
+                        <option [value]="o.id">{{ o.name }}</option>
+                        }
+                    </select>
+                    @if (isInvalid('orgId')) { <span class="form-error">Оберіть організацію</span> }
+                </div>
+
+                <div class="form-group full">
+                    <label class="form-label">Назва (UA) *</label>
+                    <input class="form-input" formControlName="nameUA" placeholder="Комп'ютерні науки"
+                        [class.error]="isInvalid('nameUA')" />
+                    @if (isInvalid('nameUA')) { <span class="form-error">Обов'язкове поле</span> }
+                </div>
+
+                <div class="form-group full">
+                    <label class="form-label">Назва (EN) *</label>
+                    <input class="form-input" formControlName="nameEN" placeholder="Computer Science"
+                        [class.error]="isInvalid('nameEN')" />
+                    @if (isInvalid('nameEN')) { <span class="form-error">Обов'язкове поле</span> }
+                </div>
+
+                <div class="form-group full">
+                    <label class="form-label">Освітня програма (UA) *</label>
+                    <input class="form-input" formControlName="eduProgramUA"
+                        [class.error]="isInvalid('eduProgramUA')" />
+                    @if (isInvalid('eduProgramUA')) { <span class="form-error">Обов'язкове поле</span> }
+                </div>
+
+                <div class="form-group full">
+                    <label class="form-label">Освітня програма (EN) *</label>
+                    <input class="form-input" formControlName="eduProgramEN"
+                        [class.error]="isInvalid('eduProgramEN')" />
+                    @if (isInvalid('eduProgramEN')) { <span class="form-error">Обов'язкове поле</span> }
+                </div>
+
+                <div class="form-group full">
+                    <label class="form-label">Навчальна програма (UA) *</label>
+                    <input class="form-input" formControlName="studyProgramUA"
+                        [class.error]="isInvalid('studyProgramUA')" />
+                    @if (isInvalid('studyProgramUA')) { <span class="form-error">Обов'язкове поле</span> }
+                </div>
+
+                <div class="form-group full">
+                    <label class="form-label">Навчальна програма (EN) *</label>
+                    <input class="form-input" formControlName="studyProgramEN"
+                        [class.error]="isInvalid('studyProgramEN')" />
+                    @if (isInvalid('studyProgramEN')) { <span class="form-error">Обов'язкове поле</span> }
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Ступінь *</label>
+                    <select class="form-select" formControlName="degree" [class.error]="isInvalid('degree')">
+                        <option value="">— Оберіть —</option>
+                        @for (d of degrees; track d) {
+                        <option [value]="d">{{ degreeLabel(d) }}</option>
+                        }
+                    </select>
+                    @if (isInvalid('degree')) { <span class="form-error">Оберіть ступінь</span> }
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Форма навчання *</label>
+                    <select class="form-select" formControlName="eduType" [class.error]="isInvalid('eduType')">
+                        <option value="">— Оберіть —</option>
+                        @for (e of eduTypes; track e) {
+                        <option [value]="e">{{ eduTypeLabel(e) }}</option>
+                        }
+                    </select>
+                    @if (isInvalid('eduType')) { <span class="form-error">Оберіть форму навчання</span> }
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Дата початку *</label>
+                    <input class="form-input" formControlName="startDate" type="date"
+                        [class.error]="isInvalid('startDate')" />
+                    @if (isInvalid('startDate')) { <span class="form-error">Обов'язкове поле</span> }
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Дата завершення</label>
+                    <input class="form-input" formControlName="endDate" type="date" />
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" (click)="closeModal()">Скасувати</button>
+                <button type="submit" class="btn-primary">{{ isEdit() ? 'Зберегти' : 'Створити' }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+}
