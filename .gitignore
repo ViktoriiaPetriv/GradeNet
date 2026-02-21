@@ -1,17 +1,96 @@
+#############################
+# ========= GLOBAL =========
+#############################
+
+HELP.md
+
 # Environment variables
 .env
-.env.local
+.env.*
+!.env.example
 
-# PostgreSQL data
-data/
-
-# Application logs
+# Logs
 logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+######################################
+# ======= SPRING BOOT (Gradle) =======
+######################################
 
 # Gradle
 .gradle/
 build/
-!gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
 
-# IDE
+# IntelliJ
 .idea/
+*.iml
+*.iws
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# STS / Eclipse
+.apt_generated/
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+##############################
+# ========= ANGULAR =========
+##############################
+
+# Node
+frontend/node_modules/
+frontend/npm-debug.log*
+frontend/yarn-error.log*
+
+# Angular build output
+frontend/dist/
+frontend/tmp/
+frontend/out-tsc/
+frontend/.angular/cache/
+
+# Coverage
+frontend/coverage/
+
+# Sass cache
+frontend/.sass-cache/
+
+# Misc Angular
+frontend/connect.lock
+frontend/libpeerconnection.log
+frontend/testem.log
+frontend/typings/
+frontend/__screenshots__/
+
+# VS CODE
+
+**/.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# DATABASE (optional)
+data/

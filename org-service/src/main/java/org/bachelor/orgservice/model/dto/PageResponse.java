@@ -6,7 +6,7 @@ import java.util.List;
 
 public record PageResponse<T>(
         List<T> content,
-        int number,
+        int pageNumber,
         int size,
         long totalElements,
         int totalPages

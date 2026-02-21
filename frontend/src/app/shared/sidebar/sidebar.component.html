@@ -1,0 +1,52 @@
+<div class="overlay" [class.active]="isOpen()" (click)="close()"></div>
+
+<button class="hamburger" [class.open]="isOpen()" (click)="toggle()">
+    <span></span><span></span><span></span>
+</button>
+
+<nav class="sidebar" [class.open]="isOpen()">
+    <div class="logo">
+        <div class="logo-icon">
+            <img src="logo.png" alt="GradeNet" />
+        </div>
+        <div class="logo-text">GradeNet</div>
+    </div>
+
+    <div class="nav-section">Навігація</div>
+    <ul class="nav-links">
+        <li routerLink="/users" routerLinkActive="active" (click)="close()">
+            👤 Користувачі
+        </li>
+        <li routerLink="/books" routerLinkActive="active" (click)="close()">
+            📋 Залікова книжка
+        </li>
+        <!-- <li routerLink="/schedule" routerLinkActive="active" (click)="close()">
+            📅 Навчальний план
+        </li> -->
+        <li routerLink="/orgs" routerLinkActive="active" (click)="close()">
+            🏛️ Організації
+        </li>
+        <li routerLink="/specialties" routerLinkActive="active" (click)="close()">
+            📚 Спеціальності
+        </li>
+    </ul>
+
+    <div class="nav-divider"></div>
+
+    <div class="nav-section">Інші</div>
+    <ul class="nav-links">
+        <li routerLink="/settings" routerLinkActive="active" (click)="close()">
+            ⚙ Налаштування
+        </li>
+    </ul>
+
+    <div class="nav-bottom">
+        <div class="user-card">
+            <div class="user-avatar">АД</div>
+            <div>
+                <div class="user-info-name">Адміністратор</div>
+                <div class="user-info-role">Admin</div>
+            </div>
+        </div>
+    </div>
+</nav>
