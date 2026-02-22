@@ -428,3 +428,47 @@ tbody tr:hover {
     border-color: var(--text-muted);
     color: var(--text);
 }
+
+.stepper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+    gap: 10px;
+}
+
+.step {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    transition: all 0.3s ease;
+}
+
+.step.active {
+    border-color: var(--btn);
+    color: var(--btn);
+    background: var(--surface-2);
+}
+
+.step.completed {
+    background: var(--btn);
+    border-color: var(--btn);
+    color: white;
+}
+
+.step-line {
+    width: 50px;
+    height: 2px;
+    background: var(--border);
+}
+
+.step-line.active {
+    background: var(--btn);
+}

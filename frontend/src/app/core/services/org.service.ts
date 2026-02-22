@@ -5,7 +5,7 @@ import { Organization, OrganizationRequest } from '../../models/org.model';
 
 @Injectable({ providedIn: 'root' })
 export class OrgService {
-  private readonly apiUrl = 'http://localhost:8081/api/orgs';
+  private readonly apiUrl = '/api/orgs';
 
   constructor(private http: HttpClient) {}
 

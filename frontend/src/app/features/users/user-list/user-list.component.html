@@ -33,10 +33,7 @@
                 @if (paginated.length === 0) {
                 <tr>
                     <td colspan="5">
-                        <div class="empty-state">
-                            <div class="empty-icon">👤</div>
-                            <div>Користувачів не знайдено</div>
-                        </div>
+                        <div class="empty-state">Користувачів не знайдено</div>
                     </td>
                 </tr>
                 }
@@ -44,12 +41,10 @@
                 <tr>
                     <td>
                         <div class="user-cell">
-                            <div class="table-avatar" [style.background]="getAvatarColor(user.id)">
-                                {{ getInitials(user) }}
-                            </div>
+                            <div class="table-avatar" [style.background]="getAvatarColor(user.id)">{{ getInitials(user)
+                                }}</div>
                             <div>
-                                <div class="full-name">{{ user.lastName }} {{ user.firstName }}</div>
-                                <div class="text-muted">{{ user.patronymic || '—' }}</div>
+                                <div class="full-name">{{ user.lastName || '—' }} {{ user.firstName || '' }}</div>
                             </div>
                         </div>
                     </td>
@@ -57,8 +52,8 @@
                     <td class="text-muted">{{ formatDate(user.birthDate) }}</td>
                     <td><span class="role-badge role-{{ user.role }}">{{ roleLabel(user.role) }}</span></td>
                     <td>
-                        <button class="action-btn edit" (click)="openEdit(user)">✎ Редагувати</button>
-                        <button class="action-btn delete" (click)="delete(user.id)">✕ Видалити</button>
+                        <button class="action-btn edit" (click)="openEdit(user)">✎</button>
+                        <button class="action-btn delete" (click)="delete(user.id)">✕</button>
                     </td>
                 </tr>
                 }
@@ -75,76 +70,82 @@
     </div>
 </div>
 
-<!-- MODAL -->
 @if (modalOpen()) {
 <div class="modal-backdrop" (click)="closeModal()">
     <div class="modal" (click)="$event.stopPropagation()">
         <div class="modal-header">
-            <div class="modal-title">{{ isEdit() ? 'Редагувати користувача' : 'Новий користувач' }}</div>
+            <div class="modal-title">{{ isEdit() ? 'Редагувати' : 'Новий користувач' }}</div>
             <button class="modal-close" (click)="closeModal()">✕</button>
         </div>
 
-        <form [formGroup]="form" (ngSubmit)="submit()">
+        @if (needsSecondStep) {
+        <div class="stepper">
+            <div class="step" [class.active]="step() >= 1" [class.completed]="step() > 1">1</div>
+            <div class="step-line" [class.active]="step() > 1"></div>
+            <div class="step" [class.active]="step() === 2">2</div>
+        </div>
+        }
+
+        <form [formGroup]="form">
+            @if (step() === 1) {
             <div class="form-grid">
-
-                <div class="form-group">
-                    <label class="form-label">Прізвище *</label>
-                    <input class="form-input" formControlName="lastName" placeholder="Іванов"
-                        [class.error]="isInvalid('lastName')" />
-                    @if (isInvalid('lastName')) { <span class="form-error">Обов'язкове поле</span> }
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Ім'я *</label>
-                    <input class="form-input" formControlName="firstName" placeholder="Іван"
-                        [class.error]="isInvalid('firstName')" />
-                    @if (isInvalid('firstName')) { <span class="form-error">Обов'язкове поле</span> }
-                </div>
-
-                <div class="form-group full">
-                    <label class="form-label">По батькові</label>
-                    <input class="form-input" formControlName="patronymic" placeholder="Іванович" />
-                </div>
-
                 <div class="form-group full">
                     <label class="form-label">Email *</label>
-                    <input class="form-input" formControlName="email" type="email" placeholder="ivan@example.com"
-                        [class.error]="isInvalid('email')" />
-                    @if (isInvalid('email')) { <span class="form-error">Введіть коректний email</span> }
+                    <input class="form-input" formControlName="email" type="email" [class.error]="isInvalid('email')" />
                 </div>
-
                 <div class="form-group full">
-                    <label class="form-label">Пароль {{ isEdit() ? '(порожнім — не змінювати)' : '*' }}</label>
+                    <label class="form-label">Пароль {{ isEdit() ? '(опціонально)' : '*' }}</label>
                     <input class="form-input" formControlName="password" type="password"
-                        placeholder="Мінімум 6 символів" [class.error]="isInvalid('password')" />
-                    @if (isInvalid('password')) { <span class="form-error">Мінімум 6 символів</span> }
+                        [class.error]="isInvalid('password')" />
                 </div>
-
-                <div class="form-group">
-                    <label class="form-label">Дата народження *</label>
-                    <input class="form-input" formControlName="birthDate" type="date"
-                        [class.error]="isInvalid('birthDate')" />
-                    @if (isInvalid('birthDate')) { <span class="form-error">Обов'язкове поле</span> }
-                </div>
-
-                <div class="form-group">
+                <div class="form-group full">
                     <label class="form-label">Роль *</label>
                     <select class="form-select" formControlName="role" [class.error]="isInvalid('role')">
-                        <option value="">— Оберіть —</option>
-                        @for (role of roles; track role) {
-                        <option [value]="role">{{ role }}</option>
-                        }
+                        <option value="">— Оберіть роль —</option>
+                        @for (role of roles; track role) { <option [value]="role">{{ roleLabel(role) }}</option> }
                     </select>
-                    @if (isInvalid('role')) { <span class="form-error">Оберіть роль</span> }
                 </div>
-
             </div>
+            }
+
+            @if (step() === 2) {
+            <div class="form-grid">
+                @if (form.get('role')?.value !== 'MANAGER') {
+                <div class="form-group">
+                    <label class="form-label">Прізвище *</label>
+                    <input class="form-input" formControlName="lastName" [class.error]="isInvalid('lastName')" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ім'я *</label>
+                    <input class="form-input" formControlName="firstName" [class.error]="isInvalid('firstName')" />
+                </div>
+                }
+                @if (form.get('role')?.value === 'STUDENT' || form.get('role')?.value === 'PROFESSOR') {
+                <div class="form-group full">
+                    <label class="form-label">Дата народження {{ form.get('role')?.value === 'STUDENT' ? '*' : ''
+                        }}</label>
+                    <input class="form-input" formControlName="birthDate" type="date" />
+                </div>
+                }
+                @if (form.get('role')?.value === 'MANAGER') {
+                <div class="form-group full">
+                    <label class="form-label">ID Організації *</label>
+                    <input class="form-input" formControlName="orgId" type="number"
+                        [class.error]="isInvalid('orgId')" />
+                </div>
+                }
+            </div>
+            }
 
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" (click)="closeModal()">Скасувати</button>
-                <button type="submit" class="btn-primary">
-                    {{ isEdit() ? 'Зберегти' : 'Створити' }}
-                </button>
+                @if (step() === 1 && needsSecondStep) {
+                <button type="button" class="btn-primary" (click)='nextStep()'>Далі →</button>
+                } @else {
+                @if (step() === 2) { <button type="button" class="btn-cancel" (click)="step.set(1)">Назад</button> }
+                <button type="button" class="btn-primary" (click)="submit()">{{ isEdit() ? 'Зберегти' : 'Створити'
+                    }}</button>
+                }
             </div>
         </form>
     </div>

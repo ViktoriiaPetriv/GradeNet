@@ -5,7 +5,7 @@ import { Specialty, SpecialtyRequest, PageResponse } from '../../models/org.mode
 
 @Injectable({ providedIn: 'root' })
 export class SpecialtyService {
-  private readonly apiUrl = 'http://localhost:8081/api/specialties';
+  private readonly apiUrl = '/api/specialties';
 
   constructor(private http: HttpClient) {}
 

@@ -195,3 +195,21 @@
     font-size: 0.7rem;
     color: var(--text-muted);
 }
+
+.logout-btn {
+    margin-left: auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    padding: 6px;
+    border-radius: 8px;
+    transition: color 0.2s, background 0.2s;
+}
+
+.logout-btn:hover {
+    color: #E53E3E;
+    background: rgba(229, 62, 62, 0.1);
+}
