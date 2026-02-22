@@ -4,6 +4,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.bachelor.userservice.exception.AuthException;
 import org.bachelor.userservice.exception.NotFoundException;
 import org.bachelor.userservice.mapper.UserMapper;
 import org.bachelor.userservice.model.dto.AuthResponseDTO;
@@ -34,7 +35,7 @@ public class AuthService {
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            throw new IllegalArgumentException("Invalid password");
+            throw new AuthException("Invalid password");
         }
 
         String accessToken = jwtService.generateToken(user);
@@ -49,7 +50,7 @@ public class AuthService {
         String refreshToken = extractRefreshCookie(request);
 
         if (!jwtService.isTokenValid(refreshToken)) {
-            throw new IllegalArgumentException("Invalid refresh token");
+            throw new AuthException("Invalid refresh token");
         }
 
         String email = jwtService.extractClaims(refreshToken).getSubject();
@@ -64,34 +65,16 @@ public class AuthService {
         return new AuthResponseDTO(newAccessToken, userMapper.toDto(user));
     }
 
-//    public void logout(HttpServletResponse response) {
-//        Cookie cookie = new Cookie(REFRESH_COOKIE, "");
-//        cookie.setHttpOnly(true);
-//        cookie.setSecure(jwtProperties.isCookieSecure());
-//        cookie.setPath("/");
-//        cookie.setMaxAge(0);
-//        response.addCookie(cookie);
-//    }
-
     private String extractRefreshCookie(HttpServletRequest request) {
         if (request.getCookies() == null) {
-            throw new IllegalArgumentException("No refresh token");
+            throw new AuthException("No refresh token");
         }
         return Arrays.stream(request.getCookies())
                 .filter(c -> REFRESH_COOKIE.equals(c.getName()))
                 .findFirst()
                 .map(Cookie::getValue)
-                .orElseThrow(() -> new IllegalArgumentException("No refresh token"));
+                .orElseThrow(() -> new AuthException("No refresh token"));
     }
-
-//    private void addRefreshCookie(HttpServletResponse response, String refreshToken) {
-//        Cookie cookie = new Cookie(REFRESH_COOKIE, refreshToken);
-//        cookie.setHttpOnly(true);
-//        cookie.setSecure(jwtProperties.isCookieSecure());
-//        cookie.setPath("/");
-//        cookie.setMaxAge((int) (jwtProperties.getRefreshExpiration() / 1000));
-//        response.addCookie(cookie);
-//    }
 
     private void addRefreshCookie(HttpServletResponse response, String refreshToken) {
         ResponseCookie cookie = ResponseCookie.from(REFRESH_COOKIE, refreshToken)
@@ -99,7 +82,7 @@ public class AuthService {
                 .secure(jwtProperties.isCookieSecure())
                 .path("/")
                 .maxAge(jwtProperties.getRefreshExpiration() / 1000)
-                .sameSite("Lax") // важливо для localhost
+                .sameSite("Lax")
                 .build();
 
         response.addHeader("Set-Cookie", cookie.toString());

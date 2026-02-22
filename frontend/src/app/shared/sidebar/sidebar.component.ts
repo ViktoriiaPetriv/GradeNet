@@ -1,5 +1,6 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -10,11 +11,16 @@ import { RouterModule } from '@angular/router';
 })
 export class SidebarComponent {
   isOpen = signal(false);
+  private authService = inject(AuthService);
 
   toggle() {
     this.isOpen.update((v) => !v);
   }
   close() {
     this.isOpen.set(false);
+  }
+
+  logout() {
+    this.authService.logout();
   }
 }

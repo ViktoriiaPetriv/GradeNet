@@ -1,7 +1,8 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-login',
@@ -15,6 +16,8 @@ export class LoginComponent {
   loading = signal(false);
   error = signal('');
   showPassword = signal(false);
+
+  private toastService = inject(ToastService);
 
   constructor(
     private fb: FormBuilder,
@@ -48,6 +51,7 @@ export class LoginComponent {
     this.authService.login(this.form.value).subscribe({
       next: () => {
         this.loading.set(false);
+        this.toastService.success('Ласкаво просимо!');
         this.router.navigate(['/users']);
       },
       error: (err) => {

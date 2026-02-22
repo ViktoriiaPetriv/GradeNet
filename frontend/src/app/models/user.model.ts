@@ -8,14 +8,16 @@ export interface User {
   email: string;
   birthDate: string;
   role: Role;
+  orgId?: number;
 }
 
 export interface UserRequest {
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
   patronymic?: string;
   email: string;
-  password: string;
-  birthDate: string;
+  password?: string;
+  birthDate?: string;
   role: Role;
+  orgId?: number;
 }

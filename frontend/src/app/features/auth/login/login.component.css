@@ -7,26 +7,41 @@
 
 .login-wrapper {
     display: grid;
-    grid-template-columns: 480px 1fr;
+    grid-template-columns: 1fr 1fr;
     height: 100vh;
     font-family: 'Onest', sans-serif;
     background: #0c0e1a;
+
+    grid-template-areas: "right left";
+    
 }
 
 /* ─── LEFT PANEL ─── */
 .login-left {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: center;
     background: #ffffff;
     padding: 40px 48px;
     position: relative;
     z-index: 1;
+
+    grid-area: left;
 }
 
 .brand {
+    position: absolute;
+    top: 40px;
+    left: 48px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+}
+
+.brand-logo {
+    height: 32px;
+    width: auto;
 }
 
 .brand-name {
@@ -37,11 +52,10 @@
 }
 
 .login-content {
-    flex: 1;
+    width: 100%;
+    max-width: 360px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    max-width: 360px;
 }
 
 .login-heading {
@@ -212,6 +226,8 @@
 
 /* ─── FOOTER ─── */
 .login-footer {
+    position: absolute;
+    bottom: 24px;
     font-size: 12px;
     color: #9ca3af;
     text-align: center;
@@ -225,6 +241,8 @@
     align-items: center;
     justify-content: center;
     background: radial-gradient(ellipse at 30% 40%, #1e2560 0%, #0c0e1a 60%);
+
+    grid-area: right;
 }
 
 .orb {
