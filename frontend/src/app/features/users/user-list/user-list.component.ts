@@ -1,12 +1,19 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { UserService } from '../../../core/services/user.service';
 import { User } from '../../../models/user.model';
 import { Role } from '../../../models/role.enum';
 import { ToastService } from '../../../core/services/toast.service';
 import { OrgService } from '../../../core/services/org.service';
 import { OrganizationShort } from '../../../models/org.model';
+
+function universityEmailValidator(control: AbstractControl): ValidationErrors | null {
+  const value = control.value;
+  if (!value) return null;
+  const valid = /^[a-zA-Z0-9._%+\-]+@(pnu|cnu)\.edu\.ua$/.test(value);
+  return valid ? null : { universityEmail: true };
+}
 
 @Component({
   selector: 'app-user-list',
@@ -51,7 +58,7 @@ export class UserListComponent implements OnInit {
 
   initForm() {
     this.form = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
+      email: ['', [Validators.required, Validators.email, universityEmailValidator]],
       password: ['', [Validators.minLength(8)]],
       role: ['', Validators.required],
       firstName: ['', [Validators.maxLength(50)]],

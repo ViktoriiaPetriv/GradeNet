@@ -99,6 +99,13 @@
                 <div class="form-group full">
                     <label class="form-label">Email *</label>
                     <input class="form-input" formControlName="email" type="email" [class.error]="isInvalid('email')" />
+                    @if (isInvalid('email')) {
+                    <span class="field-hint">
+                        @if (form.get('email')?.errors?.['required']) { Email є обов'язковим }
+                        @else if (form.get('email')?.errors?.['email']) { Невірний формат email }
+                        @else if (form.get('email')?.errors?.['universityEmail']) { Email має бути @pnu.edu.ua або @cnu.edu.ua }
+                    </span>
+                    }
                 </div>
                 <div class="form-group full">
                     <label class="form-label">Пароль {{ isEdit() ? '(опціонально)' : '*' }}</label>
