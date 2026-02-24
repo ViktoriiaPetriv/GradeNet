@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { User, UserRequest } from '../../models/user.model';
+import { User, UserRequest, UserProfile } from '../../models/user.model';
 
 @Injectable({ providedIn: 'root' })
 export class UserService {
@@ -27,5 +27,13 @@ export class UserService {
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  getProfile(id: number): Observable<UserProfile> {
+    return this.http.get<UserProfile>(`${this.apiUrl}/${id}/profile`);
+  }
+
+  getMyProfile(): Observable<UserProfile> {
+    return this.http.get<UserProfile>(`${this.apiUrl}/me/profile`);
   }
 }

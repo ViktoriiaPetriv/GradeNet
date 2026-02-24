@@ -1,0 +1,148 @@
+<div class="page">
+    @if (profile(); as p) {
+    <div class="profile-header">
+        <div class="avatar">
+            <i class="pi pi-user"></i>
+        </div>
+        <div class="profile-info">
+            @if (p.lastName || p.firstName) {
+            <div class="profile-name">{{ p.lastName || '' }} {{ p.firstName || '' }} {{ p.patronymic || '' }}</div>
+            } @else {
+            <div class="profile-name">{{ p.email }}</div>
+            }
+            <span class="role-badge role-{{ p.role }}">{{ roleLabel(p.role) }}</span>
+        </div>
+    
+        <div class="profile-actions">
+            @if (canEdit) {
+            <button class="action-btn edit" (click)="editProfile()">
+                <i class="pi pi-file-edit"></i>
+            </button>
+            }
+            @if (canDelete) {
+            <button class="action-btn delete" (click)="deleteProfile()">
+                <i class="pi pi-trash"></i>
+            </button>
+            }
+        </div>
+    </div>
+
+    <div class="profile-sections">
+
+        <!-- Основна інформація -->
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">Основна інформація</div>
+            </div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Прізвище</div>
+                    <div class="info-value" [class.empty]="!p.lastName">{{ p.lastName || 'Не вказано' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Ім'я</div>
+                    <div class="info-value" [class.empty]="!p.firstName">{{ p.firstName || 'Не вказано' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">По батькові</div>
+                    <div class="info-value" [class.empty]="!p.patronymic">{{ p.patronymic || 'Не вказано' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Дата народження</div>
+                    <div class="info-value" [class.empty]="!p.birthDate">{{ formatDate(p.birthDate) || 'Не вказано' }}
+                    </div>
+                </div>
+                <div class="info-item full">
+                    <div class="info-label">Email</div>
+                    <div class="info-value">{{ p.email }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Навчання (тільки для студента) -->
+        @if (p.studentInfo; as info) {
+        <div class="section">
+            <div class="section-header">
+                <div class="section-icon"><i class="pi pi-book"></i></div>
+                <div class="section-title">Навчання</div>
+            </div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Номер залікової книжки</div>
+                    <div class="info-value" [class.empty]="!info.bookNumber">{{ info.bookNumber || 'Не вказано' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Статус залікової книжки</div>
+                    <div class="info-value">
+                        <span class="status-badge status-{{ info.bookNumberStatus }}">
+                            {{ bookStatusLabel(info.bookNumberStatus) }}
+                        </span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Дата початку навчання</div>
+                    <div class="info-value" [class.empty]="!info.startDate">{{ formatDate(info.startDate) || 'Не
+                        вказано' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Дата закінчення навчання</div>
+                    <div class="info-value" [class.empty]="!info.endDate">{{ formatDate(info.endDate) || 'Не вказано' }}
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Факультет</div>
+                    <div class="info-value" [class.empty]="!orgInfo()?.facultyName">
+                        {{ orgInfo()?.facultyName || 'Не вказано' }}
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Кафедра</div>
+                    <div class="info-value" [class.empty]="!orgInfo()?.departmentName">
+                        {{ orgInfo()?.departmentName || 'Не вказано' }}
+                    </div>
+                </div>
+                <div class="info-item full">
+                    <div class="info-label">Спеціальність</div>
+                    <div class="info-value" [class.empty]="!specialty()">
+                        {{ specialty() ? specialty()!.code + ' — ' + specialty()!.nameUA : 'Не вказано' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        }
+    </div>
+    }
+</div>
+
+@if (editModalOpen()) {
+<div class="modal-backdrop" (click)="editModalOpen.set(false)">
+    <div class="modal" (click)="$event.stopPropagation()">
+        <app-user-modal [user]="editingUser()" mode="edit" (saved)="onSaved()" (cancelled)="editModalOpen.set(false)" />
+    </div>
+</div>
+}
+
+@if (deleteModalOpen()) {
+<div class="modal-backdrop" (click)="deleteModalOpen.set(false)">
+    <div class="modal modal-sm" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title">Видалення користувача</div>
+            <button class="modal-close" (click)="deleteModalOpen.set(false)">
+                <i class="pi pi-times"></i>
+            </button>
+        </div>
+        <div class="delete-body">
+            <div class="delete-icon"><i class="pi pi-trash"></i></div>
+            <p class="delete-text">
+                Ви впевнені, що хочете видалити користувача
+                <strong>{{ profile()?.email }}</strong>?
+            </p>
+            <p class="delete-subtext">Цю дію неможливо скасувати.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-cancel" (click)="deleteModalOpen.set(false)">Скасувати</button>
+            <button type="button" class="btn-danger" (click)="confirmDelete()">Видалити</button>
+        </div>
+    </div>
+</div>
+}

@@ -76,3 +76,10 @@ export interface OrganizationShort {
   id: number;
   name: string;
 }
+
+export interface OrgInfo {
+  facultyId: number;
+  facultyName: string;
+  departmentId: number;
+  departmentName: string;
+}

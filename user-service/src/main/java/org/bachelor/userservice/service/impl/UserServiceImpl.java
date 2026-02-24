@@ -4,11 +4,14 @@ import lombok.RequiredArgsConstructor;
 import org.bachelor.userservice.exception.NotFoundException;
 import org.bachelor.userservice.exception.ValidationException;
 import org.bachelor.userservice.mapper.UserMapper;
+import org.bachelor.userservice.model.dto.StudentInfoDTO;
 import org.bachelor.userservice.model.dto.UserDTO;
+import org.bachelor.userservice.model.dto.UserProfileDTO;
 import org.bachelor.userservice.model.dto.UserRequestDTO;
 import org.bachelor.userservice.model.entity.Role;
 import org.bachelor.userservice.model.entity.User;
 import org.bachelor.userservice.model.entity.UserOrganization;
+import org.bachelor.userservice.repository.BookNumberRepository;
 import org.bachelor.userservice.repository.UserOrganizationRepository;
 import org.bachelor.userservice.repository.UserRepository;
 import org.bachelor.userservice.service.UserService;
@@ -23,6 +26,7 @@ import java.util.List;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final BookNumberRepository bookNumberRepository;
     private final UserOrganizationRepository userOrganizationRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
@@ -138,5 +142,32 @@ public class UserServiceImpl implements UserService {
 
     private boolean isNullOrBlank(String str) {
         return str == null || str.isBlank();
+    }
+
+    public UserProfileDTO getProfile(Long id) {
+        User user = getUserOrThrow(id);
+        UserProfileDTO profile = userMapper.toProfileDto(user);
+
+        if (user.getRole() != Role.STUDENT) {
+            return profile;
+        }
+
+        Long orgId = user.getOrganizations().stream()
+                .findFirst()
+                .map(UserOrganization::getOrgId)
+                .orElse(null);
+
+        StudentInfoDTO studentInfo = bookNumberRepository.findByStudentId(id)
+                .map(book -> new StudentInfoDTO(
+                        book.getNumber(),
+                        book.getStatus().name(),
+                        book.getRegStartDate(),
+                        book.getRegEndDate(),
+                        book.getSpecialtyId(),
+                        orgId
+                ))
+                .orElse(new StudentInfoDTO(null, null, null, null, null, orgId));
+
+        return profile.withStudentInfo(studentInfo);
     }
 }

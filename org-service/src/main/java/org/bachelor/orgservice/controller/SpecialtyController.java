@@ -2,6 +2,7 @@ package org.bachelor.orgservice.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.bachelor.orgservice.model.dto.OrgInfoDTO;
 import org.bachelor.orgservice.model.dto.PageResponse;
 import org.bachelor.orgservice.model.dto.SpecialtyDTO;
 import org.bachelor.orgservice.model.dto.SpecialtyRequestDTO;
@@ -23,7 +24,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-@PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/specialties")
@@ -69,5 +69,10 @@ public class SpecialtyController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         specialtyService.delete(id);
+    }
+
+    @GetMapping("/{id}/org-info")
+    public OrgInfoDTO getOrgInfo(@PathVariable Long id) {
+        return specialtyService.getOrgInfo(id);
     }
 }

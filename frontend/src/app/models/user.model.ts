@@ -21,3 +21,23 @@ export interface UserRequest {
   role: Role;
   orgId?: number;
 }
+
+export interface StudentInfo {
+  bookNumber: string;
+  bookNumberStatus: string;
+  startDate: string;
+  endDate?: string;
+  specialtyId: number;
+  orgId: number;
+}
+
+export interface UserProfile {
+  id: number;
+  firstName?: string;
+  lastName?: string;
+  patronymic?: string;
+  email: string;
+  birthDate?: string;
+  role: string;
+  studentInfo?: StudentInfo;
+}

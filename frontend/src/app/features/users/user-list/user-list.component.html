@@ -19,6 +19,45 @@
     </div>
 
     <div class="table-container">
+        <div class="table-controls">
+        
+            <div class="left">
+                <div class="pagination-info">
+                    {{ paginationInfo }}
+                </div>
+            </div>
+        
+            <div class="right">
+        
+                <div class="page-size">
+                    <label>Показувати:</label>
+                    <select (change)="onPageSizeChange($event)">
+                        @for (size of pageSizeOptions; track size) {
+                        <option [value]="size" [selected]="size === perPage()">
+                            {{ size }}
+                        </option>
+                        }
+                    </select>
+                </div>
+        
+                <div class="pagination-btns">
+                    <button class="page-btn" [disabled]="currentPage() === 1" (click)="setPage(currentPage() - 1)">
+                        ◀
+                    </button>
+        
+                    @for (p of pages; track p) {
+                    <button class="page-btn" [class.active]="p === currentPage()" (click)="setPage(p)">
+                        {{ p }}
+                    </button>
+                    }
+        
+                    <button class="page-btn" [disabled]="currentPage() === totalPages" (click)="setPage(currentPage() + 1)">
+                        ▶
+                    </button>
+                </div>
+        
+            </div>
+        </div>
         <table>
             <thead>
                 <tr>
@@ -53,6 +92,9 @@
                     <td class="text-muted">{{ formatDate(user.birthDate) }}</td>
                     <td><span class="role-badge role-{{ user.role }}">{{ roleLabel(user.role) }}</span></td>
                     <td>
+                        <button class="action-btn view" (click)="viewProfile(user.id)">
+                            <i class="pi pi-user" style="color: #0D9E6E;"></i>
+                        </button>
                         <button class="action-btn edit" (click)="openEdit(user)">
                             <i class="pi pi-file-edit"></i>
                         </button>
@@ -64,154 +106,15 @@
                 }
             </tbody>
         </table>
-        <div class="pagination">
-            <div class="pagination-info">{{ paginationInfo }}</div>
-            <div class="pagination-btns">
-                @for (p of pages; track p) {
-                <button class="page-btn" [class.active]="p === currentPage()" (click)="setPage(p)">{{ p }}</button>
-                }
-            </div>
-        </div>
+        
     </div>
 </div>
 
 @if (modalOpen()) {
 <div class="modal-backdrop" (click)="closeModal()">
     <div class="modal" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-            <div class="modal-title">{{ isEdit() ? 'Редагувати' : 'Новий користувач' }}</div>
-            <button class="modal-close" (click)="closeModal()">
-                <i class="pi pi-times"></i>
-            </button>
-        </div>
-
-        @if (needsSecondStep) {
-        <div class="stepper">
-            <div class="step" [class.active]="step() >= 1" [class.completed]="step() > 1">1</div>
-            <div class="step-line" [class.active]="step() > 1"></div>
-            <div class="step" [class.active]="step() === 2">2</div>
-        </div>
-        }
-
-        <form [formGroup]="form">
-            @if (step() === 1) {
-            <div class="form-grid">
-                <div class="form-group full">
-                    <label class="form-label">Email *</label>
-                    <input class="form-input" formControlName="email" type="email" [class.error]="isInvalid('email')" />
-                    @if (isInvalid('email')) {
-                    <span class="field-hint">
-                        @if (form.get('email')?.errors?.['required']) { Email є обов'язковим }
-                        @else if (form.get('email')?.errors?.['email']) { Невірний формат email }
-                        @else if (form.get('email')?.errors?.['universityEmail']) { Email має бути @pnu.edu.ua або @cnu.edu.ua }
-                    </span>
-                    }
-                </div>
-                <div class="form-group full">
-                    <label class="form-label">Пароль {{ isEdit() ? '(опціонально)' : '*' }}</label>
-                    <div class="password-wrap">
-                        <input class="form-input" formControlName="password"
-                            [type]="showPassword() ? 'text' : 'password'" [class.error]="isInvalid('password')" />
-
-                        <button type="button" class="toggle-pass" (click)="togglePassword()">
-
-                            <i class="pi" [ngClass]="showPassword() ? 'pi-eye-slash' : 'pi-eye'">
-                            </i>
-
-                        </button>
-                    </div>
-                    @if (isInvalid('password') && form.get('password')?.errors?.['required']) {
-                    <span class="field-hint">Пароль є обов'язковим</span>
-                    }
-                    @if (isMinLengthNotMet('password')) {
-                    <span class="field-hint">Мінімум 8 символів</span>
-                    }
-                </div>
-                <div class="form-group full">
-                    <label class="form-label">Роль *</label>
-                    <select class="form-select" formControlName="role" [class.error]="isInvalid('role')">
-                        <option value="">— Оберіть роль —</option>
-                        @for (role of roles; track role) { <option [value]="role">{{ roleLabel(role) }}</option> }
-                    </select>
-                </div>
-            </div>
-            }
-
-            @if (step() === 2) {
-            <div class="form-grid">
-                @if (form.get('role')?.value !== 'MANAGER') {
-                <div class="form-group">
-                    <label class="form-label">Прізвище *</label>
-                    <input class="form-input" formControlName="lastName" [class.error]="isInvalid('lastName')" />
-                    @if (isInvalid('lastName')) {
-                    <span class="field-hint">
-                        @if (form.get('lastName')?.errors?.['required']) { Прізвище є обов'язковим }
-                    </span>
-                    }
-                    @if (isMaxLengthExceeded('lastName')) {
-                    <span class="field-hint">Максимум 50 символів</span>
-                    }
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Ім'я *</label>
-                    <input class="form-input" formControlName="firstName" [class.error]="isInvalid('firstName')" />
-                    @if (isInvalid('firstName')) {
-                    <span class="field-hint">
-                        @if (form.get('firstName')?.errors?.['required']) { Ім'я є обов'язковим }
-                    </span>
-                    }
-                    @if (isMaxLengthExceeded('firstName')) {
-                    <span class="field-hint">Максимум 50 символів</span>
-                    }
-                </div>
-                <div class="form-group full">
-                    <label class="form-label">По батькові</label>
-                    <input class="form-input" formControlName="patronymic" [class.error]="isInvalid('patronymic')" />
-                    @if (isMaxLengthExceeded('patronymic')) {
-                    <span class="field-hint">Максимум 50 символів</span>
-                    }
-                </div>
-                }
-                @if (form.get('role')?.value === 'STUDENT' || form.get('role')?.value === 'PROFESSOR') {
-                <div class="form-group full">
-                    <label class="form-label">Дата народження {{ form.get('role')?.value === 'STUDENT' ? '*' : ''
-                        }}</label>
-                    <input class="form-input" formControlName="birthDate" type="date" />
-                </div>
-                }
-                @if (form.get('role')?.value === 'MANAGER') {
-                <div class="form-group full">
-                    <label class="form-label">Факультет *</label>
-                    <select class="form-select" formControlName="orgId" [class.error]="isInvalid('orgId')">
-                        <option [ngValue]="null">— Оберіть факультет —</option>
-                        @for (faculty of faculties(); track faculty.id) {
-                        <option [ngValue]="faculty.id">
-                            {{ faculty.name }}
-                        </option>
-                        }
-                    </select>
-                </div>
-                }
-            </div>
-            }
-
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" (click)="closeModal()">Скасувати</button>
-                @if (step() === 1 && needsSecondStep) {
-                <button type="button" class="btn-primary" (click)="nextStep()">
-                    Далі <i class="pi pi-arrow-right"></i>
-                </button>
-                } @else {
-                @if (step() === 2) {
-                <button type="button" class="btn-cancel" (click)="step.set(1)">
-                    <i class="pi pi-arrow-left"></i> Назад
-                </button>
-                }
-                <button type="button" class="btn-primary" (click)="submit()">{{ isEdit() ? 'Зберегти' : 'Створити'
-                    }}</button>
-                }
-            </div>
-        </form>
+        <app-user-modal [user]="editingUser()" [mode]="isEdit() ? 'edit' : 'create'" (saved)="onSaved()"
+            (cancelled)="closeModal()" />
     </div>
 </div>
 }

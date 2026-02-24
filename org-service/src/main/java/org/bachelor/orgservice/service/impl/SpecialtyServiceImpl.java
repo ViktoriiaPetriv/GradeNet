@@ -5,6 +5,7 @@ import org.bachelor.orgservice.exception.EntityExistsException;
 import org.bachelor.orgservice.exception.NotFoundException;
 import org.bachelor.orgservice.exception.RestException;
 import org.bachelor.orgservice.mapper.SpecialtyMapper;
+import org.bachelor.orgservice.model.dto.OrgInfoDTO;
 import org.bachelor.orgservice.model.dto.PageResponse;
 import org.bachelor.orgservice.model.dto.SpecialtyDTO;
 import org.bachelor.orgservice.model.dto.SpecialtyRequestDTO;
@@ -147,5 +148,23 @@ public class SpecialtyServiceImpl implements SpecialtyService {
         specialtyRepository.findByNameEN(dto.nameEN())
                 .filter(existing -> !existing.getId().equals(currentId))
                 .ifPresent(e -> { throw new EntityExistsException("Спеціальність з такою назвою (EN) вже існує"); });
+    }
+
+    @Override
+    public OrgInfoDTO getOrgInfo(Long specialtyId) {
+        Specialty specialty = specialtyRepository.findById(specialtyId)
+                .orElseThrow(() -> new NotFoundException("Specialty not found"));
+
+        Organization department = specialty.getOrganization();
+
+        Organization faculty = organizationRepository.findById(department.getParent().getId())
+                .orElseThrow(() -> new NotFoundException("Faculty not found"));
+
+        return new OrgInfoDTO(
+                faculty.getId(),
+                faculty.getName(),
+                department.getId(),
+                department.getName()
+        );
     }
 }

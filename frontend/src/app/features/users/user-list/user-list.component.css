@@ -562,3 +562,60 @@ tbody tr:hover {
     transition: color 0.2s;
 }
 
+.table-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.pagination-info {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.table-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.table-controls .right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.pagination-info {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.page-size select {
+    padding: 4px 8px;
+}
+
+.pagination-btns {
+    display: flex;
+    gap: 6px;
+}
+
+.page-btn {
+    padding: 6px 10px;
+    border: 1px solid #e5e7eb;
+    background: white;
+    cursor: pointer;
+    border-radius: 6px;
+}
+
+.page-btn.active {
+    background: #5B6AF0;
+    color: white;
+    border-color: #5B6AF0;
+}
+
+.page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
