@@ -1,6 +1,7 @@
 package org.bachelor.userservice.mapper;
 
 import org.bachelor.userservice.model.dto.UserDTO;
+import org.bachelor.userservice.model.dto.UserProfileDTO;
 import org.bachelor.userservice.model.dto.UserRequestDTO;
 import org.bachelor.userservice.model.entity.User;
 import org.mapstruct.Mapper;
@@ -11,6 +12,9 @@ import org.mapstruct.MappingTarget;
 public interface UserMapper {
 
     UserDTO toDto(User user);
+
+    @Mapping(target = "studentInfo", ignore = true)
+    UserProfileDTO toProfileDto(User user);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "organizations", ignore = true)

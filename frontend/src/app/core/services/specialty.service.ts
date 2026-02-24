@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Specialty, SpecialtyRequest, PageResponse } from '../../models/org.model';
+import { Specialty, SpecialtyRequest, PageResponse, OrgInfo } from '../../models/org.model';
 
 @Injectable({ providedIn: 'root' })
 export class SpecialtyService {
@@ -50,5 +50,9 @@ export class SpecialtyService {
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  getOrgInfo(specialtyId: number): Observable<OrgInfo> {
+    return this.http.get<OrgInfo>(`${this.apiUrl}/${specialtyId}/org-info`);
   }
 }

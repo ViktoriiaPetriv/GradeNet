@@ -3,9 +3,11 @@ package org.bachelor.userservice.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.bachelor.userservice.model.dto.UserDTO;
+import org.bachelor.userservice.model.dto.UserProfileDTO;
 import org.bachelor.userservice.model.dto.UserRequestDTO;
 import org.bachelor.userservice.service.UserService;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/users")
@@ -51,4 +52,17 @@ public class UserController {
     public void delete(@PathVariable Long id) {
         userService.delete(id);
     }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/{id}/profile")
+    public UserProfileDTO getProfile(@PathVariable Long id) {
+        return userService.getProfile(id);
+    }
+
+    @GetMapping("/me/profile")
+    public UserProfileDTO getMyProfile(Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        return userService.getProfile(userId);
+    }
+
 }

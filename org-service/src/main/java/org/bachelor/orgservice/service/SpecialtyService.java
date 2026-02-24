@@ -1,5 +1,6 @@
 package org.bachelor.orgservice.service;
 
+import org.bachelor.orgservice.model.dto.OrgInfoDTO;
 import org.bachelor.orgservice.model.dto.PageResponse;
 import org.bachelor.orgservice.model.dto.SpecialtyDTO;
 import org.bachelor.orgservice.model.dto.SpecialtyRequestDTO;
@@ -20,4 +21,6 @@ public interface SpecialtyService {
     PageResponse<SpecialtyDTO> getAllByOrganization(Long orgId, Degree degree, EduType eduType, Pageable pageable);
 
     void delete(Long id);
+
+    OrgInfoDTO getOrgInfo(Long specialtyId);
 }
