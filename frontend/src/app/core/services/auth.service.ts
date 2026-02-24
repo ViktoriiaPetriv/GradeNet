@@ -7,7 +7,6 @@ import { AuthApiService } from './auth-api.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  // null = ще перевіряємо, true = є сесія, false = немає сесії
   private _sessionReady$ = new BehaviorSubject<boolean | null>(null);
   readonly sessionReady$ = this._sessionReady$.pipe(filter((v): v is boolean => v !== null));
 
@@ -20,20 +19,13 @@ export class AuthService {
   }
 
   private tryRestoreSession(): void {
-    console.log('🔄 Trying to restore session...');
-    console.log('🔄 AuthApiService:', this.authApi);
 
     this.authApi.refresh().subscribe({
       next: (res) => {
-        console.log('✅ Session restored', res);
         this.setSession(res);
         this._sessionReady$.next(true);
       },
       error: (err) => {
-        console.log('❌ Status:', err.status);
-        console.log('❌ Error:', err.error);
-        console.log('❌ URL:', err.url);
-        console.log('❌ Full:', err);
         this.tokenService.clear();
         this._sessionReady$.next(false);
       },
@@ -62,7 +54,7 @@ export class AuthService {
 
   private finalizeLogout(): void {
     this.tokenService.clear();
-    this._sessionReady$.next(null); // скидаємо в null
+    this._sessionReady$.next(null);
     this.router.navigate(['/login']);
   }
 

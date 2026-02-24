@@ -10,23 +10,26 @@ import org.bachelor.userservice.model.entity.Role;
 import java.time.LocalDate;
 
 public record UserRequestDTO (
+        @Size(max = 50, message = "Ім'я не може перевищувати 100 символів")
         String firstName,
 
+        @Size(max = 50, message = "Прізвище не може перевищувати 100 символів")
         String lastName,
 
+        @Size(max = 50, message = "По батькові не може перевищувати 100 символів")
         String patronymic,
 
-        @NotBlank(message = "Email is required")
-        @Email(message = "Email must be valid")
+        @NotBlank(message = "Email є обов'язковим")
+        @Email(message = "Email має бути коректним")
         String email,
 
-        @Size(min = 6, max = 255, message = "Password must be between 6 and 255 characters")
+        @Size(min = 8, max = 32, message = "Пароль має бути від 8 до 32 символів")
         String password,
 
-        @Past(message = "Birth date must be in the past")
+        @Past(message = "Дата народження має бути в минулому")
         LocalDate birthDate,
 
-        @NotNull(message = "Role is required")
+        @NotNull(message = "Роль є обов'язковою")
         Role role,
 
         Long orgId

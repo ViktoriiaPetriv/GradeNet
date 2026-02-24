@@ -32,10 +32,10 @@ public class AuthService {
 
     public AuthResponseDTO login(LoginRequestDTO request, HttpServletResponse response) {
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new NotFoundException("User not found"));
+                .orElseThrow(() -> new NotFoundException("Користувача не знайдено"));
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            throw new AuthException("Invalid password");
+            throw new AuthException("Невірний пароль");
         }
 
         String accessToken = jwtService.generateToken(user);
@@ -50,12 +50,12 @@ public class AuthService {
         String refreshToken = extractRefreshCookie(request);
 
         if (!jwtService.isTokenValid(refreshToken)) {
-            throw new AuthException("Invalid refresh token");
+            throw new AuthException("Недійсний токен оновлення");
         }
 
         String email = jwtService.extractClaims(refreshToken).getSubject();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+                .orElseThrow(() -> new NotFoundException("Користувача не знайдено"));
 
         String newAccessToken = jwtService.generateToken(user);
         String newRefreshToken = jwtService.generateRefreshToken(user);
@@ -67,13 +67,13 @@ public class AuthService {
 
     private String extractRefreshCookie(HttpServletRequest request) {
         if (request.getCookies() == null) {
-            throw new AuthException("No refresh token");
+            throw new AuthException("Токен оновлення відсутній");
         }
         return Arrays.stream(request.getCookies())
                 .filter(c -> REFRESH_COOKIE.equals(c.getName()))
                 .findFirst()
                 .map(Cookie::getValue)
-                .orElseThrow(() -> new AuthException("No refresh token"));
+                .orElseThrow(() -> new AuthException("Токен оновлення відсутній"));
     }
 
     private void addRefreshCookie(HttpServletResponse response, String refreshToken) {

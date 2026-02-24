@@ -1,0 +1,9 @@
+ALTER TABLE user_app
+    ALTER COLUMN first_name DROP NOT NULL,
+    ALTER COLUMN last_name DROP NOT NULL,
+    ALTER COLUMN birth_date DROP NOT NULL;
+
+ALTER TABLE user_app
+    ALTER COLUMN first_name TYPE VARCHAR(50),
+    ALTER COLUMN last_name TYPE VARCHAR(50),
+    ALTER COLUMN patronymic TYPE VARCHAR(50);

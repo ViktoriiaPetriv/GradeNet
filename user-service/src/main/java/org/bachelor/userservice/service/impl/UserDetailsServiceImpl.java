@@ -24,7 +24,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                         user.getPassword(),
                         List.of(new SimpleGrantedAuthority("ROLE" + user.getRole().name()))
                 ))
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+                .orElseThrow(() -> new UsernameNotFoundException("Користувача з email %s не знайдено".formatted(email)));
     }
 
 }
