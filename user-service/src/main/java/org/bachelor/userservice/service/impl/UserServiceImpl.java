@@ -47,7 +47,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserDTO create(UserRequestDTO request) {
         if (userRepository.findByEmail(request.email()).isPresent()) {
-            throw new ValidationException("Користувач з таким email вже існує: %s".formatted(request.email()));
+            throw new ValidationException("Користувач з такою електронною поштою вже існує: %s".formatted(request.email()));
         }
 
         validateFieldsByRole(request);
@@ -73,7 +73,7 @@ public class UserServiceImpl implements UserService {
 
         if (!user.getEmail().equals(request.email())
                 && userRepository.findByEmail(request.email()).isPresent()) {
-            throw new ValidationException("Користувач з таким email вже існує: %s".formatted(request.email()));
+            throw new ValidationException("Користувач з такою електронною поштою вже існує: %s".formatted(request.email()));
         }
 
         validateFieldsByRole(request);
