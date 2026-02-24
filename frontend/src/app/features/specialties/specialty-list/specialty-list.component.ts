@@ -1,8 +1,9 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { SpecialtyService } from '../../../core/services/specialty.service';
 import { OrgService } from '../../../core/services/org.service';
-import { Specialty, Degree, EduType, Organization } from '../../../models/org.model';
+import { Specialty, Degree, EduType, Organization, OrganizationShort } from '../../../models/org.model';
+import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-specialty-list',
@@ -25,6 +26,11 @@ export class SpecialtyListComponent implements OnInit {
   isEdit = signal(false);
   editingId = signal<number | null>(null);
   form!: FormGroup;
+  private toastService = inject(ToastService);
+  selectedFaculties = signal<Set<number>>(new Set());
+  selectedDept = signal<number | null>(null);
+  faculties = signal<OrganizationShort[]>([]);
+  departments = signal<OrganizationShort[]>([]);
 
   constructor(
     private specialtyService: SpecialtyService,
@@ -47,11 +53,45 @@ export class SpecialtyListComponent implements OnInit {
       startDate: ['', Validators.required],
       endDate: [''],
     });
-    this.orgService.getAll().subscribe((o) => this.orgs.set(o));
+    this.orgService.getAllShort('FACULTY').subscribe((f) => this.faculties.set(f));
+    this.orgService.getAllShort('DEPARTMENT').subscribe((d) => this.departments.set(d));
     this.load();
   }
 
   load() {
+    const deptId = this.selectedDept();
+    const facultyIds = [...this.selectedFaculties()];
+
+    if (deptId) {
+      this.specialtyService
+        .getByOrg(deptId, {
+          degree: this.degreeFilter() || undefined,
+          eduType: this.eduTypeFilter() || undefined,
+          page: this.currentPage(),
+        })
+        .subscribe((r) => {
+          this.specialties.set(r.content);
+          this.totalPages.set(r.totalPages);
+          this.totalElements.set(r.totalElements);
+        });
+      return;
+    }
+
+    if (facultyIds.length === 1) {
+      this.specialtyService
+        .getByOrg(facultyIds[0], {
+          degree: this.degreeFilter() || undefined,
+          eduType: this.eduTypeFilter() || undefined,
+          page: this.currentPage(),
+        })
+        .subscribe((r) => {
+          this.specialties.set(r.content);
+          this.totalPages.set(r.totalPages);
+          this.totalElements.set(r.totalElements);
+        });
+      return;
+    }
+
     this.specialtyService
       .getAll({
         degree: this.degreeFilter() || undefined,
@@ -119,11 +159,13 @@ export class SpecialtyListComponent implements OnInit {
     };
     if (this.isEdit() && this.editingId()) {
       this.specialtyService.update(this.editingId()!, request).subscribe(() => {
+        this.toastService.success('Спеціальність оновлено');
         this.load();
         this.closeModal();
       });
     } else {
       this.specialtyService.create(request).subscribe(() => {
+        this.toastService.success('Спеціальність створено');
         this.load();
         this.closeModal();
       });
@@ -132,7 +174,10 @@ export class SpecialtyListComponent implements OnInit {
 
   delete(id: number) {
     if (!confirm('Видалити спеціальність?')) return;
-    this.specialtyService.delete(id).subscribe(() => this.load());
+    this.specialtyService.delete(id).subscribe(() => {
+      this.toastService.success('Спеціальність видалено');
+      this.load();
+    });
   }
 
   isInvalid(f: string) {
@@ -173,5 +218,29 @@ export class SpecialtyListComponent implements OnInit {
   getAvatarColor(id: number): string {
     const colors = ['#5B6AF0', '#0D9E6E', '#D97706', '#7C3AED', '#E53E3E', '#0891B2'];
     return colors[id % colors.length];
+  }
+
+  toggleFaculty(id: number) {
+    const set = new Set(this.selectedFaculties());
+    if (set.has(id)) {
+      set.delete(id);
+    } else {
+      set.add(id);
+    }
+    this.selectedFaculties.set(set);
+    this.selectedDept.set(null);
+    this.currentPage.set(0);
+    this.load();
+  }
+
+  isFacultySelected(id: number): boolean {
+    return this.selectedFaculties().has(id);
+  }
+
+  onDeptFilter(e: Event) {
+    const val = (e.target as HTMLSelectElement).value;
+    this.selectedDept.set(val ? +val : null);
+    this.currentPage.set(0);
+    this.load();
   }
 }

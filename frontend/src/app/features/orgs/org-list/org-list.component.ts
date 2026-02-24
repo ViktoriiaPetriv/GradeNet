@@ -1,7 +1,8 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { OrgService } from '../../../core/services/org.service';
 import { Organization, OrgType } from '../../../models/org.model';
+import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-org-list',
@@ -20,6 +21,9 @@ export class OrgListComponent implements OnInit {
   isEdit = signal(false);
   editingId = signal<number | null>(null);
   form!: FormGroup;
+  totalPages = signal(0);
+  currentPage = signal(0);
+  private toastService = inject(ToastService);
 
   constructor(
     private orgService: OrgService,
@@ -48,10 +52,16 @@ export class OrgListComponent implements OnInit {
   }
 
   load() {
-    this.orgService.getAll().subscribe((orgs) => {
-      this.orgs.set(orgs);
-      this.applyFilter();
-    });
+    this.orgService
+      .getAll({
+        orgType: this.typeFilter() || undefined,
+        page: this.currentPage(),
+      })
+      .subscribe((r) => {
+        this.orgs.set(r.content);
+        this.totalPages.set(r.totalPages);
+        this.applyFilter();
+      });
   }
 
   applyFilter() {
@@ -68,9 +78,11 @@ export class OrgListComponent implements OnInit {
     this.search.set((e.target as HTMLInputElement).value);
     this.applyFilter();
   }
+  
   onTypeFilter(e: Event) {
     this.typeFilter.set((e.target as HTMLSelectElement).value);
-    this.applyFilter();
+    this.currentPage.set(0);
+    this.load();
   }
 
   getFaculties(): Organization[] {
@@ -105,11 +117,13 @@ export class OrgListComponent implements OnInit {
     const request = { ...val, parentId: val.parentId || null };
     if (this.isEdit() && this.editingId()) {
       this.orgService.update(this.editingId()!, request).subscribe(() => {
+        this.toastService.success('Організацію оновлено');
         this.load();
         this.closeModal();
       });
     } else {
       this.orgService.create(request).subscribe(() => {
+        this.toastService.success('Організацію створено');
         this.load();
         this.closeModal();
       });
@@ -118,7 +132,10 @@ export class OrgListComponent implements OnInit {
 
   delete(id: number) {
     if (!confirm('Видалити організацію?')) return;
-    this.orgService.delete(id).subscribe(() => this.load());
+    this.orgService.delete(id).subscribe(() => {
+      this.toastService.success('Організацію видалено');
+      this.load();
+    });
   }
 
   isInvalid(f: string) {
@@ -142,5 +159,14 @@ export class OrgListComponent implements OnInit {
 
   isDepartment(): boolean {
     return this.form.get('orgType')?.value === 'DEPARTMENT';
+  }
+
+  setPage(p: number) {
+    this.currentPage.set(p);
+    this.load();
+  }
+
+  get pages(): number[] {
+    return Array.from({ length: this.totalPages() }, (_, i) => i);
   }
 }

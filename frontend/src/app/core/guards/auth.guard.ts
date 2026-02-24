@@ -7,7 +7,6 @@ export const authGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  // Завжди чекаємо на sessionReady$ — він скидається в null при кожному старті
   return authService.sessionReady$.pipe(
     take(1),
     map((isReady) => (isReady ? true : router.createUrlTree(['/login']))),

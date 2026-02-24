@@ -47,7 +47,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserDTO create(UserRequestDTO request) {
         if (userRepository.findByEmail(request.email()).isPresent()) {
-            throw new ValidationException("Email already in use: " + request.email());
+            throw new ValidationException("Користувач з таким email вже існує: %s".formatted(request.email()));
         }
 
         validateFieldsByRole(request);
@@ -73,7 +73,7 @@ public class UserServiceImpl implements UserService {
 
         if (!user.getEmail().equals(request.email())
                 && userRepository.findByEmail(request.email()).isPresent()) {
-            throw new ValidationException("Email already in use: " + request.email());
+            throw new ValidationException("Користувач з таким email вже існує: %s".formatted(request.email()));
         }
 
         validateFieldsByRole(request);
@@ -114,7 +114,7 @@ public class UserServiceImpl implements UserService {
 
     private User getUserOrThrow(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("User with %s not found".formatted(id)));
+                .orElseThrow(() -> new NotFoundException("Користувача з ID %s не знайдено".formatted(id)));
     }
 
 
@@ -122,17 +122,17 @@ public class UserServiceImpl implements UserService {
         Role role = request.role();
 
         if (role == Role.MANAGER && request.orgId() == null) {
-            throw new ValidationException("Organization ID is required for Manager");
+            throw new ValidationException("Для користувача з роллю менеджера обов'язково потрібно вказати факультет");
         }
 
         if (role == Role.PROFESSOR || role == Role.STUDENT) {
             if (isNullOrBlank(request.firstName()) || isNullOrBlank(request.lastName())) {
-                throw new ValidationException("First and Last name are required for " + role);
+                throw new ValidationException("Ім’я та прізвище є обов’язковими для ролі %s".formatted(role));
             }
         }
 
         if (role == Role.STUDENT && request.birthDate() == null) {
-            throw new ValidationException("Birth date is required for Student");
+            throw new ValidationException("Дата народження є обов'язковою для студента");
         }
     }
 

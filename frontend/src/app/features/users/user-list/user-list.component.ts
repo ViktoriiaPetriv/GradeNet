@@ -1,13 +1,17 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { UserService } from '../../../core/services/user.service';
 import { User } from '../../../models/user.model';
 import { Role } from '../../../models/role.enum';
+import { ToastService } from '../../../core/services/toast.service';
+import { OrgService } from '../../../core/services/org.service';
+import { OrganizationShort } from '../../../models/org.model';
 
 @Component({
   selector: 'app-user-list',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './user-list.component.html',
   styleUrl: './user-list.component.css',
 })
@@ -19,13 +23,20 @@ export class UserListComponent implements OnInit {
   currentPage = signal(1);
   perPage = 6;
   roles = Object.values(Role);
+  faculties = signal<OrganizationShort[]>([]);
+  private orgService = inject(OrgService);
+  showPassword = signal(false);
 
-  // Stepper & Modal
   modalOpen = signal(false);
   isEdit = signal(false);
   editingId = signal<number | null>(null);
-  step = signal(1); // 1: Акаунт, 2: Деталі
+  step = signal(1);
   form!: FormGroup;
+
+  deleteModalOpen = signal(false);
+  userToDelete = signal<User | null>(null);
+
+  private toastService = inject(ToastService);
 
   constructor(
     private userService: UserService,
@@ -35,18 +46,17 @@ export class UserListComponent implements OnInit {
   ngOnInit() {
     this.initForm();
     this.loadUsers();
+    this.orgService.getAllShort('FACULTY').subscribe((f) => this.faculties.set(f));
   }
 
   initForm() {
     this.form = this.fb.group({
-      // Step 1
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.minLength(6)]], // Валідатори додамо динамічно
+      password: ['', [Validators.minLength(8)]],
       role: ['', Validators.required],
-      // Step 2
-      firstName: ['', [Validators.maxLength(100)]],
-      lastName: ['', [Validators.maxLength(100)]],
-      patronymic: ['', Validators.maxLength(100)],
+      firstName: ['', [Validators.maxLength(50)]],
+      lastName: ['', [Validators.maxLength(50)]],
+      patronymic: ['', Validators.maxLength(50)],
       birthDate: [''],
       orgId: [null],
     });
@@ -95,12 +105,11 @@ export class UserListComponent implements OnInit {
     const bDate = this.form.get('birthDate');
     const oId = this.form.get('orgId');
 
-    // Reset
     [fName, lName, bDate, oId].forEach((c) => c?.clearValidators());
 
     if (role === Role.PROFESSOR || role === Role.STUDENT) {
-      fName?.setValidators([Validators.required, Validators.maxLength(100)]);
-      lName?.setValidators([Validators.required, Validators.maxLength(100)]);
+      fName?.setValidators([Validators.required, Validators.maxLength(50)]);
+      lName?.setValidators([Validators.required, Validators.maxLength(50)]);
     }
     if (role === Role.STUDENT) bDate?.setValidators([Validators.required]);
     if (role === Role.MANAGER) oId?.setValidators([Validators.required]);
@@ -109,21 +118,28 @@ export class UserListComponent implements OnInit {
   }
 
   openCreate() {
+    this.showPassword.set(false);
     this.isEdit.set(false);
     this.editingId.set(null);
     this.step.set(1);
     this.form.reset({ role: '' });
-    this.form.get('password')?.setValidators([Validators.required, Validators.minLength(6)]);
+    this.form.get('password')?.setValidators([Validators.required, Validators.minLength(8)]);
     this.modalOpen.set(true);
   }
 
   openEdit(user: User) {
+    this.showPassword.set(false);
     this.isEdit.set(true);
     this.editingId.set(user.id);
     this.step.set(1);
+
+    this.form.reset();
     this.form.patchValue(user);
+    this.form.get('password')?.setValue('');
+
     this.form.get('password')?.clearValidators();
-    this.form.get('password')?.setValidators([Validators.minLength(6)]);
+    this.form.get('password')?.setValidators([Validators.minLength(8)]);
+
     this.modalOpen.set(true);
   }
 
@@ -134,7 +150,6 @@ export class UserListComponent implements OnInit {
     }
 
     const request = this.form.value;
-    // Очищаємо пароль, якщо він порожній (для бекенду)
     if (!request.password) delete request.password;
 
     const action$ = this.isEdit()
@@ -142,6 +157,7 @@ export class UserListComponent implements OnInit {
       : this.userService.create(request);
 
     action$.subscribe((res) => {
+      this.toastService.success(this.isEdit() ? 'Користувача оновлено' : 'Користувача створено');
       this.loadUsers();
       this.closeModal();
     });
@@ -152,7 +168,6 @@ export class UserListComponent implements OnInit {
     this.step.set(1);
   }
 
-  // --- Helpers (Search, Pagination, etc.) ---
   applyFilter() {
     const s = this.search().toLowerCase();
     const r = this.roleFilter();
@@ -191,20 +206,37 @@ export class UserListComponent implements OnInit {
     return `Показано ${Math.min(start, this.filtered().length)}–${end} з ${this.filtered().length}`;
   }
   delete(id: number) {
-    if (confirm('Видалити користувача?'))
-      this.userService.delete(id).subscribe(() => this.loadUsers());
+    if (!confirm('Видалити користувача?')) return;
+    this.userService.delete(id).subscribe(() => {
+      this.toastService.success('Користувача видалено');
+      this.loadUsers();
+    });
   }
+
   isInvalid(field: string): boolean {
     const c = this.form.get(field);
     return !!(c?.invalid && c?.touched);
   }
+
+  isMaxLengthExceeded(field: string): boolean {
+    const c = this.form.get(field);
+    return !!(c?.errors?.['maxlength'] && c?.dirty);
+  }
+
+  isMinLengthNotMet(field: string): boolean {
+    const c = this.form.get(field);
+    return !!(c?.errors?.['minlength'] && c?.dirty);
+  }
+
   getInitials(u: User): string {
     return (u.lastName?.[0] || '') + (u.firstName?.[0] || '');
   }
+
   getAvatarColor(id: number): string {
     const colors = ['#5B6AF0', '#0D9E6E', '#D97706', '#7C3AED', '#E53E3E', '#0891B2'];
     return colors[id % colors.length];
   }
+
   roleLabel(role: string): string {
     const map: any = {
       ADMIN: 'Admin',
@@ -214,9 +246,34 @@ export class UserListComponent implements OnInit {
     };
     return map[role] || role;
   }
+
   formatDate(d: string): string {
     if (!d) return '—';
     const [y, m, day] = d.split('-');
     return `${day}.${m}.${y}`;
+  }
+
+  togglePassword() {
+    this.showPassword.update((v) => !v);
+  }
+
+  openDeleteModal(user: User) {
+    this.userToDelete.set(user);
+    this.deleteModalOpen.set(true);
+  }
+
+  closeDeleteModal() {
+    this.deleteModalOpen.set(false);
+    this.userToDelete.set(null);
+  }
+
+  confirmDelete() {
+    const user = this.userToDelete();
+    if (!user) return;
+    this.userService.delete(user.id).subscribe(() => {
+      this.toastService.success('Користувача видалено');
+      this.loadUsers();
+      this.closeDeleteModal();
+    });
   }
 }

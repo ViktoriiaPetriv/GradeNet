@@ -4,16 +4,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.bachelor.orgservice.model.dto.OrganizationDTO;
 import org.bachelor.orgservice.model.dto.OrganizationRequestDTO;
+import org.bachelor.orgservice.model.dto.OrganizationShortDTO;
+import org.bachelor.orgservice.model.dto.PageResponse;
+import org.bachelor.orgservice.model.entity.OrgType;
 import org.bachelor.orgservice.service.OrganizationService;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -49,7 +46,18 @@ public class OrganizationController {
     }
 
     @GetMapping
-    public List<OrganizationDTO> getAll() {
-        return organizationService.getAll();
+    public PageResponse<OrganizationDTO> getAll(
+            @RequestParam(required = false) OrgType orgType,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return organizationService.getAll(orgType, PageRequest.of(page, size));
+    }
+
+    @GetMapping("/short")
+    public List<OrganizationShortDTO> getAllShort(
+            @RequestParam(required = false) OrgType orgType
+    ) {
+        return organizationService.getAllShort(orgType);
     }
 }

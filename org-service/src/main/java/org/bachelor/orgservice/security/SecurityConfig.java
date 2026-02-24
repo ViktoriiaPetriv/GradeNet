@@ -35,9 +35,9 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) ->
-                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Неавторизований доступ"))
                         .accessDeniedHandler((request, response, accessDeniedException) ->
-                                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden"))
+                                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Доступ заборонено"))
                 );
 
         return http.build();

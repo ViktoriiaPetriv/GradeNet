@@ -47,7 +47,7 @@ public class SpecialtyServiceImpl implements SpecialtyService {
     @Override
     public SpecialtyDTO update(Long id, SpecialtyRequestDTO dto) {
         Specialty specialty = specialtyRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Specialty not found"));
+                .orElseThrow(() -> new NotFoundException("Спеціальність не знайдено"));
 
         validateUniqueness(dto, id);
         validateDates(dto);
@@ -74,7 +74,7 @@ public class SpecialtyServiceImpl implements SpecialtyService {
     public SpecialtyDTO getById(Long id) {
         return specialtyRepository.findById(id)
                 .map(specialtyMapper::toDto)
-                .orElseThrow(() -> new NotFoundException("Specialty not found"));
+                .orElseThrow(() -> new NotFoundException("Спеціальність не знайдено"));
     }
 
     @Override
@@ -88,7 +88,7 @@ public class SpecialtyServiceImpl implements SpecialtyService {
     @Override
     public PageResponse<SpecialtyDTO> getAllByOrganization(Long orgId, Degree degree, EduType eduType, Pageable pageable) {
         Organization organization = organizationRepository.findById(orgId)
-                .orElseThrow(() -> new NotFoundException("Organization not found"));
+                .orElseThrow(() -> new NotFoundException("Організацію не знайдено"));
 
         List<Long> orgIds = resolveOrgIds(organization);
 
@@ -102,7 +102,7 @@ public class SpecialtyServiceImpl implements SpecialtyService {
     @Override
         public void delete(Long id) {
         Specialty specialty = specialtyRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Specialty not found"));
+                .orElseThrow(() -> new NotFoundException("Спеціальність не знайдено"));
 
         specialtyRepository.delete(specialty);
     }
@@ -120,10 +120,10 @@ public class SpecialtyServiceImpl implements SpecialtyService {
 
     private Organization resolveOrganization(Long orgId) {
         Organization organization = organizationRepository.findById(orgId)
-                .orElseThrow(() -> new NotFoundException("Organization not found"));
+                .orElseThrow(() -> new NotFoundException("Організацію не знайдено"));
 
         if (organization.getOrgType() != OrgType.DEPARTMENT) {
-            throw new RestException("Specialties can only be assigned to departments");
+            throw new RestException("Спеціальності можуть бути прив’язані лише до кафедр");
         }
 
         return organization;
@@ -131,21 +131,21 @@ public class SpecialtyServiceImpl implements SpecialtyService {
 
     private void validateDates(SpecialtyRequestDTO dto) {
         if (dto.endDate() != null && !dto.endDate().isAfter(dto.startDate())) {
-            throw new RestException("End date must be after start date");
+            throw new RestException("Дата завершення повинна бути пізнішою за дату початку");
         }
     }
 
     private void validateUniqueness(SpecialtyRequestDTO dto, Long currentId) {
         specialtyRepository.findByCode(dto.code())
                 .filter(existing -> !existing.getId().equals(currentId))
-                .ifPresent(e -> { throw new EntityExistsException("Specialty with this code already exists"); });
+                .ifPresent(e -> { throw new EntityExistsException("Спеціальність із таким кодом вже існує"); });
 
         specialtyRepository.findByNameUA(dto.nameUA())
                 .filter(existing -> !existing.getId().equals(currentId))
-                .ifPresent(e -> { throw new EntityExistsException("Specialty with this name (UA) already exists"); });
+                .ifPresent(e -> { throw new EntityExistsException("Спеціальність з такою назвою (UA) вже існує"); });
 
         specialtyRepository.findByNameEN(dto.nameEN())
                 .filter(existing -> !existing.getId().equals(currentId))
-                .ifPresent(e -> { throw new EntityExistsException("Specialty with this name (EN) already exists"); });
+                .ifPresent(e -> { throw new EntityExistsException("Спеціальність з такою назвою (EN) вже існує"); });
     }
 }

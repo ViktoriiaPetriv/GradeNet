@@ -60,13 +60,13 @@ public class BookNumberServiceImpl implements BookNumberService {
     @Transactional
     public BookNumberDTO create(BookNumberRequestDTO request) {
         if (bookNumberRepository.existsByNumber(request.number())) {
-            throw new ValidationException("Book number already exists: " + request.number());
+            throw new ValidationException("Номер залікової книжки вже існує: %s".formatted(request.number()));
         }
         User student = userRepository.findById(request.studentId())
-                .orElseThrow(() -> new NotFoundException("User with %s not found".formatted(request.studentId())));
+                .orElseThrow(() -> new NotFoundException("Користувача з ID %s не знайдено".formatted(request.studentId())));
 
         if (student.getRole() != Role.STUDENT) {
-            throw new ValidationException("User with id %s is not a student".formatted(request.studentId()));
+            throw new ValidationException("Користувач з ID %s не є студентом".formatted(request.studentId()));
         }
 
         BookNumber bookNumber = bookNumberMapper.toEntity(request);
@@ -85,15 +85,15 @@ public class BookNumberServiceImpl implements BookNumberService {
         if (request.number() != null
                 && !bookNumber.getNumber().equals(request.number())
                 && bookNumberRepository.existsByNumber(request.number())) {
-            throw new ValidationException("Book number already exists: " + request.number());
+            throw new ValidationException("Номер залікової книжки вже існує: %s".formatted(request.number()));
         }
 
         if (request.studentId() != null) {
             User student = userRepository.findById(request.studentId())
-                    .orElseThrow(() -> new NotFoundException("User with %s not found".formatted(request.studentId())));
+                    .orElseThrow(() -> new NotFoundException("Користувача з ID %s не знайдено".formatted(request.studentId())));
 
             if (student.getRole() != Role.STUDENT) {
-                throw new ValidationException("User with id %s is not a student".formatted(request.studentId()));
+                throw new ValidationException("Користувач з ID %s не є студентом".formatted(request.studentId()));
             }
 
             bookNumber.setStudent(student);
@@ -116,7 +116,7 @@ public class BookNumberServiceImpl implements BookNumberService {
         BookNumber bookNumber = getBookOrThrow(id);
 
         if (bookNumber.getStatus() != BookNumberStatus.REGISTERED) {
-            throw new ValidationException("Book number must be in REGISTERED status to mark as FILLED");
+            throw new ValidationException("Залікову книжку можна позначити заповненою лише після її реєстрації");
         }
 
         bookNumber.setStatus(BookNumberStatus.FILLED);
@@ -131,7 +131,7 @@ public class BookNumberServiceImpl implements BookNumberService {
         BookNumber bookNumber = getBookOrThrow(id);
 
         if (bookNumber.getStatus() != BookNumberStatus.FILLED) {
-            throw new ValidationException("Book number must be in FILLED status to mark as HANDED");
+            throw new ValidationException("Залікову книжку можна видати студенту лише після її заповнення");
         }
 
         bookNumber.setStatus(BookNumberStatus.HANDED);
@@ -142,6 +142,6 @@ public class BookNumberServiceImpl implements BookNumberService {
 
     private BookNumber getBookOrThrow(Long id) {
         return bookNumberRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Book with %s not found".formatted(id)));
+                .orElseThrow(() -> new NotFoundException("Залікову книжку з ID %s не знайдено".formatted(id)));
     }
 }

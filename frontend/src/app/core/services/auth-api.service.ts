@@ -5,7 +5,7 @@ import { AuthResponse, LoginRequest } from '../../models/auth.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthApiService {
-  private readonly apiUrl = '/api/auth'; // відносний шлях
+  private readonly apiUrl = '/api/auth';
 
   constructor(private http: HttpClient) {}
 

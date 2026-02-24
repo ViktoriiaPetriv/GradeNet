@@ -71,3 +71,8 @@ export interface PageResponse<T> {
   totalElements: number;
   totalPages: number;
 }
+
+export interface OrganizationShort {
+  id: number;
+  name: string;
+}

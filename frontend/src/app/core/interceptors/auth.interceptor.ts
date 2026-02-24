@@ -5,6 +5,8 @@ import { TokenService } from '../services/token.service';
 import { AuthApiService } from '../services/auth-api.service';
 import { Router } from '@angular/router';
 import { ToastService } from '../services/toast.service';
+import { LoaderService } from '../services/loader.service';
+import { finalize } from 'rxjs';
 
 let isRefreshing = false;
 const refreshDone$ = new BehaviorSubject<string | null>(null);
@@ -17,11 +19,18 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authApi = inject(AuthApiService);
   const router = inject(Router);
   const toastService = inject(ToastService);
+  const loaderService = inject(LoaderService);
   const token = tokenService.getToken();
 
   const authReq = token && !req.url.includes('/api/auth/') ? addToken(req, token) : req;
+  const skipLoader = req.url.includes('/api/auth/refresh');
+
+  if (!skipLoader) loaderService.show();
 
   return next(authReq).pipe(
+    finalize(() => {
+      if (!skipLoader) loaderService.hide();
+    }),
     catchError((error: HttpErrorResponse) => {
       if (error.status === 401 && !req.url.includes('/api/auth/')) {
         if (isRefreshing) {
@@ -67,7 +76,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 function extractErrorMessage(error: HttpErrorResponse): string {
   if (error.error?.message) return error.error.message;
   if (error.error?.errors?.length) {
-    return error.error.errors.map((e: any) => e.message).join(', ');
+    return error.error.errors.map((e: { message: string }) => e.message).join('\n');
   }
   switch (error.status) {
     case 400:

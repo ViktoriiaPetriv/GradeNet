@@ -5,17 +5,19 @@ import { CommonModule } from '@angular/common';
 import { filter, map } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ToastModule } from 'primeng/toast';
+import { LoaderComponent } from "./shared/loader/loader.component";
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent, CommonModule, ToastModule],
+  imports: [RouterOutlet, SidebarComponent, CommonModule, ToastModule, LoaderComponent],
   template: `
     @if (showSidebar()) {
       <app-sidebar />
     }
     <router-outlet />
     <p-toast position="top-right" />
+    <app-loader />
   `,
   styleUrl: './app.css',
 })
