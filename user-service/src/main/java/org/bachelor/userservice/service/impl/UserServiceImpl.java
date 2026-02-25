@@ -54,6 +54,7 @@ public class UserServiceImpl implements UserService {
             throw new ValidationException("Користувач з такою електронною поштою вже існує: %s".formatted(request.email()));
         }
 
+        validatePassword(request.password());
         validateFieldsByRole(request);
 
         User user = userMapper.toEntity(request);
@@ -80,6 +81,7 @@ public class UserServiceImpl implements UserService {
             throw new ValidationException("Користувач з такою електронною поштою вже існує: %s".formatted(request.email()));
         }
 
+        validatePassword(request.password());
         validateFieldsByRole(request);
 
         userMapper.updateEntity(request, user);
@@ -169,5 +171,12 @@ public class UserServiceImpl implements UserService {
                 .orElse(new StudentInfoDTO(null, null, null, null, null, orgId));
 
         return profile.withStudentInfo(studentInfo);
+    }
+
+    private void validatePassword(String password) {
+        if (password == null || password.isBlank()) return;
+        if (!password.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$")) {
+            throw new ValidationException("Пароль має містити мінімум 8 символів, велику і малу літеру, цифру та спецсимвол (@$!%*?&)");
+        }
     }
 }
