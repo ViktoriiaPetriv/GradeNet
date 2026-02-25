@@ -22,6 +22,20 @@ function universityEmailValidator(control: AbstractControl): ValidationErrors | 
   return valid ? null : { universityEmail: true };
 }
 
+function nameValidator(control: AbstractControl): ValidationErrors | null {
+  const value = control.value;
+  if (!value) return null;
+  const valid = /^[\p{L}'\- ]+$/u.test(value);
+  return valid ? null : { invalidName: true };
+}
+
+function strongPasswordValidator(control: AbstractControl): ValidationErrors | null {
+  const value = control.value;
+  if (!value) return null;
+  const valid = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(value);
+  return valid ? null : { weakPassword: true };
+}
+
 @Component({
   selector: 'app-user-modal',
   standalone: true,
@@ -65,11 +79,11 @@ export class UserModalComponent implements OnChanges {
         this.form.patchValue(u);
         this.form.get('password')?.setValue('');
         this.form.get('password')?.clearValidators();
-        this.form.get('password')?.setValidators([Validators.minLength(8)]);
+        this.form.get('password')?.setValidators([strongPasswordValidator]);
         this.form.get('password')?.updateValueAndValidity();
       } else {
         this.form.reset({ role: '' });
-        this.form.get('password')?.setValidators([Validators.required, Validators.minLength(8)]);
+        this.form.get('password')?.setValidators([Validators.required, strongPasswordValidator]);
         this.form.get('password')?.updateValueAndValidity();
       }
     }
@@ -80,9 +94,9 @@ export class UserModalComponent implements OnChanges {
       email: ['', [Validators.required, Validators.email, universityEmailValidator]],
       password: ['', [Validators.minLength(8)]],
       role: ['', Validators.required],
-      firstName: ['', [Validators.maxLength(50)]],
-      lastName: ['', [Validators.maxLength(50)]],
-      patronymic: ['', Validators.maxLength(50)],
+      firstName: ['', [Validators.maxLength(50), nameValidator]],
+      lastName: ['', [Validators.maxLength(50), nameValidator]],
+      patronymic: ['', [Validators.maxLength(50), nameValidator]],
       birthDate: [''],
       orgId: [null],
     });
@@ -129,8 +143,8 @@ export class UserModalComponent implements OnChanges {
     [fName, lName, bDate, oId].forEach((c) => c?.clearValidators());
 
     if (role === Role.PROFESSOR || role === Role.STUDENT) {
-      fName?.setValidators([Validators.required, Validators.maxLength(50)]);
-      lName?.setValidators([Validators.required, Validators.maxLength(50)]);
+      fName?.setValidators([Validators.required, Validators.maxLength(50), nameValidator]);
+      lName?.setValidators([Validators.required, Validators.maxLength(50), nameValidator]);
     }
     if (role === Role.STUDENT) bDate?.setValidators([Validators.required]);
     if (role === Role.MANAGER) oId?.setValidators([Validators.required]);
@@ -164,6 +178,11 @@ export class UserModalComponent implements OnChanges {
   isInvalid(field: string): boolean {
     const c = this.form.get(field);
     return !!(c?.invalid && c?.touched);
+  }
+
+  isNameInvalid(field: string): boolean {
+    const c = this.form.get(field);
+    return !!(c?.errors?.['invalidName'] && c?.dirty);
   }
 
   isMaxLengthExceeded(field: string): boolean {
