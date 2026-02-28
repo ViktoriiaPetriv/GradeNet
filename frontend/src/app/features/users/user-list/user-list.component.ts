@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { UserService } from '../../../core/services/user.service';
 import { User } from '../../../models/user.model';
@@ -6,11 +6,12 @@ import { Role } from '../../../models/role.enum';
 import { ToastService } from '../../../core/services/toast.service';
 import { Router } from '@angular/router';
 import { UserModalComponent } from '../user-modal/user-modal.component';
+import { PaginationComponent } from '../../../shared/pagination/pagination.component';
 
 @Component({
   selector: 'app-user-list',
   standalone: true,
-  imports: [CommonModule, UserModalComponent],
+  imports: [CommonModule, UserModalComponent, PaginationComponent],
   templateUrl: './user-list.component.html',
   styleUrl: './user-list.component.css',
 })
@@ -21,7 +22,7 @@ export class UserListComponent implements OnInit {
   roleFilter = signal('');
   currentPage = signal(1);
   perPage = signal(10);
-  pageSizeOptions = [2, 10, 20, 50, 100];
+  perPageOptions = [2, 5, 10, 25, 50];
   roles = Object.values(Role);
   editingUser = signal<User | null>(null);
   modalOpen = signal(false);
@@ -32,6 +33,52 @@ export class UserListComponent implements OnInit {
   private userService = inject(UserService);
   private toastService = inject(ToastService);
   private router = inject(Router);
+
+  totalPages = computed(() => Math.max(1, Math.ceil(this.filtered().length / this.perPage())));
+
+  paginated = computed(() => {
+    const start = (this.currentPage() - 1) * this.perPage();
+    return this.filtered().slice(start, start + this.perPage());
+  });
+
+  pages = computed(() => {
+    const total = this.totalPages();
+    const current = this.currentPage();
+    const delta = 1;
+
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+
+    const range: number[] = [];
+    range.push(1);
+
+    const leftBound = Math.max(2, current - delta);
+    const rightBound = Math.min(total - 1, current + delta);
+
+    if (leftBound > 2) range.push(-1);
+    for (let i = leftBound; i <= rightBound; i++) range.push(i);
+    if (rightBound < total - 1) range.push(-1);
+
+    range.push(total);
+    return range;
+  });
+
+  paginationInfo = computed(() => {
+    const total = this.filtered().length;
+    if (total === 0) return 'Немає записів';
+    const start = (this.currentPage() - 1) * this.perPage() + 1;
+    const end = Math.min(this.currentPage() * this.perPage(), total);
+    return `Показано ${start}–${end} з ${total}`;
+  });
+
+  onPageChange(page: number) {
+    this.currentPage.set(page);
+  }
+  onPerPageChange(size: number) {
+    this.perPage.set(size);
+    this.currentPage.set(1);
+  }
 
   ngOnInit() {
     this.loadUsers();
@@ -111,36 +158,22 @@ export class UserListComponent implements OnInit {
     this.applyFilter();
   }
 
-  setPageSize(size: number) {
-    this.perPage.set(size);
-    this.currentPage.set(1);
+  setPage(p: number) {
+    if (p < 1 || p > this.totalPages()) return;
+    this.currentPage.set(p);
   }
 
-  setPage(page: number) {
-    this.currentPage.set(page);
+  goFirst() {
+    this.setPage(1);
   }
-
-  get paginated(): User[] {
-    const start = (this.currentPage() - 1) * this.perPage();
-    return this.filtered().slice(start, start + this.perPage());
+  goLast() {
+    this.setPage(this.totalPages());
   }
-
-  get totalPages(): number {
-    return Math.max(1, Math.ceil(this.filtered().length / this.perPage()));
+  goPrev() {
+    this.setPage(this.currentPage() - 1);
   }
-
-  get pages(): number[] {
-    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
-  }
-
-  get paginationInfo(): string {
-    const total = this.filtered().length;
-    if (total === 0) return 'Показано 0 з 0';
-
-    const start = (this.currentPage() - 1) * this.perPage() + 1;
-    const end = Math.min(this.currentPage() * this.perPage(), total);
-
-    return `Показано ${start}–${end} з ${total}`;
+  goNext() {
+    this.setPage(this.currentPage() + 1);
   }
 
   getInitials(u: User): string {
@@ -166,10 +199,5 @@ export class UserListComponent implements OnInit {
     if (!d) return '—';
     const [y, m, day] = d.split('-');
     return `${day}.${m}.${y}`;
-  }
-
-  onPageSizeChange(event: Event) {
-    const value = (event.target as HTMLSelectElement).value;
-    this.setPageSize(+value);
   }
 }

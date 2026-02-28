@@ -3,6 +3,7 @@ package org.bachelor.userservice.model.dto;
 import org.bachelor.userservice.model.entity.Role;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public record UserProfileDTO(
         Long id,
@@ -12,9 +13,9 @@ public record UserProfileDTO(
         String email,
         LocalDate birthDate,
         Role role,
-        StudentInfoDTO studentInfo
+        List<StudentInfoDTO> books
 ) {
-    public UserProfileDTO withStudentInfo(StudentInfoDTO studentInfo) {
-        return new UserProfileDTO(id, firstName, lastName, patronymic, email, birthDate, role, studentInfo);
+    public UserProfileDTO withBooks(List<StudentInfoDTO> books) {
+        return new UserProfileDTO(id, firstName, lastName, patronymic, email, birthDate, role, books);
     }
 }

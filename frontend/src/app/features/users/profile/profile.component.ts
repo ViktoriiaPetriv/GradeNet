@@ -1,15 +1,20 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { UserProfile, StudentInfo, User } from '../../../models/user.model';
-import { Specialty, Organization } from '../../../models/org.model';
-import { TokenService } from '../../../core/services/token.service';
-import { OrgService } from '../../../core/services/org.service';
-import { SpecialtyService } from '../../../core/services/specialty.service';
-import { ActivatedRoute } from '@angular/router';
+import { Specialty } from '../../../models/org.model';
 import { OrgInfo } from '../../../models/org.model';
-import { Router } from '@angular/router';
+import { TokenService } from '../../../core/services/token.service';
+import { SpecialtyService } from '../../../core/services/specialty.service';
+import { ActivatedRoute, Router } from '@angular/router';
 import { UserModalComponent } from '../user-modal/user-modal.component';
 import { UserService } from '../../../core/services/user.service';
+import { forkJoin, of } from 'rxjs';
+
+interface BookWithDetails {
+  info: StudentInfo;
+  specialty: Specialty | null;
+  orgInfo: OrgInfo | null;
+}
 
 @Component({
   selector: 'app-profile',
@@ -20,16 +25,13 @@ import { UserService } from '../../../core/services/user.service';
 })
 export class ProfileComponent implements OnInit {
   profile = signal<UserProfile | null>(null);
-  specialty = signal<Specialty | null>(null);
-  org = signal<Organization | null>(null);
-  orgInfo = signal<OrgInfo | null>(null);
+  books = signal<BookWithDetails[]>([]);
   editModalOpen = signal(false);
   editingUser = signal<User | null>(null);
   deleteModalOpen = signal(false);
 
   private userService = inject(UserService);
   private specialtyService = inject(SpecialtyService);
-  private orgService = inject(OrgService);
   private tokenService = inject(TokenService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -37,21 +39,8 @@ export class ProfileComponent implements OnInit {
   ngOnInit() {
     this.route.paramMap.subscribe((params) => {
       const id = params.get('id');
-
       if (id === 'me') {
-        this.userService.getMyProfile().subscribe((profile) => {
-          this.profile.set(profile);
-
-          if (profile.studentInfo?.specialtyId) {
-            this.specialtyService
-              .getById(profile.studentInfo.specialtyId)
-              .subscribe((s) => this.specialty.set(s));
-
-            this.specialtyService
-              .getOrgInfo(profile.studentInfo.specialtyId)
-              .subscribe((info) => this.orgInfo.set(info));
-          }
-        });
+        this.userService.getMyProfile().subscribe((p) => this.handleProfile(p));
       } else if (id) {
         this.loadProfile(+id);
       }
@@ -60,21 +49,39 @@ export class ProfileComponent implements OnInit {
 
   private loadProfile(id: number) {
     this.profile.set(null);
-    this.specialty.set(null);
-    this.orgInfo.set(null);
+    this.books.set([]);
+    this.userService.getProfile(id).subscribe((p) => this.handleProfile(p));
+  }
 
-    this.userService.getProfile(id).subscribe((profile) => {
-      this.profile.set(profile);
+  private handleProfile(p: UserProfile) {
+    this.profile.set(p);
 
-      if (profile.studentInfo?.specialtyId) {
-        this.specialtyService
-          .getById(profile.studentInfo.specialtyId)
-          .subscribe((s) => this.specialty.set(s));
-        this.specialtyService
-          .getOrgInfo(profile.studentInfo.specialtyId)
-          .subscribe((info) => this.orgInfo.set(info));
-      }
+    if (!p.books?.length) {
+      this.books.set([]);
+      return;
+    }
+
+    forkJoin(
+      p.books.map((book) =>
+        book.specialtyId
+          ? forkJoin({
+              specialty: this.specialtyService.getById(book.specialtyId),
+              orgInfo: this.specialtyService.getOrgInfo(book.specialtyId),
+            })
+          : of({ specialty: null, orgInfo: null }),
+      ),
+    ).subscribe((results) => {
+      const booksWithDetails: BookWithDetails[] = p.books.map((book, i) => ({
+        info: book,
+        specialty: results[i].specialty,
+        orgInfo: results[i].orgInfo,
+      }));
+      this.books.set(booksWithDetails);
     });
+  }
+
+  goBack() {
+    this.router.navigate(['/users']);
   }
 
   getInitials(): string {
@@ -95,7 +102,7 @@ export class ProfileComponent implements OnInit {
       PROFESSOR: 'Викладач',
       STUDENT: 'Студент',
     };
-    return map[role] || role;
+    return map[role] ?? role;
   }
 
   formatDate(d?: string): string {
@@ -104,13 +111,14 @@ export class ProfileComponent implements OnInit {
     return `${day}.${m}.${y}`;
   }
 
-  bookStatusLabel(status: string): string {
+  bookStatusLabel(status: string | null): string {
+    if (!status) return '—';
     const map: Record<string, string> = {
-      ACTIVE: 'Активна',
-      INACTIVE: 'Неактивна',
+      REGISTERED: 'Зареєстрована',
+      FILLED: 'Заповнена',
       HANDED: 'Здана',
     };
-    return map[status] || status;
+    return map[status] ?? status;
   }
 
   get currentUser() {
@@ -134,7 +142,6 @@ export class ProfileComponent implements OnInit {
   }
 
   editProfile() {
-    // конвертуй UserProfile → User
     const p = this.profile()!;
     this.editingUser.set(p as unknown as User);
     this.editModalOpen.set(true);

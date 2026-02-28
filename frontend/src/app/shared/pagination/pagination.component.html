@@ -1,0 +1,41 @@
+<div class="pagination">
+    <div class="pagination-left">
+        <span class="pagination-info">{{ info() }}</span>
+    </div>
+
+    <div class="pagination-center">
+        <button class="page-btn nav-btn" [disabled]="currentPage() === 1" (click)="setPage(1)" title="Перша сторінка">
+            <i class="pi pi-angle-double-left"></i>
+        </button>
+        <button class="page-btn nav-btn" [disabled]="currentPage() === 1" (click)="setPage(currentPage() - 1)"
+            title="Попередня">
+            <i class="pi pi-angle-left"></i>
+        </button>
+
+        @for (p of pages(); track $index) {
+        @if (p === -1) {
+        <span class="page-ellipsis">…</span>
+        } @else {
+        <button class="page-btn" [class.active]="p === currentPage()" (click)="setPage(p)">{{ p }}</button>
+        }
+        }
+
+        <button class="page-btn nav-btn" [disabled]="currentPage() === totalPages()"
+            (click)="setPage(currentPage() + 1)" title="Наступна">
+            <i class="pi pi-angle-right"></i>
+        </button>
+        <button class="page-btn nav-btn" [disabled]="currentPage() === totalPages()" (click)="setPage(totalPages())"
+            title="Остання сторінка">
+            <i class="pi pi-angle-double-right"></i>
+        </button>
+    </div>
+
+    <div class="pagination-right">
+        <span class="per-page-label">Записів на сторінці:</span>
+        <select class="per-page-select" (change)="onPerPageChange($event)">
+            @for (opt of perPageOptions(); track opt) {
+            <option [value]="opt" [selected]="opt === perPage()">{{ opt }}</option>
+            }
+        </select>
+    </div>
+</div>

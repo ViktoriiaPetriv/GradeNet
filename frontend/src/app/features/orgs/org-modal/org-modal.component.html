@@ -1,0 +1,54 @@
+<div class="modal-header">
+    <div class="modal-title">{{ isEdit ? 'Редагувати організацію' : 'Нова організація' }}</div>
+    <button class="modal-close" (click)="cancelled.emit()">
+        <i class="pi pi-times"></i>
+    </button>
+</div>
+
+<form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="form-grid">
+
+        <div class="form-group full">
+            <label class="form-label">Назва *</label>
+            <input class="form-input" formControlName="name" placeholder="Факультет інформатики"
+                [class.error]="isInvalid('name')" />
+            @if (isInvalid('name')) {
+            <span class="form-error">Обов'язкове поле</span>
+            }
+        </div>
+
+        <div class="form-group full">
+            <label class="form-label">Тип *</label>
+            <select class="form-select" formControlName="orgType" [class.error]="isInvalid('orgType')">
+                <option value="">— Оберіть —</option>
+                @for (t of orgTypes; track t) {
+                <option [value]="t">{{ orgTypeLabel(t) }}</option>
+                }
+            </select>
+            @if (isInvalid('orgType')) {
+            <span class="form-error">Оберіть тип</span>
+            }
+        </div>
+
+        @if (isDepartment) {
+        <div class="form-group full">
+            <label class="form-label">Факультет *</label>
+            <select class="form-select" formControlName="parentId" [class.error]="isInvalid('parentId')">
+                <option [value]="null">— Оберіть факультет —</option>
+                @for (f of faculties; track f.id) {
+                <option [value]="f.id">{{ f.name }}</option>
+                }
+            </select>
+            @if (isInvalid('parentId')) {
+            <span class="form-error">Оберіть факультет</span>
+            }
+        </div>
+        }
+
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="cancelled.emit()"><i class="pi pi-times"></i>Скасувати</button>
+        <button type="submit" class="btn-primary">{{ isEdit ? 'Зберегти' : 'Створити' }}</button>
+    </div>
+</form>

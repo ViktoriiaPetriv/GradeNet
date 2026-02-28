@@ -19,45 +19,6 @@
     </div>
 
     <div class="table-container">
-        <div class="table-controls">
-        
-            <div class="left">
-                <div class="pagination-info">
-                    {{ paginationInfo }}
-                </div>
-            </div>
-        
-            <div class="right">
-        
-                <div class="page-size">
-                    <label>Показувати:</label>
-                    <select (change)="onPageSizeChange($event)">
-                        @for (size of pageSizeOptions; track size) {
-                        <option [value]="size" [selected]="size === perPage()">
-                            {{ size }}
-                        </option>
-                        }
-                    </select>
-                </div>
-        
-                <div class="pagination-btns">
-                    <button class="page-btn" [disabled]="currentPage() === 1" (click)="setPage(currentPage() - 1)">
-                        ◀
-                    </button>
-        
-                    @for (p of pages; track p) {
-                    <button class="page-btn" [class.active]="p === currentPage()" (click)="setPage(p)">
-                        {{ p }}
-                    </button>
-                    }
-        
-                    <button class="page-btn" [disabled]="currentPage() === totalPages" (click)="setPage(currentPage() + 1)">
-                        ▶
-                    </button>
-                </div>
-        
-            </div>
-        </div>
         <table>
             <thead>
                 <tr>
@@ -69,17 +30,17 @@
                 </tr>
             </thead>
             <tbody>
-                @if (paginated.length === 0) {
+                @if (paginated().length === 0) {
                 <tr>
                     <td colspan="5">
                         <div class="empty-state">Користувачів не знайдено</div>
                     </td>
                 </tr>
                 }
-                @for (user of paginated; track user.id) {
-                <tr>
+                @for (user of paginated(); track user.id) {
+                <tr class="clickable-row" (click)="viewProfile(user.id)">
                     <td>
-                        <div class="user-cell">
+                        <div class="table-cell">
                             <div class="table-avatar" [style.background]="getAvatarColor(user.id)">
                                 <i class="pi pi-user"></i>
                             </div>
@@ -92,13 +53,10 @@
                     <td class="text-muted">{{ formatDate(user.birthDate) }}</td>
                     <td><span class="role-badge role-{{ user.role }}">{{ roleLabel(user.role) }}</span></td>
                     <td>
-                        <button class="action-btn view" (click)="viewProfile(user.id)">
-                            <i class="pi pi-user" style="color: #0D9E6E;"></i>
-                        </button>
-                        <button class="action-btn edit" (click)="openEdit(user)">
+                        <button class="action-btn edit" (click)="openEdit(user); $event.stopPropagation()">
                             <i class="pi pi-file-edit"></i>
                         </button>
-                        <button class="action-btn delete" (click)="openDeleteModal(user)">
+                        <button class="action-btn delete" (click)="openDeleteModal(user); $event.stopPropagation()">
                             <i class="pi pi-trash"></i>
                         </button>
                     </td>
@@ -106,7 +64,10 @@
                 }
             </tbody>
         </table>
-        
+
+        <!-- ── PAGINATION ── -->
+        <app-pagination [currentPage]="currentPage()" [totalPages]="totalPages()" [perPage]="perPage()"
+            [info]="paginationInfo()" (pageChange)="onPageChange($event)" (perPageChange)="onPerPageChange($event)" />
     </div>
 </div>
 
@@ -138,7 +99,7 @@
         </div>
 
         <div class="modal-footer">
-            <button type="button" class="btn-cancel" (click)="closeDeleteModal()">Скасувати</button>
+            <button type="button" class="btn-cancel" (click)="closeDeleteModal()"><i class="pi pi-times"></i>Скасувати</button>
             <button type="button" class="btn-danger" (click)="confirmDelete()">Видалити</button>
         </div>
     </div>

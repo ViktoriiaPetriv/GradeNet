@@ -1,13 +1,15 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Component, OnInit, signal, inject, computed } from '@angular/core';
+import { Router } from '@angular/router';
 import { OrgService } from '../../../core/services/org.service';
 import { Organization, OrgType } from '../../../models/org.model';
 import { ToastService } from '../../../core/services/toast.service';
+import { PaginationComponent } from '../../../shared/pagination/pagination.component';
+import { OrgModalComponent } from '../org-modal/org-modal.component';
 
 @Component({
   selector: 'app-org-list',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [PaginationComponent, OrgModalComponent],
   templateUrl: './org-list.component.html',
   styleUrl: './org-list.component.css',
 })
@@ -15,39 +17,34 @@ export class OrgListComponent implements OnInit {
   orgs = signal<Organization[]>([]);
   filtered = signal<Organization[]>([]);
   search = signal('');
-  typeFilter = signal('');
+  typeFilter = signal<OrgType | ''>('');
   orgTypes = Object.values(OrgType);
+
+  currentPage = signal(0);
+  totalPages = signal(0);
+  perPage = signal(10);
+  perPageOptions = [5, 10, 25, 50];
+
   modalOpen = signal(false);
   isEdit = signal(false);
-  editingId = signal<number | null>(null);
-  form!: FormGroup;
-  totalPages = signal(0);
-  currentPage = signal(0);
-  private toastService = inject(ToastService);
+  editingOrg = signal<Organization | null>(null);
 
-  constructor(
-    private orgService: OrgService,
-    private fb: FormBuilder,
-  ) {}
+  deleteModalOpen = signal(false);
+  orgToDelete = signal<Organization | null>(null);
+
+  private orgService = inject(OrgService);
+  private toastService = inject(ToastService);
+  private router = inject(Router);
+
+  currentPageUi = computed(() => this.currentPage() + 1);
+
+  paginationInfo = computed(() => {
+    const total = this.totalPages();
+    if (total === 0) return 'Немає записів';
+    return `Сторінка ${this.currentPageUi()} з ${total}`;
+  });
 
   ngOnInit() {
-    this.form = this.fb.group({
-      name: ['', [Validators.required]],
-      orgType: ['', [Validators.required]],
-      parentId: [null],
-    });
-
-    this.form.get('orgType')?.valueChanges.subscribe((type) => {
-      const parentControl = this.form.get('parentId');
-      if (type === OrgType.DEPARTMENT) {
-        parentControl?.setValidators([Validators.required]);
-      } else {
-        parentControl?.clearValidators();
-        parentControl?.setValue(null);
-      }
-      parentControl?.updateValueAndValidity();
-    });
-
     this.load();
   }
 
@@ -56,6 +53,7 @@ export class OrgListComponent implements OnInit {
       .getAll({
         orgType: this.typeFilter() || undefined,
         page: this.currentPage(),
+        size: this.perPage(),
       })
       .subscribe((r) => {
         this.orgs.set(r.content);
@@ -78,78 +76,71 @@ export class OrgListComponent implements OnInit {
     this.search.set((e.target as HTMLInputElement).value);
     this.applyFilter();
   }
-  
+
   onTypeFilter(e: Event) {
-    this.typeFilter.set((e.target as HTMLSelectElement).value);
+    this.typeFilter.set((e.target as HTMLSelectElement).value as OrgType | '');
     this.currentPage.set(0);
     this.load();
   }
 
-  getFaculties(): Organization[] {
-    return this.orgs().filter((o) => o.orgType === OrgType.FACULTY);
+  onPageChange(page: number) {
+    this.currentPage.set(page - 1);
+    this.load();
+  }
+
+  onPerPageChange(size: number) {
+    this.perPage.set(size);
+    this.currentPage.set(0);
+    this.load();
   }
 
   openCreate() {
+    this.editingOrg.set(null);
     this.isEdit.set(false);
-    this.editingId.set(null);
-    this.form.reset();
     this.modalOpen.set(true);
   }
 
   openEdit(org: Organization) {
+    this.editingOrg.set(org);
     this.isEdit.set(true);
-    this.editingId.set(org.id);
-    this.form.patchValue({ name: org.name, orgType: org.orgType, parentId: org.parentId ?? null });
     this.modalOpen.set(true);
   }
 
   closeModal() {
     this.modalOpen.set(false);
-    this.form.reset();
   }
 
-  submit() {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-    const val = this.form.value;
-    const request = { ...val, parentId: val.parentId || null };
-    if (this.isEdit() && this.editingId()) {
-      this.orgService.update(this.editingId()!, request).subscribe(() => {
-        this.toastService.success('Організацію оновлено');
-        this.load();
-        this.closeModal();
-      });
-    } else {
-      this.orgService.create(request).subscribe(() => {
-        this.toastService.success('Організацію створено');
-        this.load();
-        this.closeModal();
-      });
-    }
+  onSaved() {
+    this.load();
+    this.closeModal();
   }
 
-  delete(id: number) {
-    if (!confirm('Видалити організацію?')) return;
-    this.orgService.delete(id).subscribe(() => {
+  openDeleteModal(org: Organization) {
+    this.orgToDelete.set(org);
+    this.deleteModalOpen.set(true);
+  }
+
+  closeDeleteModal() {
+    this.deleteModalOpen.set(false);
+    this.orgToDelete.set(null);
+  }
+
+  confirmDelete() {
+    const org = this.orgToDelete();
+    if (!org) return;
+    this.orgService.delete(org.id).subscribe(() => {
       this.toastService.success('Організацію видалено');
       this.load();
+      this.closeDeleteModal();
     });
   }
 
-  isInvalid(f: string) {
-    const c = this.form.get(f);
-    return !!(c?.invalid && c?.touched);
+  viewOrg(id: number) {
+    this.router.navigate(['/orgs', id]);
   }
 
   orgTypeLabel(t: string): string {
     return t === 'FACULTY' ? 'Факультет' : 'Кафедра';
-  }
-
-  getParentName(parentId?: number): string {
-    if (!parentId) return '—';
-    return this.orgs().find((o) => o.id === parentId)?.name ?? '—';
   }
 
   getAvatarColor(id: number): string {
@@ -157,16 +148,8 @@ export class OrgListComponent implements OnInit {
     return colors[id % colors.length];
   }
 
-  isDepartment(): boolean {
-    return this.form.get('orgType')?.value === 'DEPARTMENT';
-  }
-
-  setPage(p: number) {
-    this.currentPage.set(p);
-    this.load();
-  }
-
-  get pages(): number[] {
-    return Array.from({ length: this.totalPages() }, (_, i) => i);
+  getParentName(parentId: number | null | undefined): string {
+    if (!parentId) return '—';
+    return this.orgs().find((o) => o.id === parentId)?.name ?? '—';
   }
 }

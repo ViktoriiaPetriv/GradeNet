@@ -69,6 +69,12 @@ public class BookNumberServiceImpl implements BookNumberService {
             throw new ValidationException("Користувач з ID %s не є студентом".formatted(request.studentId()));
         }
 
+        if (bookNumberRepository.existsByStudentIdAndSpecialtyId(request.studentId(), request.specialtyId())) {
+            throw new ValidationException(
+                    "У цього студента вже є залікова книжка для цієї спеціальності"
+            );
+        }
+
         BookNumber bookNumber = bookNumberMapper.toEntity(request);
         bookNumber.setStudent(student);
         bookNumber.setStatus(BookNumberStatus.REGISTERED);
@@ -88,7 +94,7 @@ public class BookNumberServiceImpl implements BookNumberService {
             throw new ValidationException("Номер залікової книжки вже існує: %s".formatted(request.number()));
         }
 
-        if (request.studentId() != null) {
+        if (request.studentId() != null && !bookNumber.getStudent().getId().equals(request.studentId())) {
             User student = userRepository.findById(request.studentId())
                     .orElseThrow(() -> new NotFoundException("Користувача з ID %s не знайдено".formatted(request.studentId())));
 
@@ -96,7 +102,23 @@ public class BookNumberServiceImpl implements BookNumberService {
                 throw new ValidationException("Користувач з ID %s не є студентом".formatted(request.studentId()));
             }
 
+            // Перевірка наявності книжки для цього студента та спеціальності
+            Long specialtyId = request.specialtyId() != null ? request.specialtyId() : bookNumber.getSpecialtyId();
+            if (bookNumberRepository.existsByStudentIdAndSpecialtyId(student.getId(), specialtyId)
+                    && !(student.getId().equals(bookNumber.getStudent().getId())
+                    && specialtyId.equals(bookNumber.getSpecialtyId()))) {
+                throw new ValidationException("У цього студента вже є залікова книжка для цієї спеціальності");
+            }
+
             bookNumber.setStudent(student);
+        }
+
+        if (request.specialtyId() != null && !request.specialtyId().equals(bookNumber.getSpecialtyId())) {
+            Long studentId = request.studentId() != null ? request.studentId() : bookNumber.getStudent().getId();
+            if (bookNumberRepository.existsByStudentIdAndSpecialtyId(studentId, request.specialtyId())) {
+                throw new ValidationException("У цього студента вже є залікова книжка для цієї спеціальності");
+            }
+            bookNumber.setSpecialtyId(request.specialtyId());
         }
 
         bookNumberMapper.updateEntity(request, bookNumber);

@@ -1,108 +1,96 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Component, OnInit, signal, inject, computed } from '@angular/core';
+import { Router } from '@angular/router';
 import { SpecialtyService } from '../../../core/services/specialty.service';
 import { OrgService } from '../../../core/services/org.service';
-import { Specialty, Degree, EduType, Organization, OrganizationShort } from '../../../models/org.model';
+import { Specialty, Degree, EduType, OrganizationShort, OrgType } from '../../../models/org.model';
 import { ToastService } from '../../../core/services/toast.service';
+import { SpecialtyFormComponent } from '../specialty-form/specialty-form.component';
+import { PaginationComponent } from '../../../shared/pagination/pagination.component';
 
 @Component({
   selector: 'app-specialty-list',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [SpecialtyFormComponent, PaginationComponent],
   templateUrl: './specialty-list.component.html',
   styleUrl: './specialty-list.component.css',
 })
 export class SpecialtyListComponent implements OnInit {
   specialties = signal<Specialty[]>([]);
-  orgs = signal<Organization[]>([]);
   totalPages = signal(0);
   totalElements = signal(0);
   currentPage = signal(0);
+  perPage = signal(10);
+  perPageOptions = [5, 10, 25, 50];
   degreeFilter = signal('');
   eduTypeFilter = signal('');
   degrees = Object.values(Degree);
   eduTypes = Object.values(EduType);
   modalOpen = signal(false);
-  isEdit = signal(false);
-  editingId = signal<number | null>(null);
-  form!: FormGroup;
-  private toastService = inject(ToastService);
-  selectedFaculties = signal<Set<number>>(new Set());
-  selectedDept = signal<number | null>(null);
+  deleteModalOpen = signal(false);
+  specialtyToDelete = signal<Specialty | null>(null);
+  editingSpecialty = signal<Specialty | null>(null);
   faculties = signal<OrganizationShort[]>([]);
   departments = signal<OrganizationShort[]>([]);
+  selectedFacultyId = signal<number | null>(null);
+  selectedDeptId = signal<number | null>(null);
+  loading = signal(false);
+
+  private toastService = inject(ToastService);
+  private router = inject(Router);
 
   constructor(
     private specialtyService: SpecialtyService,
     private orgService: OrgService,
-    private fb: FormBuilder,
   ) {}
 
+  currentPageUi = computed(() => this.currentPage() + 1);
+
+  paginationInfo = computed(() => {
+    const total = this.totalPages();
+    if (total === 0) return 'Немає записів';
+    return `Сторінка ${this.currentPageUi()} з ${total} · Всього: ${this.totalElements()}`;
+  });
+
+  onPageChange(page: number) {
+    this.currentPage.set(page - 1);
+    this.load();
+  }
+
+  onPerPageChange(size: number) {
+    this.perPage.set(size);
+    this.currentPage.set(0);
+    this.load();
+  }
+
   ngOnInit() {
-    this.form = this.fb.group({
-      code: ['', [Validators.required, Validators.maxLength(10)]],
-      nameUA: ['', Validators.required],
-      nameEN: ['', Validators.required],
-      studyProgramUA: ['', Validators.required],
-      studyProgramEN: ['', Validators.required],
-      eduProgramUA: ['', Validators.required],
-      eduProgramEN: ['', Validators.required],
-      orgId: ['', Validators.required],
-      degree: ['', Validators.required],
-      eduType: ['', Validators.required],
-      startDate: ['', Validators.required],
-      endDate: [''],
-    });
-    this.orgService.getAllShort('FACULTY').subscribe((f) => this.faculties.set(f));
-    this.orgService.getAllShort('DEPARTMENT').subscribe((d) => this.departments.set(d));
+    this.orgService.getAllShort(OrgType.FACULTY).subscribe((f) => this.faculties.set(f));
+    this.orgService.getAllShort(OrgType.DEPARTMENT).subscribe((d) => this.departments.set(d));
     this.load();
   }
 
   load() {
-    const deptId = this.selectedDept();
-    const facultyIds = [...this.selectedFaculties()];
+    this.loading.set(true);
+    const deptId = this.selectedDeptId();
+    const facultyId = this.selectedFacultyId();
+    const orgId = deptId ?? facultyId ?? null;
 
-    if (deptId) {
-      this.specialtyService
-        .getByOrg(deptId, {
-          degree: this.degreeFilter() || undefined,
-          eduType: this.eduTypeFilter() || undefined,
-          page: this.currentPage(),
-        })
-        .subscribe((r) => {
-          this.specialties.set(r.content);
-          this.totalPages.set(r.totalPages);
-          this.totalElements.set(r.totalElements);
-        });
-      return;
-    }
+    const params = {
+      degree: this.degreeFilter() || undefined,
+      eduType: this.eduTypeFilter() || undefined,
+      page: this.currentPage(),
+      size: this.perPage(),
+    };
 
-    if (facultyIds.length === 1) {
-      this.specialtyService
-        .getByOrg(facultyIds[0], {
-          degree: this.degreeFilter() || undefined,
-          eduType: this.eduTypeFilter() || undefined,
-          page: this.currentPage(),
-        })
-        .subscribe((r) => {
-          this.specialties.set(r.content);
-          this.totalPages.set(r.totalPages);
-          this.totalElements.set(r.totalElements);
-        });
-      return;
-    }
+    const obs = orgId
+      ? this.specialtyService.getByOrg(orgId, params)
+      : this.specialtyService.getAll(params);
 
-    this.specialtyService
-      .getAll({
-        degree: this.degreeFilter() || undefined,
-        eduType: this.eduTypeFilter() || undefined,
-        page: this.currentPage(),
-      })
-      .subscribe((r) => {
-        this.specialties.set(r.content);
-        this.totalPages.set(r.totalPages);
-        this.totalElements.set(r.totalElements);
-      });
+    obs.subscribe((r) => {
+      this.specialties.set(r.content);
+      this.totalPages.set(r.totalPages);
+      this.totalElements.set(r.totalElements);
+      this.loading.set(false);
+    });
   }
 
   onDegreeFilter(e: Event) {
@@ -110,83 +98,71 @@ export class SpecialtyListComponent implements OnInit {
     this.currentPage.set(0);
     this.load();
   }
+
   onEduTypeFilter(e: Event) {
     this.eduTypeFilter.set((e.target as HTMLSelectElement).value);
     this.currentPage.set(0);
     this.load();
   }
-  setPage(p: number) {
-    this.currentPage.set(p);
+
+  onFacultyFilter(e: Event) {
+    const val = (e.target as HTMLSelectElement).value;
+    this.selectedFacultyId.set(val ? +val : null);
+    this.selectedDeptId.set(null);
+    this.currentPage.set(0);
     this.load();
   }
-  get pages(): number[] {
-    return Array.from({ length: this.totalPages() }, (_, i) => i + 1);
+
+  onDeptFilter(e: Event) {
+    const val = (e.target as HTMLSelectElement).value;
+    this.selectedDeptId.set(val ? +val : null);
+    this.currentPage.set(0);
+    this.load();
   }
 
   openCreate() {
-    this.isEdit.set(false);
-    this.editingId.set(null);
-    this.form.reset();
+    this.editingSpecialty.set(null);
     this.modalOpen.set(true);
   }
 
   openEdit(s: Specialty) {
-    this.isEdit.set(true);
-    this.editingId.set(s.id);
-    this.form.patchValue({
-      ...s,
-      startDate: this.toDateInput(s.startDate),
-      endDate: s.endDate ? this.toDateInput(s.endDate) : '',
-    });
+    this.editingSpecialty.set(s);
     this.modalOpen.set(true);
   }
 
   closeModal() {
     this.modalOpen.set(false);
-    this.form.reset();
+    this.editingSpecialty.set(null);
   }
 
-  submit() {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-    const val = this.form.value;
-    const request = {
-      ...val,
-      startDate: new Date(val.startDate).toISOString(),
-      endDate: val.endDate ? new Date(val.endDate).toISOString() : null,
-    };
-    if (this.isEdit() && this.editingId()) {
-      this.specialtyService.update(this.editingId()!, request).subscribe(() => {
-        this.toastService.success('Спеціальність оновлено');
-        this.load();
-        this.closeModal();
-      });
-    } else {
-      this.specialtyService.create(request).subscribe(() => {
-        this.toastService.success('Спеціальність створено');
-        this.load();
-        this.closeModal();
-      });
-    }
+  onFormSaved() {
+    this.closeModal();
+    this.load();
   }
 
-  delete(id: number) {
-    if (!confirm('Видалити спеціальність?')) return;
-    this.specialtyService.delete(id).subscribe(() => {
+  viewDetail(id: number) {
+    this.router.navigate(['/specialties', id]);
+  }
+
+  openDelete(s: Specialty) {
+    this.specialtyToDelete.set(s);
+    this.deleteModalOpen.set(true);
+  }
+
+  closeDelete() {
+    this.deleteModalOpen.set(false);
+  }
+
+  confirmDelete() {
+    const s = this.specialtyToDelete();
+    if (!s) return;
+
+    this.specialtyService.delete(s.id).subscribe(() => {
       this.toastService.success('Спеціальність видалено');
+      this.deleteModalOpen.set(false);
+      this.specialtyToDelete.set(null);
       this.load();
     });
-  }
-
-  isInvalid(f: string) {
-    const c = this.form.get(f);
-    return !!(c?.invalid && c?.touched);
-  }
-
-  getOrgName(orgId: number): string {
-    return this.orgs().find((o) => o.id === orgId)?.name ?? '—';
   }
 
   degreeLabel(d: string): string {
@@ -211,36 +187,12 @@ export class SpecialtyListComponent implements OnInit {
     return map[e] || e;
   }
 
-  toDateInput(iso: string): string {
-    return iso ? iso.split('T')[0] : '';
-  }
-
   getAvatarColor(id: number): string {
     const colors = ['#5B6AF0', '#0D9E6E', '#D97706', '#7C3AED', '#E53E3E', '#0891B2'];
     return colors[id % colors.length];
   }
 
-  toggleFaculty(id: number) {
-    const set = new Set(this.selectedFaculties());
-    if (set.has(id)) {
-      set.delete(id);
-    } else {
-      set.add(id);
-    }
-    this.selectedFaculties.set(set);
-    this.selectedDept.set(null);
-    this.currentPage.set(0);
-    this.load();
-  }
-
-  isFacultySelected(id: number): boolean {
-    return this.selectedFaculties().has(id);
-  }
-
-  onDeptFilter(e: Event) {
-    const val = (e.target as HTMLSelectElement).value;
-    this.selectedDept.set(val ? +val : null);
-    this.currentPage.set(0);
-    this.load();
+  getDeptName(orgId: number): string {
+    return this.departments().find((d) => d.id === orgId)?.name ?? '—';
   }
 }

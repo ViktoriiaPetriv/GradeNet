@@ -1,0 +1,215 @@
+<div class="page">
+    <div class="page-header">
+        <div>
+            <div class="page-title">Залікові книжки</div>
+            <div class="page-subtitle">Реєстрація та управління заліковими книжками</div>
+        </div>
+        <button class="btn-primary" (click)="openCreate()">
+            <i class="pi pi-plus"></i> Зареєструвати
+        </button>
+    </div>
+
+    <div class="filters">
+        <input class="search-input" type="text" placeholder="Пошук за номером..." [value]="search()"
+            (input)="onSearch($event)" />
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Номер</th>
+                    <th>Студент</th>
+                    <th>Дата реєстрації</th>
+                    <th>Дата видачі</th>
+                    <th>Статус</th>
+                    <th>Дії</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (books().length === 0) {
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <div class="empty-icon"><i class="pi pi-book"></i></div>
+                            <div>Заліковок не знайдено</div>
+                        </div>
+                    </td>
+                </tr>
+                }
+                @for (book of books(); track book.id) {
+                <tr class="clickable-row" (click)="viewBook(book.id)">
+                    <td>
+                        <div class="table-cell">
+                            <div class="table-avatar" [style.background]="getAvatarColor(book.id)">
+                                <i class="pi pi-book"></i>
+                            </div>
+                            <span class="book-number">{{ book.number }}</span>
+                        </div>
+                    </td>
+                    <td class="text-muted">{{ book.studentId }}</td>
+                    <td class="text-muted">{{ formatDate(book.regStartDate) }}</td>
+                    <td class="text-muted">{{ formatDate(book.handedDate) }}</td>
+                    <td>
+                        <span class="status-badge status-{{ book.status }}">
+                            {{ statusLabel(book.status) }}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="action-btn edit" (click)="openEdit(book); $event.stopPropagation()"
+                            title="Редагувати">
+                            <i class="pi pi-file-edit"></i>
+                        </button>
+                        @if (book.status === 'REGISTERED') {
+                        <button class="action-btn fill" (click)="openFillModal(book); $event.stopPropagation()"
+                            title="Позначити заповненою">
+                            <i class="pi pi-check" style="color: #D97706;"></i>
+                        </button>
+                        }
+                        @if (book.status === 'FILLED') {
+                        <button class="action-btn hand" (click)="openHandModal(book); $event.stopPropagation()"
+                            title="Видати студенту">
+                            <i class="pi pi-send" style="color: #7C3AED;"></i>
+                        </button>
+                        }
+                        <button class="action-btn delete" (click)="openDeleteModal(book); $event.stopPropagation()"
+                            title="Видалити">
+                            <i class="pi pi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- ── PAGINATION ── -->
+        <div class="pagination">
+            <div class="pagination-left">
+                <span class="pagination-info">{{ paginationInfo() }}</span>
+            </div>
+
+            <div class="pagination-center">
+                <button class="page-btn nav-btn" [disabled]="currentPageUi() === 1" (click)="goFirst()"
+                    title="Перша сторінка">
+                    <i class="pi pi-angle-double-left"></i>
+                </button>
+                <button class="page-btn nav-btn" [disabled]="currentPageUi() === 1" (click)="goPrev()"
+                    title="Попередня">
+                    <i class="pi pi-angle-left"></i>
+                </button>
+
+                @for (p of pages(); track $index) {
+                @if (p === -1) {
+                <span class="page-ellipsis">…</span>
+                } @else {
+                <button class="page-btn" [class.active]="p === currentPageUi()" (click)="setPage(p)">{{ p }}</button>
+                }
+                }
+
+                <button class="page-btn nav-btn" [disabled]="currentPageUi() === totalPages()" (click)="goNext()"
+                    title="Наступна">
+                    <i class="pi pi-angle-right"></i>
+                </button>
+                <button class="page-btn nav-btn" [disabled]="currentPageUi() === totalPages()" (click)="goLast()"
+                    title="Остання сторінка">
+                    <i class="pi pi-angle-double-right"></i>
+                </button>
+            </div>
+
+            <div class="pagination-right">
+                <span class="per-page-label">Записів на сторінці:</span>
+                <select class="per-page-select" (change)="onPerPageChange($event)">
+                    @for (opt of perPageOptions; track opt) {
+                    <option [value]="opt" [selected]="opt === perPage()">{{ opt }}</option>
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit / Create modal -->
+@if (modalOpen()) {
+<div class="modal-backdrop" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+        <app-book-modal [book]="editingBook()" [mode]="isEdit() ? 'edit' : 'create'" (saved)="onSaved()"
+            (cancelled)="closeModal()" />
+    </div>
+</div>
+}
+
+<!-- Delete confirmation modal -->
+@if (deleteModalOpen()) {
+<div class="modal-backdrop" (click)="closeDeleteModal()">
+    <div class="modal modal-sm" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title">Видалення заліковки</div>
+            <button class="modal-close" (click)="closeDeleteModal()">
+                <i class="pi pi-times"></i>
+            </button>
+        </div>
+        <div class="delete-body">
+            <div class="delete-icon"><i class="pi pi-trash"></i></div>
+            <p class="delete-text">
+                Ви впевнені, що хочете видалити заліковку
+                <strong>{{ bookToDelete()?.number }}</strong>?
+            </p>
+            <p class="delete-subtext">Цю дію неможливо скасувати.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-cancel" (click)="closeDeleteModal()"><i class="pi pi-times"></i>Скасувати</button>
+            <button type="button" class="btn-danger" (click)="confirmDelete()">Видалити</button>
+        </div>
+    </div>
+</div>
+}
+
+<!-- Fill confirmation modal -->
+@if (fillModalOpen()) {
+<div class="modal-backdrop" (click)="closeFillModal()">
+    <div class="modal modal-sm" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title">Підтвердження</div>
+            <button class="modal-close" (click)="closeFillModal()">
+                <i class="pi pi-times"></i>
+            </button>
+        </div>
+        <div class="delete-body">
+            <div class="confirm-icon confirm-warning"><i class="pi pi-check"></i></div>
+            <p class="delete-text">
+                Позначити заліковку <strong>{{ bookToAction()?.number }}</strong> як заповнену?
+            </p>
+            <p class="delete-subtext">Статус буде змінено на «Заповнено».</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-cancel" (click)="closeFillModal()"><i class="pi pi-times"></i>Скасувати</button>
+            <button type="button" class="btn-confirm-warning" (click)="confirmFill()">Підтвердити</button>
+        </div>
+    </div>
+</div>
+}
+
+<!-- Hand confirmation modal -->
+@if (handModalOpen()) {
+<div class="modal-backdrop" (click)="closeHandModal()">
+    <div class="modal modal-sm" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title">Підтвердження</div>
+            <button class="modal-close" (click)="closeHandModal()">
+                <i class="pi pi-times"></i>
+            </button>
+        </div>
+        <div class="delete-body">
+            <div class="confirm-icon confirm-purple"><i class="pi pi-send"></i></div>
+            <p class="delete-text">
+                Видати заліковку <strong>{{ bookToAction()?.number }}</strong> студенту?
+            </p>
+            <p class="delete-subtext">Статус буде змінено на «Видано».</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-cancel" (click)="closeHandModal()"><i class="pi pi-times"></i>Скасувати</button>
+            <button type="button" class="btn-confirm-purple" (click)="confirmHand()">Видати</button>
+        </div>
+    </div>
+</div>
+}

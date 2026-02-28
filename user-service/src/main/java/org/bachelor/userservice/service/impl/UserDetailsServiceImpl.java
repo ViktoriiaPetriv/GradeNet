@@ -22,7 +22,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .map(user -> new User(
                         user.getEmail(),
                         user.getPassword(),
-                        List.of(new SimpleGrantedAuthority("ROLE" + user.getRole().name()))
+                        List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
                 ))
                 .orElseThrow(() -> new UsernameNotFoundException("Користувача з email %s не знайдено".formatted(email)));
     }

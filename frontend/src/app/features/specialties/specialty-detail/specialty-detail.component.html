@@ -1,0 +1,154 @@
+<div class="page">
+
+    @if (loading()) {
+    <div class="loading-page">
+        <div class="spinner"></div>
+    </div>
+    }
+
+    @if (!loading() && specialty()) {
+    <div class="detail-layout">
+
+        <!-- Header -->
+        <div class="detail-header">
+            <button class="back-btn" (click)="goBack()">
+                <i class="pi pi-arrow-left"></i> Назад до списку
+            </button>
+            <div class="header-actions">
+                <button class="btn-edit" (click)="openEdit()"><i class="pi pi-file-edit"></i> Редагувати</button>
+                <button class="btn-delete" (click)="openDelete()"><i class="pi pi-trash"></i> Видалити</button>
+            </div>
+        </div>
+
+        <!-- Hero card -->
+        <div class="hero-card">
+            <div class="hero-avatar" [style.background]="getAvatarColor(specialty()!.id)">
+                {{ specialty()!.nameUA[0] }}
+            </div>
+            <div class="hero-info">
+                <div class="hero-code">
+                    <span class="code-badge">{{ specialty()!.code }}</span>
+                </div>
+                <h1 class="hero-title">{{ specialty()!.nameUA }}</h1>
+                <p class="hero-subtitle">{{ specialty()!.nameEN }}</p>
+                <div class="hero-badges">
+                    <span class="degree-badge degree-{{ specialty()!.degree }}">
+                        {{ degreeLabel(specialty()!.degree) }}
+                    </span>
+                    <span class="edutype-badge">{{ eduTypeLabel(specialty()!.eduType) }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="content-grid">
+
+            <!-- Programs card -->
+            <div class="info-card">
+                <div class="card-title"><i class="pi pi-file-edit"></i> Програми</div>
+                <div class="info-rows">
+                    <div class="info-row">
+                        <span class="info-label">Освітня програма (UA)</span>
+                        <span class="info-value">{{ specialty()!.eduProgramUA }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Освітня програма (EN)</span>
+                        <span class="info-value">{{ specialty()!.eduProgramEN }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Навчальна програма (UA)</span>
+                        <span class="info-value">{{ specialty()!.studyProgramUA }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Навчальна програма (EN)</span>
+                        <span class="info-value">{{ specialty()!.studyProgramEN }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right column -->
+            <div class="right-col">
+
+                <!-- Org info card -->
+                @if (orgInfo()) {
+                <div class="info-card">
+                    <div class="card-title"><i class="pi pi-sitemap"></i> Організація</div>
+                    <div class="org-tree">
+                        <div class="org-item faculty">
+                            <span class="org-type-dot faculty-dot"></span>
+                            <div>
+                                <div class="org-type-label">Факультет</div>
+                                <div class="org-name">{{ orgInfo()!.facultyName }}</div>
+                            </div>
+                        </div>
+                        <div class="tree-connector"></div>
+                        <div class="org-item department">
+                            <span class="org-type-dot dept-dot"></span>
+                            <div>
+                                <div class="org-type-label">Кафедра</div>
+                                <div class="org-name">{{ orgInfo()!.departmentName }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                }
+
+                <!-- Dates card -->
+                <div class="info-card">
+                    <div class="card-title"><i class="pi pi-calendar"></i> Терміни дії</div>
+                    <div class="info-rows">
+                        <div class="info-row">
+                            <span class="info-label">Дата початку</span>
+                            <span class="info-value date-value">{{ formatDate(specialty()!.startDate) }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Дата завершення</span>
+                            <span class="info-value date-value">
+                                {{ specialty()!.endDate ? formatDate(specialty()!.endDate!) : '—' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+    }
+
+</div>
+
+@if (editModalOpen() && specialty()) {
+<app-specialty-form [specialty]="specialty()" (saved)="onSaved()" (cancelled)="closeEdit()" />
+}
+
+@if (deleteModalOpen() && specialty()) {
+<div class="modal-backdrop" (click)="closeDelete()">
+    <div class="modal modal-sm" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title">Підтвердження видалення</div>
+            <button class="modal-close" (click)="closeDelete()">
+                <i class="pi pi-times"></i>
+            </button>
+        </div>
+
+        <div class="confirm-body">
+            <div class="confirm-icon confirm-danger"><i class="pi pi-trash"></i></div>
+            <p class="confirm-text">
+                Ви дійсно хочете видалити спеціальність
+                <strong>{{ specialty()!.code }} — {{ specialty()!.nameUA }}</strong>?
+            </p>
+            <div class="confirm-subtext">
+                Цю дію неможливо скасувати.
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn-cancel" (click)="closeDelete()"><i class="pi pi-times"></i>Скасувати</button>
+            <button type="button" class="btn-danger" (click)="confirmDelete()">
+                <i class="pi pi-trash"></i> Видалити
+            </button>
+        </div>
+    </div>
+</div>
+}

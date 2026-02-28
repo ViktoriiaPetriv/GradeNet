@@ -1,7 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Organization, OrganizationRequest, OrganizationShort, PageResponse } from '../../models/org.model';
+import {
+  Organization,
+  OrganizationRequest,
+  OrganizationShort,
+  PageResponse,
+  OrgType,
+} from '../../models/org.model';
 
 @Injectable({ providedIn: 'root' })
 export class OrgService {
@@ -10,7 +16,7 @@ export class OrgService {
   constructor(private http: HttpClient) {}
 
   getAll(params?: {
-    orgType?: string;
+    orgType?: OrgType;
     page?: number;
     size?: number;
   }): Observable<PageResponse<Organization>> {
@@ -19,6 +25,12 @@ export class OrgService {
     if (params?.page !== undefined) p = p.set('page', params.page);
     if (params?.size !== undefined) p = p.set('size', params.size);
     return this.http.get<PageResponse<Organization>>(this.apiUrl, { params: p });
+  }
+
+  getAllShort(orgType?: OrgType): Observable<OrganizationShort[]> {
+    let p = new HttpParams();
+    if (orgType) p = p.set('orgType', orgType);
+    return this.http.get<OrganizationShort[]>(`${this.apiUrl}/short`, { params: p });
   }
 
   getById(id: number): Observable<Organization> {
@@ -35,11 +47,5 @@ export class OrgService {
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
-  }
-
-  getAllShort(orgType?: string): Observable<OrganizationShort[]> {
-    let p = new HttpParams();
-    if (orgType) p = p.set('orgType', orgType);
-    return this.http.get<OrganizationShort[]>(`${this.apiUrl}/short`, { params: p });
   }
 }

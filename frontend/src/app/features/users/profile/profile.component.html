@@ -1,6 +1,27 @@
 <div class="page">
     @if (profile(); as p) {
-    <div class="profile-header">
+
+    <!-- Header (як у specialty-detail) -->
+    <div class="detail-header">
+        <button class="back-btn" (click)="goBack()">
+            <i class="pi pi-arrow-left"></i> Назад до списку
+        </button>
+        <div class="header-actions">
+            @if (canEdit) {
+            <button class="btn-edit" (click)="editProfile()">
+                <i class="pi pi-file-edit"></i> Редагувати
+            </button>
+            }
+            @if (canDelete) {
+            <button class="btn-delete" (click)="deleteProfile()">
+                <i class="pi pi-trash"></i> Видалити
+            </button>
+            }
+        </div>
+    </div>
+
+    <!-- Hero card (аватар + ім'я + роль) -->
+    <div class="profile-hero">
         <div class="avatar">
             <i class="pi pi-user"></i>
         </div>
@@ -12,26 +33,13 @@
             }
             <span class="role-badge role-{{ p.role }}">{{ roleLabel(p.role) }}</span>
         </div>
-    
-        <div class="profile-actions">
-            @if (canEdit) {
-            <button class="action-btn edit" (click)="editProfile()">
-                <i class="pi pi-file-edit"></i>
-            </button>
-            }
-            @if (canDelete) {
-            <button class="action-btn delete" (click)="deleteProfile()">
-                <i class="pi pi-trash"></i>
-            </button>
-            }
-        </div>
     </div>
 
     <div class="profile-sections">
 
-        <!-- Основна інформація -->
         <div class="section">
             <div class="section-header">
+                <div class="section-icon"><i class="pi pi-user"></i></div>
                 <div class="section-title">Основна інформація</div>
             </div>
             <div class="info-grid">
@@ -49,8 +57,7 @@
                 </div>
                 <div class="info-item">
                     <div class="info-label">Дата народження</div>
-                    <div class="info-value" [class.empty]="!p.birthDate">{{ formatDate(p.birthDate) || 'Не вказано' }}
-                    </div>
+                    <div class="info-value" [class.empty]="!p.birthDate">{{ formatDate(p.birthDate) }}</div>
                 </div>
                 <div class="info-item full">
                     <div class="info-label">Email</div>
@@ -59,57 +66,71 @@
             </div>
         </div>
 
-        <!-- Навчання (тільки для студента) -->
-        @if (p.studentInfo; as info) {
+        @if (books().length > 0) {
+        @for (b of books(); track b.info.bookId; let i = $index) {
         <div class="section">
             <div class="section-header">
                 <div class="section-icon"><i class="pi pi-book"></i></div>
-                <div class="section-title">Навчання</div>
+                <div class="section-title">
+                    Залікова книжка {{ books().length > 1 ? '#' + (i + 1) : '' }}
+                </div>
+                <span class="status-badge status-{{ b.info.bookNumberStatus }}" style="margin-left: auto;">
+                    {{ bookStatusLabel(b.info.bookNumberStatus) }}
+                </span>
             </div>
             <div class="info-grid">
                 <div class="info-item">
-                    <div class="info-label">Номер залікової книжки</div>
-                    <div class="info-value" [class.empty]="!info.bookNumber">{{ info.bookNumber || 'Не вказано' }}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Статус залікової книжки</div>
-                    <div class="info-value">
-                        <span class="status-badge status-{{ info.bookNumberStatus }}">
-                            {{ bookStatusLabel(info.bookNumberStatus) }}
-                        </span>
+                    <div class="info-label">Номер</div>
+                    <div class="info-value" [class.empty]="!b.info.bookNumber">
+                        {{ b.info.bookNumber || 'Не вказано' }}
                     </div>
                 </div>
                 <div class="info-item">
-                    <div class="info-label">Дата початку навчання</div>
-                    <div class="info-value" [class.empty]="!info.startDate">{{ formatDate(info.startDate) || 'Не
-                        вказано' }}</div>
+                    <div class="info-label">Дата реєстрації</div>
+                    <div class="info-value" [class.empty]="!b.info.startDate">
+                        {{ formatDate(b.info.startDate || undefined) }}
+                    </div>
                 </div>
                 <div class="info-item">
-                    <div class="info-label">Дата закінчення навчання</div>
-                    <div class="info-value" [class.empty]="!info.endDate">{{ formatDate(info.endDate) || 'Не вказано' }}
+                    <div class="info-label">Дата завершення</div>
+                    <div class="info-value" [class.empty]="!b.info.endDate">
+                        {{ formatDate(b.info.endDate ?? undefined) }}
                     </div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">Факультет</div>
-                    <div class="info-value" [class.empty]="!orgInfo()?.facultyName">
-                        {{ orgInfo()?.facultyName || 'Не вказано' }}
+                    <div class="info-value" [class.empty]="!b.orgInfo?.facultyName">
+                        {{ b.orgInfo?.facultyName || 'Не вказано' }}
                     </div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">Кафедра</div>
-                    <div class="info-value" [class.empty]="!orgInfo()?.departmentName">
-                        {{ orgInfo()?.departmentName || 'Не вказано' }}
+                    <div class="info-value" [class.empty]="!b.orgInfo?.departmentName">
+                        {{ b.orgInfo?.departmentName || 'Не вказано' }}
                     </div>
                 </div>
                 <div class="info-item full">
                     <div class="info-label">Спеціальність</div>
-                    <div class="info-value" [class.empty]="!specialty()">
-                        {{ specialty() ? specialty()!.code + ' — ' + specialty()!.nameUA : 'Не вказано' }}
+                    <div class="info-value" [class.empty]="!b.specialty">
+                        {{ b.specialty ? b.specialty.code + ' — ' + b.specialty.nameUA : 'Не вказано' }}
                     </div>
                 </div>
             </div>
         </div>
         }
+        } @else if (p.role === 'STUDENT') {
+        <div class="section">
+            <div class="section-header">
+                <div class="section-icon"><i class="pi pi-book"></i></div>
+                <div class="section-title">Залікова книжка</div>
+            </div>
+            <div class="empty-state" style="padding: 2rem;">
+                <div class="empty-icon"><i class="pi pi-book"></i></div>
+                <div>Залікову книжку ще не зареєстровано</div>
+            </div>
+        </div>
+        }
+
     </div>
     }
 </div>
@@ -131,16 +152,15 @@
                 <i class="pi pi-times"></i>
             </button>
         </div>
-        <div class="delete-body">
-            <div class="delete-icon"><i class="pi pi-trash"></i></div>
-            <p class="delete-text">
-                Ви впевнені, що хочете видалити користувача
-                <strong>{{ profile()?.email }}</strong>?
+        <div class="confirm-body">
+            <div class="confirm-icon confirm-danger"><i class="pi pi-trash"></i></div>
+            <p class="confirm-text">
+                Ви впевнені, що хочете видалити користувача <strong>{{ profile()?.email }}</strong>?
             </p>
-            <p class="delete-subtext">Цю дію неможливо скасувати.</p>
+            <p class="confirm-subtext">Цю дію неможливо скасувати.</p>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn-cancel" (click)="deleteModalOpen.set(false)">Скасувати</button>
+            <button type="button" class="btn-cancel" (click)="deleteModalOpen.set(false)"><i class="pi pi-times"></i>Скасувати</button>
             <button type="button" class="btn-danger" (click)="confirmDelete()">Видалити</button>
         </div>
     </div>

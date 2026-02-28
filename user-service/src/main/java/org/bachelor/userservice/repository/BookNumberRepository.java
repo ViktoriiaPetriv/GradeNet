@@ -11,4 +11,5 @@ public interface BookNumberRepository extends JpaRepository<BookNumber, Long>, J
     boolean existsByNumber(String number);
     List<BookNumber> findAllByStudentId(Long studentId);
     Optional<BookNumber> findByStudentId(Long studentId);
+    boolean existsByStudentIdAndSpecialtyId(Long studentId, Long specialtyId);
 }

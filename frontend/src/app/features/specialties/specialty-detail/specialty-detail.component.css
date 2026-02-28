@@ -1,0 +1,325 @@
+.page {
+    padding: 2.5rem 3rem 2.5rem 5rem;
+}
+
+.loading-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 40vh;
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.detail-layout {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.8rem;
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    cursor: pointer;
+    padding: 6px 0;
+    transition: color 0.15s;
+}
+
+.back-btn:hover {
+    color: var(--text);
+}
+
+.header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-edit {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--accent);
+    padding: 8px 16px;
+    border-radius: 9px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.15s;
+}
+
+.btn-edit:hover {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+}
+
+.btn-delete {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--red);
+    padding: 8px 16px;
+    border-radius: 9px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.15s;
+}
+
+.btn-delete:hover {
+    background: var(--red-bg);
+    border-color: var(--red);
+}
+
+.hero-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow);
+}
+
+.hero-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+}
+
+.hero-info {
+    flex: 1;
+}
+
+.hero-code {
+    margin-bottom: 0.5rem;
+}
+
+.code-badge {
+    display: inline-flex;
+    padding: 3px 10px;
+    border-radius: 7px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-family: monospace;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+
+.hero-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 4px;
+}
+
+.hero-subtitle {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin: 0 0 1rem;
+}
+
+.hero-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.degree-badge {
+    display: inline-flex;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.degree-BACHELOR {
+    background: rgba(91, 106, 240, 0.1);
+    color: #5B6AF0;
+}
+
+.degree-MASTER {
+    background: rgba(139, 92, 246, 0.1);
+    color: #7C3AED;
+}
+
+.degree-DOCTOR {
+    background: rgba(229, 62, 62, 0.08);
+    color: #E53E3E;
+}
+
+.degree-SPECIALIST {
+    background: rgba(13, 158, 110, 0.08);
+    color: #0D9E6E;
+}
+
+.edutype-badge {
+    display: inline-flex;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+}
+
+.content-grid {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.info-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+}
+
+.card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.info-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.info-row {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.info-label {
+    font-size: 0.72rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+}
+
+.info-value {
+    font-size: 0.9rem;
+    color: var(--text);
+    font-weight: 400;
+}
+
+.date-value {
+    font-weight: 500;
+}
+
+.org-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.org-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+}
+
+.org-type-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.faculty-dot {
+    background: #5B6AF0;
+}
+
+.dept-dot {
+    background: #0D9E6E;
+}
+
+.org-type-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.org-name {
+    font-size: 0.9rem;
+    color: var(--text);
+    font-weight: 500;
+    margin-top: 2px;
+}
+
+.tree-connector {
+    width: 1px;
+    height: 14px;
+    background: var(--border);
+    margin-left: 4px;
+}
+
+@media (max-width: 768px) {
+    .page {
+        padding: 1.5rem;
+    }
+
+    .content-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hero-card {
+        flex-direction: column;
+    }
+}
