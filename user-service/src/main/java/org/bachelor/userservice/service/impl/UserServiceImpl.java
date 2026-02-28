@@ -156,13 +156,11 @@ public class UserServiceImpl implements UserService {
             return profile;
         }
 
-        // Отримуємо orgId студента (один, бо студент прив'язаний до однієї кафедри)
         Long orgId = user.getOrganizations().stream()
                 .findFirst()
                 .map(UserOrganization::getOrgId)
                 .orElse(null);
 
-        // Отримуємо ВСІ книжки студента
         List<StudentInfoDTO> books = bookNumberRepository.findAllByStudentId(id)
                 .stream()
                 .map(book -> new StudentInfoDTO(

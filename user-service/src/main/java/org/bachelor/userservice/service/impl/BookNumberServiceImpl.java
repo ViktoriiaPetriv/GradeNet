@@ -102,7 +102,6 @@ public class BookNumberServiceImpl implements BookNumberService {
                 throw new ValidationException("Користувач з ID %s не є студентом".formatted(request.studentId()));
             }
 
-            // Перевірка наявності книжки для цього студента та спеціальності
             Long specialtyId = request.specialtyId() != null ? request.specialtyId() : bookNumber.getSpecialtyId();
             if (bookNumberRepository.existsByStudentIdAndSpecialtyId(student.getId(), specialtyId)
                     && !(student.getId().equals(bookNumber.getStudent().getId())
