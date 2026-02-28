@@ -13,7 +13,7 @@ public interface UserMapper {
 
     UserDTO toDto(User user);
 
-    @Mapping(target = "studentInfo", ignore = true)
+    @Mapping(target = "books", ignore = true)
     UserProfileDTO toProfileDto(User user);
 
     @Mapping(target = "id", ignore = true)

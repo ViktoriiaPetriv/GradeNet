@@ -140,12 +140,6 @@ tbody tr:hover {
     background: var(--surface-2);
 }
 
-.user-cell {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
 .table-avatar {
     width: 34px;
     height: 34px;
@@ -281,7 +275,6 @@ tbody tr:hover {
     border-color: var(--btn);
 }
 
-/* MODAL */
 .modal-backdrop {
     position: fixed;
     inset: 0;
@@ -427,12 +420,6 @@ tbody tr:hover {
 .btn-cancel:hover {
     border-color: var(--text-muted);
     color: var(--text);
-}
-
-.org-cell {
-    display: flex;
-    align-items: center;
-    gap: 12px;
 }
 
 .type-badge {

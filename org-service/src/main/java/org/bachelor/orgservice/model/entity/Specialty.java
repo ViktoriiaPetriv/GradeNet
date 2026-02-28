@@ -25,13 +25,13 @@ public class Specialty {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 10)
+    @Column(nullable = false, length = 10)
     private String code;
 
-    @Column(name = "name_ua", nullable = false, unique = true)
+    @Column(name = "name_ua", nullable = false)
     private String nameUA;
 
-    @Column(name = "name_en", nullable = false, unique = true)
+    @Column(name = "name_en", nullable = false)
     private String nameEN;
 
     @Column(name = "study_program_ua", nullable = false)

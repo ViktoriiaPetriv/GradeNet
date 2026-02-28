@@ -137,17 +137,17 @@ public class SpecialtyServiceImpl implements SpecialtyService {
     }
 
     private void validateUniqueness(SpecialtyRequestDTO dto, Long currentId) {
-        specialtyRepository.findByCode(dto.code())
-                .filter(existing -> !existing.getId().equals(currentId))
-                .ifPresent(e -> { throw new EntityExistsException("Спеціальність із таким кодом вже існує"); });
+        // Використовуємо специфікацію для перевірки комбінації
+        Specification<Specialty> spec = SpecialtySpecification.hasCodeDegreeEduTypeOrg(
+                dto.code(), dto.degree(), dto.eduType(), dto.orgId());
 
-        specialtyRepository.findByNameUA(dto.nameUA())
+        specialtyRepository.findOne(spec)
                 .filter(existing -> !existing.getId().equals(currentId))
-                .ifPresent(e -> { throw new EntityExistsException("Спеціальність з такою назвою (UA) вже існує"); });
-
-        specialtyRepository.findByNameEN(dto.nameEN())
-                .filter(existing -> !existing.getId().equals(currentId))
-                .ifPresent(e -> { throw new EntityExistsException("Спеціальність з такою назвою (EN) вже існує"); });
+                .ifPresent(e -> {
+                    throw new EntityExistsException(
+                            "Спеціальність із таким кодом, рівнем та типом навчання вже існує для цієї кафедри"
+                    );
+                });
     }
 
     @Override

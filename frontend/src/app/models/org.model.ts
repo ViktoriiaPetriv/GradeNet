@@ -23,14 +23,19 @@ export interface Organization {
   id: number;
   name: string;
   orgType: OrgType;
-  parentId?: number;
-  children?: Organization[];
+  parentId: number | null;
+}
+
+export interface OrganizationShort {
+  id: number;
+  name: string;
+  orgType: OrgType;
 }
 
 export interface OrganizationRequest {
   name: string;
   orgType: OrgType;
-  parentId?: number | null;
+  parentId: number | null;
 }
 
 export interface Specialty {
@@ -46,7 +51,7 @@ export interface Specialty {
   degree: Degree;
   eduType: EduType;
   startDate: string;
-  endDate?: string;
+  endDate: string | null;
 }
 
 export interface SpecialtyRequest {
@@ -61,20 +66,7 @@ export interface SpecialtyRequest {
   degree: Degree;
   eduType: EduType;
   startDate: string;
-  endDate?: string;
-}
-
-export interface PageResponse<T> {
-  content: T[];
-  pageNumber: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-}
-
-export interface OrganizationShort {
-  id: number;
-  name: string;
+  endDate: string | null;
 }
 
 export interface OrgInfo {
@@ -82,4 +74,12 @@ export interface OrgInfo {
   facultyName: string;
   departmentId: number;
   departmentName: string;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  number: number;
 }

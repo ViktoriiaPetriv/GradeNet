@@ -146,6 +146,8 @@ public class UserServiceImpl implements UserService {
         return str == null || str.isBlank();
     }
 
+    @Override
+    @Transactional(readOnly = true)
     public UserProfileDTO getProfile(Long id) {
         User user = getUserOrThrow(id);
         UserProfileDTO profile = userMapper.toProfileDto(user);
@@ -159,8 +161,10 @@ public class UserServiceImpl implements UserService {
                 .map(UserOrganization::getOrgId)
                 .orElse(null);
 
-        StudentInfoDTO studentInfo = bookNumberRepository.findByStudentId(id)
+        List<StudentInfoDTO> books = bookNumberRepository.findAllByStudentId(id)
+                .stream()
                 .map(book -> new StudentInfoDTO(
+                        book.getId(),
                         book.getNumber(),
                         book.getStatus().name(),
                         book.getRegStartDate(),
@@ -168,9 +172,9 @@ public class UserServiceImpl implements UserService {
                         book.getSpecialtyId(),
                         orgId
                 ))
-                .orElse(new StudentInfoDTO(null, null, null, null, null, orgId));
+                .toList();
 
-        return profile.withStudentInfo(studentInfo);
+        return profile.withBooks(books);
     }
 
     private void validatePassword(String password) {

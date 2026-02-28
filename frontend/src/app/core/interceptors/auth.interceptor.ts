@@ -1,12 +1,11 @@
 import { HttpInterceptorFn, HttpErrorResponse, HttpRequest } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { catchError, switchMap, throwError, BehaviorSubject, filter, take } from 'rxjs';
+import { catchError, switchMap, throwError, BehaviorSubject, filter, take, finalize } from 'rxjs';
 import { TokenService } from '../services/token.service';
 import { AuthApiService } from '../services/auth-api.service';
 import { Router } from '@angular/router';
 import { ToastService } from '../services/toast.service';
 import { LoaderService } from '../services/loader.service';
-import { finalize } from 'rxjs';
 
 let isRefreshing = false;
 const refreshDone$ = new BehaviorSubject<string | null>(null);
@@ -14,15 +13,17 @@ const refreshDone$ = new BehaviorSubject<string | null>(null);
 const addToken = (req: HttpRequest<unknown>, token: string) =>
   req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
 
+const isAuthRoute = (url: string) => url.includes('/api/auth/');
+
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const tokenService = inject(TokenService);
   const authApi = inject(AuthApiService);
   const router = inject(Router);
   const toastService = inject(ToastService);
   const loaderService = inject(LoaderService);
-  const token = tokenService.getToken();
 
-  const authReq = token && !req.url.includes('/api/auth/') ? addToken(req, token) : req;
+  const token = tokenService.getToken();
+  const authReq = token && !isAuthRoute(req.url) ? addToken(req, token) : req;
   const skipLoader = req.url.includes('/api/auth/refresh');
 
   if (!skipLoader) loaderService.show();
@@ -32,7 +33,16 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       if (!skipLoader) loaderService.hide();
     }),
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401 && !req.url.includes('/api/auth/')) {
+      if (error.status === 403) {
+        toastService.error('Доступ заборонено');
+        return throwError(() => error);
+      }
+
+      if (error.status === 401 && isAuthRoute(req.url)) {
+        return throwError(() => error);
+      }
+
+      if (error.status === 401) {
         if (isRefreshing) {
           return refreshDone$.pipe(
             filter((t): t is string => t !== null),
@@ -63,15 +73,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         );
       }
 
-      if (error.status !== 401) {
-        toastService.error(extractErrorMessage(error));
-      }
-
+      toastService.error(extractErrorMessage(error));
       return throwError(() => error);
     }),
   );
 };
-
 
 function extractErrorMessage(error: HttpErrorResponse): string {
   if (error.error?.message) return error.error.message;
@@ -81,8 +87,6 @@ function extractErrorMessage(error: HttpErrorResponse): string {
   switch (error.status) {
     case 400:
       return 'Некоректний запит';
-    case 403:
-      return 'Доступ заборонено';
     case 404:
       return 'Ресурс не знайдено';
     case 500:

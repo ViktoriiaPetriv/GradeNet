@@ -13,7 +13,7 @@ import { User } from '../../../models/user.model';
 import { Role } from '../../../models/role.enum';
 import { ToastService } from '../../../core/services/toast.service';
 import { OrgService } from '../../../core/services/org.service';
-import { OrganizationShort } from '../../../models/org.model';
+import { OrganizationShort, OrgType } from '../../../models/org.model';
 
 function universityEmailValidator(control: AbstractControl): ValidationErrors | null {
   const value = control.value;
@@ -44,11 +44,9 @@ function strongPasswordValidator(control: AbstractControl): ValidationErrors | n
   styleUrl: './user-modal.component.css',
 })
 export class UserModalComponent implements OnChanges {
-  // Inputs
   user = input<User | null>(null);
   mode = input<'create' | 'edit'>('create');
 
-  // Outputs
   saved = output<void>();
   cancelled = output<void>();
 
@@ -65,7 +63,7 @@ export class UserModalComponent implements OnChanges {
 
   constructor() {
     this.initForm();
-    this.orgService.getAllShort('FACULTY').subscribe((f) => this.faculties.set(f));
+    this.orgService.getAllShort(OrgType.FACULTY).subscribe((f) => this.faculties.set(f));
   }
 
   ngOnChanges(changes: SimpleChanges) {

@@ -48,6 +48,6 @@ public class BookNumber {
     @Column(name = "status", nullable = false)
     private BookNumberStatus status;
 
-    @Column(name = "specialty_id")
-    private Long specialtyId;       // TODO realize connection with org-service
+    @Column(name = "specialty_id", nullable = false)
+    private Long specialtyId;
 }

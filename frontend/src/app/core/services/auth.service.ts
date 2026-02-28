@@ -1,9 +1,10 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, filter, tap } from 'rxjs';
 import { AuthResponse, LoginRequest } from '../../models/auth.model';
 import { TokenService } from './token.service';
 import { AuthApiService } from './auth-api.service';
+import { User } from '../../models/user.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -19,7 +20,6 @@ export class AuthService {
   }
 
   private tryRestoreSession(): void {
-
     this.authApi.refresh().subscribe({
       next: (res) => {
         this.setSession(res);

@@ -23,6 +23,7 @@ export interface UserRequest {
 }
 
 export interface StudentInfo {
+  bookId: number;
   bookNumber: string;
   bookNumberStatus: string;
   startDate: string;
@@ -39,5 +40,5 @@ export interface UserProfile {
   email: string;
   birthDate?: string;
   role: string;
-  studentInfo?: StudentInfo;
+  books: StudentInfo[];
 }

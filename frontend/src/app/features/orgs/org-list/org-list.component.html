@@ -4,7 +4,9 @@
             <div class="page-title">Організації</div>
             <div class="page-subtitle">Факультети та кафедри університету</div>
         </div>
-        <button class="btn-primary" (click)="openCreate()">+ Додати організацію</button>
+        <button class="btn-primary" (click)="openCreate()">
+            <i class="pi pi-plus"></i> Додати організацію
+        </button>
     </div>
 
     <div class="filters">
@@ -40,75 +42,71 @@
                 </tr>
                 }
                 @for (org of filtered(); track org.id) {
-                <tr>
+                <tr class="clickable-row" (click)="viewOrg(org.id)">
                     <td>
-                        <div class="org-cell">
+                        <div class="table-cell">
                             <div class="table-avatar" [style.background]="getAvatarColor(org.id)">
                                 {{ org.name[0] }}
                             </div>
                             <div class="full-name">{{ org.name }}</div>
                         </div>
                     </td>
-                    <td><span class="type-badge type-{{ org.orgType }}">{{ orgTypeLabel(org.orgType) }}</span></td>
+                    <td>
+                        <span class="type-badge type-{{ org.orgType }}">{{ orgTypeLabel(org.orgType) }}</span>
+                    </td>
                     <td class="text-muted">{{ getParentName(org.parentId) }}</td>
                     <td>
-                        <button class="action-btn edit" (click)="openEdit(org)">✎ Редагувати</button>
-                        <button class="action-btn delete" (click)="delete(org.id)">✕ Видалити</button>
+                        <button class="action-btn edit" (click)="openEdit(org); $event.stopPropagation()"
+                            title="Редагувати">
+                            <i class="pi pi-file-edit"></i>
+                        </button>
+                        <button class="action-btn delete" (click)="openDeleteModal(org); $event.stopPropagation()"
+                            title="Видалити">
+                            <i class="pi pi-trash"></i>
+                        </button>
                     </td>
                 </tr>
                 }
             </tbody>
         </table>
+
+        <app-pagination [currentPage]="currentPageUi()" [totalPages]="totalPages()" [perPage]="perPage()"
+            [perPageOptions]="perPageOptions" [info]="paginationInfo()" (pageChange)="onPageChange($event)"
+            (perPageChange)="onPerPageChange($event)" />
     </div>
 </div>
 
+<!-- Create / Edit modal -->
 @if (modalOpen()) {
 <div class="modal-backdrop" (click)="closeModal()">
     <div class="modal" (click)="$event.stopPropagation()">
+        <app-org-modal [org]="editingOrg()" [mode]="isEdit() ? 'edit' : 'create'" (saved)="onSaved()"
+            (cancelled)="closeModal()" />
+    </div>
+</div>
+}
+
+<!-- Delete modal -->
+@if (deleteModalOpen()) {
+<div class="modal-backdrop" (click)="closeDeleteModal()">
+    <div class="modal modal-sm" (click)="$event.stopPropagation()">
         <div class="modal-header">
-            <div class="modal-title">{{ isEdit() ? 'Редагувати організацію' : 'Нова організація' }}</div>
-            <button class="modal-close" (click)="closeModal()">✕</button>
+            <div class="modal-title">Видалення організації</div>
+            <button class="modal-close" (click)="closeDeleteModal()">
+                <i class="pi pi-times"></i>
+            </button>
         </div>
-        <form [formGroup]="form" (ngSubmit)="submit()">
-            <div class="form-grid">
-
-                <div class="form-group full">
-                    <label class="form-label">Назва *</label>
-                    <input class="form-input" formControlName="name" placeholder="Факультет інформатики"
-                        [class.error]="isInvalid('name')" />
-                    @if (isInvalid('name')) { <span class="form-error">Обов'язкове поле</span> }
-                </div>
-
-                <div class="form-group full">
-                    <label class="form-label">Тип *</label>
-                    <select class="form-select" formControlName="orgType" [class.error]="isInvalid('orgType')">
-                        <option value="">— Оберіть —</option>
-                        @for (t of orgTypes; track t) {
-                        <option [value]="t">{{ orgTypeLabel(t) }}</option>
-                        }
-                    </select>
-                    @if (isInvalid('orgType')) { <span class="form-error">Оберіть тип</span> }
-                </div>
-                
-                @if (isDepartment()) {
-                <div class="form-group full">
-                    <label class="form-label">Факультет *</label>
-                    <select class="form-select" formControlName="parentId">
-                        <option [value]="null">— Оберіть факультет —</option>
-                        @for (f of getFaculties(); track f.id) {
-                        <option [value]="f.id">{{ f.name }}</option>
-                        }
-                    </select>
-                    @if (isInvalid('parentId')) { <span class="form-error">Оберіть факультет</span> }
-                </div>
-                }
-
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" (click)="closeModal()">Скасувати</button>
-                <button type="submit" class="btn-primary">{{ isEdit() ? 'Зберегти' : 'Створити' }}</button>
-            </div>
-        </form>
+        <div class="confirm-body">
+            <div class="confirm-icon confirm-danger"><i class="pi pi-trash"></i></div>
+            <p class="confirm-text">
+                Ви впевнені, що хочете видалити <strong>{{ orgToDelete()?.name }}</strong>?
+            </p>
+            <p class="confirm-subtext">Цю дію неможливо скасувати.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-cancel" (click)="closeDeleteModal()"><i class="pi pi-times"></i>Скасувати</button>
+            <button type="button" class="btn-danger" (click)="confirmDelete()">Видалити</button>
+        </div>
     </div>
 </div>
 }

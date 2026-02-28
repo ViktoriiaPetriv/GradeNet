@@ -116,7 +116,7 @@
     }
 
     <div class="modal-footer">
-        <button type="button" class="btn-cancel" (click)="cancel()">Скасувати</button>
+        <button type="button" class="btn-cancel" (click)="cancel()"><i class="pi pi-times"></i>Скасувати</button>
         @if (step() === 1 && needsSecondStep) {
         <button type="button" class="btn-primary" (click)="nextStep()">
             Далі <i class="pi pi-arrow-right"></i>

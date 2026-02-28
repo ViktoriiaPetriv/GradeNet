@@ -1,0 +1,128 @@
+<div class="modal-header">
+    <div class="modal-title">{{ isEdit ? 'Редагувати заліковку' : 'Реєстрація заліковки' }}</div>
+    <button class="modal-close" (click)="cancel()">
+        <i class="pi pi-times"></i>
+    </button>
+</div>
+
+<form [formGroup]="form">
+    <div class="form-grid">
+
+        <!-- Номер -->
+        <div class="form-group full">
+            <label class="form-label">Номер заліковки *</label>
+            <input class="form-input" formControlName="number" placeholder="Напр. КН-2024-001"
+                [class.error]="isInvalid('number')" />
+            @if (isInvalid('number')) {
+            @if (form.get('number')?.errors?.['required']) {
+            <span class="field-hint">Номер є обов'язковим</span>
+            } @else if (form.get('number')?.errors?.['maxlength']) {
+            <span class="field-hint">Максимум 20 символів</span>
+            }
+            }
+        </div>
+
+        <!-- Студент -->
+        <div class="form-group full">
+            <label class="form-label">Студент *</label>
+            <select class="form-select" formControlName="studentId" [class.error]="isInvalid('studentId')">
+                <option [ngValue]="null">— Оберіть студента —</option>
+                @for (s of students(); track s.id) {
+                <option [ngValue]="s.id">{{ getStudentLabel(s) }}</option>
+                }
+            </select>
+            @if (isInvalid('studentId')) {
+            <span class="field-hint">Студент є обов'язковим</span>
+            }
+        </div>
+
+        <!-- Роздільник -->
+        <div class="form-group full">
+            <div class="section-divider">
+                <span>Фільтрація спеціальності</span>
+            </div>
+        </div>
+
+        <!-- Факультет -->
+        <div class="form-group full">
+            <label class="form-label">Факультет *</label>
+            <select class="form-select" formControlName="facultyId" [class.error]="isInvalid('facultyId')"
+                (change)="onFacultyChange()">
+                <option [ngValue]="null">— Оберіть факультет —</option>
+                @for (f of faculties(); track f.id) {
+                <option [ngValue]="f.id">{{ f.name }}</option>
+                }
+            </select>
+            @if (isInvalid('facultyId')) {
+            <span class="field-hint">Оберіть факультет</span>
+            }
+        </div>
+
+        <!-- Рівень та тип навчання в один рядок -->
+        <div class="form-group">
+            <label class="form-label">Рівень *</label>
+            <select class="form-select" formControlName="degree" [class.error]="isInvalid('degree')"
+                (change)="onSpecialtyFilterChange()" [attr.disabled]="!form.get('facultyId')?.value ? true : null">
+                <option [ngValue]="null">— Оберіть —</option>
+                @for (d of degrees; track d) {
+                <option [ngValue]="d">{{ degreeLabel(d) }}</option>
+                }
+            </select>
+            @if (isInvalid('degree')) {
+            <span class="field-hint">Оберіть рівень</span>
+            }
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Форма навчання *</label>
+            <select class="form-select" formControlName="eduType" [class.error]="isInvalid('eduType')"
+                (change)="onSpecialtyFilterChange()" [attr.disabled]="!form.get('facultyId')?.value ? true : null">
+                <option [ngValue]="null">— Оберіть —</option>
+                @for (t of eduTypes; track t) {
+                <option [ngValue]="t">{{ eduTypeLabel(t) }}</option>
+                }
+            </select>
+            @if (isInvalid('eduType')) {
+            <span class="field-hint">Оберіть форму навчання</span>
+            }
+        </div>
+
+        <!-- Спеціальність — активна тільки коли всі три фільтри заповнені -->
+        <div class="form-group full">
+            <label class="form-label">Спеціальність *</label>
+            @if (specialties().length === 0 && form.get('facultyId')?.value && form.get('degree')?.value &&
+            form.get('eduType')?.value) {
+            <div class="no-specialties">
+                <i class="pi pi-info-circle"></i>
+                За обраними фільтрами спеціальностей не знайдено
+            </div>
+            } @else {
+            <select class="form-select" formControlName="specialtyId" [class.error]="isInvalid('specialtyId')"
+                [attr.disabled]="specialties().length === 0 ? true : null">
+                <option [ngValue]="null">
+                    @if (!form.get('degree')?.value || !form.get('eduType')?.value) {
+                    Спочатку оберіть рівень та форму навчання
+                    } @else {
+                    — Оберіть спеціальність —
+                    }
+                </option>
+                @for (sp of specialties(); track sp.id) {
+                <option [ngValue]="sp.id">{{ sp.code }} — {{ sp.nameUA }}</option>
+                }
+            </select>
+            }
+            @if (isInvalid('specialtyId')) {
+            <span class="field-hint">Оберіть спеціальність</span>
+            }
+        </div>
+
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="cancel()"><i class="pi pi-times"></i>Скасувати</button>
+        <button type="button" class="btn-primary" (click)="submit()">
+            <i class="pi" [class.pi-check]="!isEdit" [class.pi-save]="isEdit"></i>
+            {{ isEdit ? 'Зберегти' : 'Зареєструвати' }}
+        </button>
+    </div>
+</form>

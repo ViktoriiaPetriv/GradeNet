@@ -23,4 +23,19 @@ public class SpecialtySpecification {
         return (root, query, cb) ->
                 eduType == null ? null : cb.equal(root.get("eduType"), eduType);
     }
+
+    public static Specification<Specialty> hasCodeDegreeEduTypeOrg(
+            String code, Degree degree, EduType eduType, Long orgId) {
+        return (root, query, cb) -> {
+            if (code == null || degree == null || eduType == null || orgId == null) {
+                return null;
+            }
+            return cb.and(
+                    cb.equal(root.get("code"), code),
+                    cb.equal(root.get("degree"), degree),
+                    cb.equal(root.get("eduType"), eduType),
+                    cb.equal(root.get("organization").get("id"), orgId)
+            );
+        };
+    }
 }
