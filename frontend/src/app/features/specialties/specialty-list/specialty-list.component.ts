@@ -6,6 +6,7 @@ import { Specialty, Degree, EduType, OrganizationShort, OrgType } from '../../..
 import { ToastService } from '../../../core/services/toast.service';
 import { SpecialtyFormComponent } from '../specialty-form/specialty-form.component';
 import { PaginationComponent } from '../../../shared/pagination/pagination.component';
+import { AuthStateService } from '../../../core/services/auth-state.service';
 
 @Component({
   selector: 'app-specialty-list',
@@ -38,6 +39,10 @@ export class SpecialtyListComponent implements OnInit {
   private toastService = inject(ToastService);
   private router = inject(Router);
 
+  private authState = inject(AuthStateService);
+  isAdmin = this.authState.isAdmin;
+  isManager = this.authState.isManager;
+
   constructor(
     private specialtyService: SpecialtyService,
     private orgService: OrgService,
@@ -63,8 +68,22 @@ export class SpecialtyListComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.orgService.getAllShort(OrgType.FACULTY).subscribe((f) => this.faculties.set(f));
-    this.orgService.getAllShort(OrgType.DEPARTMENT).subscribe((d) => this.departments.set(d));
+
+    console.log('currentUser:', this.authState.currentUser());
+    console.log('managerFacultyId:', this.authState.managerFacultyId());
+    if (this.isManager()) {
+      const facultyId = this.authState.managerFacultyId();
+      if (facultyId) {
+        this.selectedFacultyId.set(facultyId);
+        this.orgService.getDepartmentsByFaculty(facultyId).subscribe((d) => {
+          this.departments.set(d);
+        });
+      }
+    } else {
+      this.orgService.getAllShort(OrgType.FACULTY).subscribe((f) => this.faculties.set(f));
+      this.orgService.getAllShort(OrgType.DEPARTMENT).subscribe((d) => this.departments.set(d));
+    }
+
     this.load();
   }
 

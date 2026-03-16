@@ -48,4 +48,8 @@ export class OrgService {
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
+
+  getDepartmentsByFaculty(facultyId: number): Observable<OrganizationShort[]> {
+    return this.http.get<OrganizationShort[]>(`${this.apiUrl}/${facultyId}/departments`);
+  }
 }

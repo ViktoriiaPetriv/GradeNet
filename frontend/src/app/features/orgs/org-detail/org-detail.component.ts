@@ -5,6 +5,7 @@ import { OrgService } from '../../../core/services/org.service';
 import { Organization, OrgType } from '../../../models/org.model';
 import { ToastService } from '../../../core/services/toast.service';
 import { OrgModalComponent } from '../org-modal/org-modal.component';
+import { AuthStateService } from '../../../core/services/auth-state.service';
 
 @Component({
   selector: 'app-org-detail',
@@ -27,6 +28,9 @@ export class OrgDetailComponent implements OnInit {
   private router = inject(Router);
   private orgService = inject(OrgService);
   private toastService = inject(ToastService);
+
+  private authState = inject(AuthStateService);
+  isAdmin = this.authState.isAdmin;
 
   ngOnInit() {
     this.route.paramMap.subscribe((params) => {

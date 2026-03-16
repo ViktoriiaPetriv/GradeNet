@@ -117,6 +117,7 @@
     border-radius: 10px;
     padding: 0 14px;
     transition: border-color 0.2s, box-shadow 0.2s;
+    position: relative;
 }
 
 .field-wrap:focus-within {
@@ -143,6 +144,10 @@
     font-size: 14.5px;
     color: #111;
     padding: 12px 0;
+}
+
+.field-wrap .field-input {
+    padding-right: 2.5rem;
 }
 
 .field-input::placeholder {

@@ -7,6 +7,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { Router } from '@angular/router';
 import { UserModalComponent } from '../user-modal/user-modal.component';
 import { PaginationComponent } from '../../../shared/pagination/pagination.component';
+import { AuthStateService } from '../../../core/services/auth-state.service';
 
 @Component({
   selector: 'app-user-list',
@@ -33,6 +34,10 @@ export class UserListComponent implements OnInit {
   private userService = inject(UserService);
   private toastService = inject(ToastService);
   private router = inject(Router);
+  private authState = inject(AuthStateService);
+
+  isAdmin = this.authState.isAdmin;
+  isAdminOrManager = this.authState.isAdminOrManager;
 
   totalPages = computed(() => Math.max(1, Math.ceil(this.filtered().length / this.perPage())));
 

@@ -13,9 +13,10 @@ public record UserProfileDTO(
         String email,
         LocalDate birthDate,
         Role role,
+        Long orgId,
         List<StudentInfoDTO> books
 ) {
     public UserProfileDTO withBooks(List<StudentInfoDTO> books) {
-        return new UserProfileDTO(id, firstName, lastName, patronymic, email, birthDate, role, books);
+        return new UserProfileDTO(id, firstName, lastName, patronymic, email, birthDate, role, orgId, books);
     }
 }

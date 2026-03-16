@@ -4,7 +4,12 @@
             <div class="page-title">Користувачі</div>
             <div class="page-subtitle">Управління обліковими записами системи</div>
         </div>
-        <button class="btn-primary" (click)="openCreate()"><i class="pi pi-plus"></i> Додати користувача</button>
+
+        @if (isAdminOrManager()) {
+        <button class="btn-primary" (click)="openCreate()">
+            <i class="pi pi-plus"></i> Додати користувача
+        </button>
+        }
     </div>
 
     <div class="filters">
@@ -26,17 +31,12 @@
                     <th>Email</th>
                     <th>Дата народження</th>
                     <th>Роль</th>
+                    @if (isAdminOrManager()) {
                     <th>Дії</th>
+                    }
                 </tr>
             </thead>
             <tbody>
-                @if (paginated().length === 0) {
-                <tr>
-                    <td colspan="5">
-                        <div class="empty-state">Користувачів не знайдено</div>
-                    </td>
-                </tr>
-                }
                 @for (user of paginated(); track user.id) {
                 <tr class="clickable-row" (click)="viewProfile(user.id)">
                     <td>
@@ -52,6 +52,7 @@
                     <td class="text-muted">{{ user.email }}</td>
                     <td class="text-muted">{{ formatDate(user.birthDate) }}</td>
                     <td><span class="role-badge role-{{ user.role }}">{{ roleLabel(user.role) }}</span></td>
+                    @if (isAdminOrManager()) {
                     <td>
                         <button class="action-btn edit" (click)="openEdit(user); $event.stopPropagation()">
                             <i class="pi pi-file-edit"></i>
@@ -60,19 +61,19 @@
                             <i class="pi pi-trash"></i>
                         </button>
                     </td>
+                    }
                 </tr>
                 }
             </tbody>
         </table>
 
-        <!-- ── PAGINATION ── -->
         <app-pagination [currentPage]="currentPage()" [totalPages]="totalPages()" [perPage]="perPage()"
             [info]="paginationInfo()" (pageChange)="onPageChange($event)" (perPageChange)="onPerPageChange($event)" />
     </div>
 </div>
 
 @if (modalOpen()) {
-<div class="modal-backdrop" (click)="closeModal()">
+<div class="modal-backdrop">
     <div class="modal" (click)="$event.stopPropagation()">
         <app-user-modal [user]="editingUser()" [mode]="isEdit() ? 'edit' : 'create'" (saved)="onSaved()"
             (cancelled)="closeModal()" />

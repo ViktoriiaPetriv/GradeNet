@@ -8,7 +8,9 @@ import { SpecialtyService } from '../../../core/services/specialty.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UserModalComponent } from '../user-modal/user-modal.component';
 import { UserService } from '../../../core/services/user.service';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin, of, catchError } from 'rxjs';
+import { ChangePasswordModalComponent } from '../change-password/change-password.component';
+import { AuthStateService } from '../../../core/services/auth-state.service';
 
 interface BookWithDetails {
   info: StudentInfo;
@@ -19,7 +21,7 @@ interface BookWithDetails {
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, UserModalComponent],
+  imports: [CommonModule, UserModalComponent, ChangePasswordModalComponent],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.css',
 })
@@ -29,21 +31,19 @@ export class ProfileComponent implements OnInit {
   editModalOpen = signal(false);
   editingUser = signal<User | null>(null);
   deleteModalOpen = signal(false);
+  changePasswordModalOpen = signal(false);
 
   private userService = inject(UserService);
   private specialtyService = inject(SpecialtyService);
   private tokenService = inject(TokenService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private authState = inject(AuthStateService);
 
   ngOnInit() {
     this.route.paramMap.subscribe((params) => {
       const id = params.get('id');
-      if (id === 'me') {
-        this.userService.getMyProfile().subscribe((p) => this.handleProfile(p));
-      } else if (id) {
-        this.loadProfile(+id);
-      }
+      if (id) this.loadProfile(+id);
     });
   }
 
@@ -65,23 +65,35 @@ export class ProfileComponent implements OnInit {
       p.books.map((book) =>
         book.specialtyId
           ? forkJoin({
-              specialty: this.specialtyService.getById(book.specialtyId),
-              orgInfo: this.specialtyService.getOrgInfo(book.specialtyId),
+              specialty: this.specialtyService
+                .getById(book.specialtyId)
+                .pipe(catchError(() => of(null))),
+              orgInfo: this.specialtyService
+                .getOrgInfo(book.specialtyId)
+                .pipe(catchError(() => of(null))),
             })
           : of({ specialty: null, orgInfo: null }),
       ),
-    ).subscribe((results) => {
-      const booksWithDetails: BookWithDetails[] = p.books.map((book, i) => ({
-        info: book,
-        specialty: results[i].specialty,
-        orgInfo: results[i].orgInfo,
-      }));
-      this.books.set(booksWithDetails);
+    ).subscribe({
+      next: (results) => {
+        this.books.set(
+          p.books.map((book, i) => ({
+            info: book,
+            specialty: results[i].specialty,
+            orgInfo: results[i].orgInfo,
+          })),
+        );
+      },
+      error: (err) => console.error('books load error', err),
     });
   }
 
   goBack() {
     this.router.navigate(['/users']);
+  }
+
+  get canGoBack(): boolean {
+    return !this.isOwner || this.isAdmin || this.isManager;
   }
 
   getInitials(): string {
@@ -126,19 +138,30 @@ export class ProfileComponent implements OnInit {
   }
 
   get isAdmin(): boolean {
-    return this.currentUser?.role === 'ADMIN';
+    return this.authState.isAdmin();
+  }
+
+  get isManager(): boolean {
+    return this.authState.isManager();
   }
 
   get isOwner(): boolean {
-    return this.currentUser?.id === this.profile()?.id;
+    return this.authState.currentUserId() === this.profile()?.id;
   }
 
-  get canEdit(): boolean {
-    return this.isAdmin || this.isOwner;
+  get canEditFull(): boolean {
+    return this.isAdmin || (this.isManager && this.profile()?.role === 'STUDENT');
   }
 
+  get canChangePassword(): boolean {
+    return this.isOwner && !this.isAdmin;
+  }
   get canDelete(): boolean {
-    return this.isAdmin;
+    return this.isAdmin || (this.isManager && this.profile()?.role === 'STUDENT');
+  }
+
+  changePassword() {
+    this.changePasswordModalOpen.set(true);
   }
 
   editProfile() {

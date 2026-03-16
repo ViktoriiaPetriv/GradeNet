@@ -1,15 +1,14 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, filter, tap } from 'rxjs';
+import { Observable, tap, ReplaySubject } from 'rxjs';
 import { AuthResponse, LoginRequest } from '../../models/auth.model';
 import { TokenService } from './token.service';
 import { AuthApiService } from './auth-api.service';
-import { User } from '../../models/user.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private _sessionReady$ = new BehaviorSubject<boolean | null>(null);
-  readonly sessionReady$ = this._sessionReady$.pipe(filter((v): v is boolean => v !== null));
+  private _sessionReady$ = new ReplaySubject<boolean>(1);
+  readonly sessionReady$ = this._sessionReady$.asObservable();
 
   private router = inject(Router);
   private tokenService = inject(TokenService);
@@ -54,7 +53,7 @@ export class AuthService {
 
   private finalizeLogout(): void {
     this.tokenService.clear();
-    this._sessionReady$.next(null);
+    this._sessionReady$.next(false);
     this.router.navigate(['/login']);
   }
 

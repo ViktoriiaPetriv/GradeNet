@@ -1,15 +1,21 @@
 <div class="page">
     @if (profile(); as p) {
 
-    <!-- Header (як у specialty-detail) -->
     <div class="detail-header">
+        @if (canGoBack) {
         <button class="back-btn" (click)="goBack()">
             <i class="pi pi-arrow-left"></i> Назад до списку
         </button>
+        }
         <div class="header-actions">
-            @if (canEdit) {
+            @if (canEditFull) {
             <button class="btn-edit" (click)="editProfile()">
                 <i class="pi pi-file-edit"></i> Редагувати
+            </button>
+            }
+            @if (canChangePassword) {
+            <button class="btn-edit" (click)="changePassword()">
+                <i class="pi pi-lock"></i> Змінити пароль
             </button>
             }
             @if (canDelete) {
@@ -20,7 +26,6 @@
         </div>
     </div>
 
-    <!-- Hero card (аватар + ім'я + роль) -->
     <div class="profile-hero">
         <div class="avatar">
             <i class="pi pi-user"></i>
@@ -136,7 +141,7 @@
 </div>
 
 @if (editModalOpen()) {
-<div class="modal-backdrop" (click)="editModalOpen.set(false)">
+<div class="modal-backdrop">
     <div class="modal" (click)="$event.stopPropagation()">
         <app-user-modal [user]="editingUser()" mode="edit" (saved)="onSaved()" (cancelled)="editModalOpen.set(false)" />
     </div>
@@ -160,9 +165,19 @@
             <p class="confirm-subtext">Цю дію неможливо скасувати.</p>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn-cancel" (click)="deleteModalOpen.set(false)"><i class="pi pi-times"></i>Скасувати</button>
+            <button type="button" class="btn-cancel" (click)="deleteModalOpen.set(false)"><i
+                    class="pi pi-times"></i>Скасувати</button>
             <button type="button" class="btn-danger" (click)="confirmDelete()">Видалити</button>
         </div>
+    </div>
+</div>
+}
+
+@if (changePasswordModalOpen()) {
+<div class="modal-backdrop">
+    <div class="modal" (click)="$event.stopPropagation()">
+        <app-change-password-modal [userId]="profile()!.id" (saved)="changePasswordModalOpen.set(false)"
+            (cancelled)="changePasswordModalOpen.set(false)" />
     </div>
 </div>
 }

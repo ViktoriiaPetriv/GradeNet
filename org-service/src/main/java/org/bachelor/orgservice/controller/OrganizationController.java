@@ -59,4 +59,9 @@ public class OrganizationController {
     ) {
         return organizationService.getAllShort(orgType);
     }
+
+    @GetMapping("/{id}/departments")
+    public List<OrganizationShortDTO> getDepartmentsByFaculty(@PathVariable Long id) {
+        return organizationService.getDepartmentsByFaculty(id);
+    }
 }

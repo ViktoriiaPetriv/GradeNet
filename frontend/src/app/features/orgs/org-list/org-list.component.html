@@ -4,9 +4,11 @@
             <div class="page-title">Організації</div>
             <div class="page-subtitle">Факультети та кафедри університету</div>
         </div>
+        @if (isAdmin()) {
         <button class="btn-primary" (click)="openCreate()">
             <i class="pi pi-plus"></i> Додати організацію
         </button>
+        }
     </div>
 
     <div class="filters">
@@ -55,6 +57,7 @@
                         <span class="type-badge type-{{ org.orgType }}">{{ orgTypeLabel(org.orgType) }}</span>
                     </td>
                     <td class="text-muted">{{ getParentName(org.parentId) }}</td>
+                    @if (isAdmin()) {
                     <td>
                         <button class="action-btn edit" (click)="openEdit(org); $event.stopPropagation()"
                             title="Редагувати">
@@ -65,6 +68,7 @@
                             <i class="pi pi-trash"></i>
                         </button>
                     </td>
+                    }
                 </tr>
                 }
             </tbody>
@@ -76,9 +80,8 @@
     </div>
 </div>
 
-<!-- Create / Edit modal -->
 @if (modalOpen()) {
-<div class="modal-backdrop" (click)="closeModal()">
+<div class="modal-backdrop">
     <div class="modal" (click)="$event.stopPropagation()">
         <app-org-modal [org]="editingOrg()" [mode]="isEdit() ? 'edit' : 'create'" (saved)="onSaved()"
             (cancelled)="closeModal()" />
@@ -86,7 +89,6 @@
 </div>
 }
 
-<!-- Delete modal -->
 @if (deleteModalOpen()) {
 <div class="modal-backdrop" (click)="closeDeleteModal()">
     <div class="modal modal-sm" (click)="$event.stopPropagation()">
@@ -104,7 +106,8 @@
             <p class="confirm-subtext">Цю дію неможливо скасувати.</p>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn-cancel" (click)="closeDeleteModal()"><i class="pi pi-times"></i>Скасувати</button>
+            <button type="button" class="btn-cancel" (click)="closeDeleteModal()"><i
+                    class="pi pi-times"></i>Скасувати</button>
             <button type="button" class="btn-danger" (click)="confirmDelete()">Видалити</button>
         </div>
     </div>

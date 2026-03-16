@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.bachelor.orgservice.model.dto.AuthenticatedUser;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -42,9 +43,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         Claims claims = jwtService.extractClaims(token);
         Long userId = claims.get("userId", Long.class);
         String role = claims.get("role", String.class);
+        Long orgId = claims.get("orgId") != null
+                ? ((Number) claims.get("orgId")).longValue()
+                : null;
+
+        AuthenticatedUser authenticatedUser = new AuthenticatedUser(userId, role, orgId);
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                userId,
+                authenticatedUser,
                 null,
                 List.of(new SimpleGrantedAuthority("ROLE_" + role))
         );

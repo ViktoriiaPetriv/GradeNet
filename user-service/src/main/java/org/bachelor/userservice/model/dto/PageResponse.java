@@ -20,4 +20,8 @@ public record PageResponse<T>(
                 page.getTotalPages()
         );
     }
+
+    public static <T> PageResponse<T> empty() {
+        return new PageResponse<>(List.of(), 0, 0, 0, 0);
+    }
 }

@@ -5,6 +5,7 @@ import { BookService } from '../../../core/services/book.service';
 import { BookNumber, BookNumberStatus } from '../../../models/book.model';
 import { ToastService } from '../../../core/services/toast.service';
 import { BookModalComponent } from '../book-modal/book-modal.component';
+import { AuthStateService } from '../../../core/services/auth-state.service';
 
 @Component({
   selector: 'app-book-list',
@@ -35,6 +36,10 @@ export class BookListComponent implements OnInit {
   private bookService = inject(BookService);
   private toastService = inject(ToastService);
   private router = inject(Router);
+  private authState = inject(AuthStateService);
+
+  isAdmin = this.authState.isAdmin;
+  isAdminOrManager = this.authState.isAdminOrManager;
 
   currentPageUi = computed(() => this.currentPage() + 1);
 

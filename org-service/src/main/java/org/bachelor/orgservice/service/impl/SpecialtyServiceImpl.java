@@ -1,10 +1,12 @@
 package org.bachelor.orgservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.bachelor.orgservice.exception.EntityExistsException;
 import org.bachelor.orgservice.exception.NotFoundException;
 import org.bachelor.orgservice.exception.RestException;
 import org.bachelor.orgservice.mapper.SpecialtyMapper;
+import org.bachelor.orgservice.model.dto.AuthenticatedUser;
 import org.bachelor.orgservice.model.dto.OrgInfoDTO;
 import org.bachelor.orgservice.model.dto.PageResponse;
 import org.bachelor.orgservice.model.dto.SpecialtyDTO;
@@ -18,12 +20,16 @@ import org.bachelor.orgservice.repository.OrganizationRepository;
 import org.bachelor.orgservice.repository.SpecialtyRepository;
 import org.bachelor.orgservice.repository.SpecialtySpecification;
 import org.bachelor.orgservice.service.SpecialtyService;
+import org.bachelor.orgservice.utils.SecurityUtils;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class SpecialtyServiceImpl implements SpecialtyService {
@@ -34,6 +40,7 @@ public class SpecialtyServiceImpl implements SpecialtyService {
 
     @Override
     public SpecialtyDTO create(SpecialtyRequestDTO dto) {
+        SecurityUtils.requireAdmin();
         validateUniqueness(dto, null);
         validateDates(dto);
 
@@ -47,6 +54,7 @@ public class SpecialtyServiceImpl implements SpecialtyService {
 
     @Override
     public SpecialtyDTO update(Long id, SpecialtyRequestDTO dto) {
+        SecurityUtils.requireAdmin();
         Specialty specialty = specialtyRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Спеціальність не знайдено"));
 
@@ -73,6 +81,8 @@ public class SpecialtyServiceImpl implements SpecialtyService {
 
     @Override
     public SpecialtyDTO getById(Long id) {
+        SecurityUtils.requireAdminOrManager();
+
         return specialtyRepository.findById(id)
                 .map(specialtyMapper::toDto)
                 .orElseThrow(() -> new NotFoundException("Спеціальність не знайдено"));
@@ -80,6 +90,8 @@ public class SpecialtyServiceImpl implements SpecialtyService {
 
     @Override
     public PageResponse<SpecialtyDTO> getAll(Degree degree, EduType eduType, Pageable pageable) {
+        SecurityUtils.requireAdminOrManager();
+
         Specification<Specialty> spec = SpecialtySpecification.hasDegree(degree)
                 .and(SpecialtySpecification.hasEduType(eduType));
 
@@ -88,6 +100,27 @@ public class SpecialtyServiceImpl implements SpecialtyService {
 
     @Override
     public PageResponse<SpecialtyDTO> getAllByOrganization(Long orgId, Degree degree, EduType eduType, Pageable pageable) {
+        AuthenticatedUser currentUser = SecurityUtils.getCurrentUser();
+
+        if (currentUser.isManager()) {
+            Long facultyId = currentUser.getOrgId();
+            boolean hasAccess = facultyId != null && facultyId.equals(orgId);
+
+            if (!hasAccess) {
+                Organization org = organizationRepository.findById(orgId)
+                        .orElseThrow(() -> new NotFoundException("Організацію не знайдено"));
+                hasAccess = org.getParent() != null
+                        && facultyId != null
+                        && facultyId.equals(org.getParent().getId());
+            }
+
+            if (!hasAccess) {
+                throw new AccessDeniedException("Немає доступу до цієї організації");
+            }
+        } else if (!currentUser.isAdmin()) {
+            throw new AccessDeniedException("Недостатньо прав");
+        }
+
         Organization organization = organizationRepository.findById(orgId)
                 .orElseThrow(() -> new NotFoundException("Організацію не знайдено"));
 
@@ -102,6 +135,8 @@ public class SpecialtyServiceImpl implements SpecialtyService {
 
     @Override
         public void delete(Long id) {
+        SecurityUtils.requireAdmin();
+
         Specialty specialty = specialtyRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Спеціальність не знайдено"));
 
@@ -137,7 +172,6 @@ public class SpecialtyServiceImpl implements SpecialtyService {
     }
 
     private void validateUniqueness(SpecialtyRequestDTO dto, Long currentId) {
-        // Використовуємо специфікацію для перевірки комбінації
         Specification<Specialty> spec = SpecialtySpecification.hasCodeDegreeEduTypeOrg(
                 dto.code(), dto.degree(), dto.eduType(), dto.orgId());
 
@@ -166,5 +200,23 @@ public class SpecialtyServiceImpl implements SpecialtyService {
                 department.getId(),
                 department.getName()
         );
+    }
+
+    @Override
+    public List<Long> getIdsByOrgIds(List<Long> orgIds) {
+        List<Long> expandedIds = new ArrayList<>(orgIds);
+
+        List<Long> departmentIds = organizationRepository
+                .findAllByParentIdInAndOrgType(orgIds, OrgType.DEPARTMENT)
+                .stream()
+                .map(Organization::getId)
+                .toList();
+
+        expandedIds.addAll(departmentIds);
+
+        return specialtyRepository.findAllByOrganizationIdIn(expandedIds)
+                .stream()
+                .map(Specialty::getId)
+                .toList();
     }
 }

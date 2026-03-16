@@ -14,4 +14,5 @@ public class UserDTO {
     private String email;
     private LocalDate birthDate;
     private Role role;
+    private Long orgId;
 }
