@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
+import org.bachelor.userservice.model.entity.UserOrganization;
 import org.bachelor.userservice.security.JwtProperties;
 import org.bachelor.userservice.model.entity.User;
 import org.springframework.stereotype.Service;
@@ -19,10 +20,16 @@ public class JwtService {
     private final JwtProperties jwtProperties;
 
     public String generateToken(User user) {
+        Long orgId = user.getOrganizations().stream()
+                .map(UserOrganization::getOrgId)
+                .findFirst()
+                .orElse(null);
+
         return Jwts.builder()
                 .subject(user.getEmail())
                 .claim("userId", user.getId())
                 .claim("role", user.getRole().name())
+                .claim("orgId", orgId)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
                 .signWith(getSigningKey())
@@ -30,10 +37,16 @@ public class JwtService {
     }
 
     public String generateRefreshToken(User user) {
+        Long orgId = user.getOrganizations().stream()
+                .map(UserOrganization::getOrgId)
+                .findFirst()
+                .orElse(null);
+
         return Jwts.builder()
                 .subject(user.getEmail())
                 .claim("userId", user.getId())
                 .claim("role", user.getRole().name())
+                .claim("orgId", orgId)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtProperties.getRefreshExpiration()))
                 .signWith(getSigningKey())

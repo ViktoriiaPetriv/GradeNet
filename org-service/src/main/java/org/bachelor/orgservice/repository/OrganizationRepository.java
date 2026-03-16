@@ -17,4 +17,5 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
     List<Organization> findAllByParentIdAndOrgType(Long parentId, OrgType orgType);
     List<Organization> findAllByOrgType(OrgType orgType);
     Page<Organization> findAllByOrgType(OrgType orgType, Pageable pageable);
+    List<Organization> findAllByParentIdInAndOrgType(List<Long> parentIds, OrgType orgType);
 }

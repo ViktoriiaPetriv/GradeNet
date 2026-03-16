@@ -14,18 +14,22 @@
 
     <div class="nav-section">Навігація</div>
     <ul class="nav-links">
+        @if (isAdmin()) {
+        <li routerLink="/orgs" routerLinkActive="active" (click)="close()">
+            <i class="pi pi-building"></i> Організації
+        </li>
+        }
+        @if (isAdminOrManager()) {
         <li routerLink="/users" routerLinkActive="active" (click)="close()">
-            👤 Користувачі
+            <i class="pi pi-users"></i> Користувачі
         </li>
         <li routerLink="/books" routerLinkActive="active" (click)="close()">
-            📋 Залікова книжка
-        </li>
-        <li routerLink="/orgs" routerLinkActive="active" (click)="close()">
-            🏛️ Організації
+            <i class="pi pi-book"></i> Залікова книжка
         </li>
         <li routerLink="/specialties" routerLinkActive="active" (click)="close()">
-            📚 Спеціальності
+            <i class="pi pi-graduation-cap"></i> Спеціальності
         </li>
+        }
     </ul>
 
     <div class="nav-divider"></div>
@@ -33,14 +37,14 @@
     <div class="nav-section">Інші</div>
     <ul class="nav-links">
         <li routerLink="/settings" routerLinkActive="active" (click)="close()">
-            ⚙ Налаштування
+            <i class="pi pi-cog"></i> Налаштування
         </li>
     </ul>
 
     <div class="nav-bottom">
         <div class="user-card" (click)="goToProfile()" style="cursor: pointer;">
             <div class="user-avatar"><i class="pi pi-user"></i></div>
-            <div>
+            <div class="user-info">
                 <div class="user-info-name">{{ currentUser()?.email }}</div>
                 <div class="user-info-role">{{ roleLabel(currentUser()?.role) }}</div>
             </div>

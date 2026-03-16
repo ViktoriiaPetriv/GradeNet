@@ -16,4 +16,5 @@ public interface OrganizationService {
     void delete(Long id);
     PageResponse<OrganizationDTO> getAll(OrgType orgType, Pageable pageable);
     List<OrganizationShortDTO> getAllShort(OrgType orgType);
+    List<OrganizationShortDTO> getDepartmentsByFaculty(Long facultyId);
 }

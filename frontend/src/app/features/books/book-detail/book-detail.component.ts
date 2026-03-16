@@ -9,6 +9,7 @@ import { OrgInfo, Specialty } from '../../../models/org.model';
 import { User } from '../../../models/user.model';
 import { ToastService } from '../../../core/services/toast.service';
 import { BookModalComponent } from '../book-modal/book-modal.component';
+import { AuthStateService } from '../../../core/services/auth-state.service';
 
 @Component({
   selector: 'app-book-detail',
@@ -34,6 +35,10 @@ export class BookDetailComponent implements OnInit {
   private userService = inject(UserService);
   private specialtyService = inject(SpecialtyService);
   private toastService = inject(ToastService);
+  private authState = inject(AuthStateService);
+
+  isAdmin = this.authState.isAdmin;
+  isAdminOrManager = this.authState.isAdminOrManager;
 
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('id'));

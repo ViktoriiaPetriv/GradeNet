@@ -6,22 +6,26 @@
             <i class="pi pi-arrow-left"></i> Назад
         </button>
         <div class="header-actions">
-            @if (b.status === 'REGISTERED') {
+            @if (isAdminOrManager() && b.status === 'REGISTERED') {
             <button class="btn-warning" (click)="fillModalOpen.set(true)">
                 <i class="pi pi-check"></i> Позначити заповненою
             </button>
             }
-            @if (b.status === 'FILLED') {
+            @if (isAdminOrManager() && b.status === 'FILLED') {
             <button class="btn-purple" (click)="handModalOpen.set(true)">
                 <i class="pi pi-send"></i> Видати студенту
             </button>
             }
+            @if (isAdminOrManager()) {
             <button class="btn-secondary" (click)="editModalOpen.set(true)">
                 <i class="pi pi-file-edit"></i> Редагувати
             </button>
+            }
+            @if (isAdmin()) {
             <button class="btn-danger-outline" (click)="deleteModalOpen.set(true)">
                 <i class="pi pi-trash"></i> Видалити
             </button>
+            }
         </div>
     </div>
 
@@ -111,7 +115,7 @@
 
 <!-- Edit modal -->
 @if (editModalOpen()) {
-<div class="modal-backdrop" (click)="editModalOpen.set(false)">
+<div class="modal-backdrop">
     <div class="modal" (click)="$event.stopPropagation()">
         <app-book-modal [book]="book()" mode="edit" (saved)="onSaved()" (cancelled)="editModalOpen.set(false)" />
     </div>
@@ -136,7 +140,8 @@
             <p class="confirm-subtext">Цю дію неможливо скасувати.</p>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn-cancel" (click)="deleteModalOpen.set(false)"><i class="pi pi-times"></i>Скасувати</button>
+            <button type="button" class="btn-cancel" (click)="deleteModalOpen.set(false)"><i
+                    class="pi pi-times"></i>Скасувати</button>
             <button type="button" class="btn-danger" (click)="confirmDelete()">Видалити</button>
         </div>
     </div>
@@ -161,7 +166,8 @@
             <p class="confirm-subtext">Статус буде змінено на «Заповнено».</p>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn-cancel" (click)="fillModalOpen.set(false)"><i class="pi pi-times"></i>Скасувати</button>
+            <button type="button" class="btn-cancel" (click)="fillModalOpen.set(false)"><i
+                    class="pi pi-times"></i>Скасувати</button>
             <button type="button" class="btn-confirm-warning" (click)="confirmFill()">Підтвердити</button>
         </div>
     </div>
@@ -186,7 +192,8 @@
             <p class="confirm-subtext">Статус буде змінено на «Видано».</p>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn-cancel" (click)="handModalOpen.set(false)"><i class="pi pi-times"></i>Скасувати</button>
+            <button type="button" class="btn-cancel" (click)="handModalOpen.set(false)"><i
+                    class="pi pi-times"></i>Скасувати</button>
             <button type="button" class="btn-confirm-purple" (click)="confirmHand()">Видати</button>
         </div>
     </div>

@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.bachelor.userservice.exception.NotFoundException;
 import org.bachelor.userservice.exception.ValidationException;
 import org.bachelor.userservice.mapper.UserMapper;
+import org.bachelor.userservice.model.dto.AuthenticatedUser;
+import org.bachelor.userservice.model.dto.ChangePasswordRequestDTO;
 import org.bachelor.userservice.model.dto.StudentInfoDTO;
 import org.bachelor.userservice.model.dto.UserDTO;
 import org.bachelor.userservice.model.dto.UserProfileDTO;
@@ -14,12 +16,16 @@ import org.bachelor.userservice.model.entity.UserOrganization;
 import org.bachelor.userservice.repository.BookNumberRepository;
 import org.bachelor.userservice.repository.UserOrganizationRepository;
 import org.bachelor.userservice.repository.UserRepository;
+import org.bachelor.userservice.service.AccessControlService;
 import org.bachelor.userservice.service.UserService;
+import org.bachelor.userservice.utils.SecurityUtils;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @RequiredArgsConstructor
 @Service
@@ -28,6 +34,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final BookNumberRepository bookNumberRepository;
     private final UserOrganizationRepository userOrganizationRepository;
+    private final AccessControlService accessControlService;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
 
@@ -35,15 +42,25 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public List<UserDTO> findAll() {
-        return userRepository.findAll()
-                .stream()
-                .map(userMapper::toDto)
-                .toList();
+        AuthenticatedUser currentUser = SecurityUtils.getCurrentUser();
+
+        if (currentUser.isAdmin()) {
+            return userRepository.findAll().stream().map(userMapper::toDto).toList();
+        }
+
+        if (currentUser.isManager()) {
+            Set<Long> allIds = accessControlService.getAllowedUserIdsForManager();
+            if (allIds.isEmpty()) return List.of();
+            return userRepository.findAllById(allIds).stream().map(userMapper::toDto).toList();
+        }
+
+        throw new AccessDeniedException("Недостатньо прав");
     }
 
     @Override
     @Transactional(readOnly = true)
     public UserDTO findById(Long id) {
+        accessControlService.requireAdminOrManagerOfUser(id);
         return userMapper.toDto(getUserOrThrow(id));
     }
 
@@ -74,21 +91,22 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserDTO update(Long id, UserRequestDTO request) {
+        AuthenticatedUser currentUser = SecurityUtils.getCurrentUser();
+
+        if (!currentUser.isAdmin()) {
+            throw new AccessDeniedException("Недостатньо прав для редагування профілю");
+        }
+
         User user = getUserOrThrow(id);
 
         if (!user.getEmail().equals(request.email())
                 && userRepository.findByEmail(request.email()).isPresent()) {
-            throw new ValidationException("Користувач з такою електронною поштою вже існує: %s".formatted(request.email()));
+            throw new ValidationException("Користувач з такою електронною поштою вже існує: %s"
+                    .formatted(request.email()));
         }
 
-        validatePassword(request.password());
         validateFieldsByRole(request);
-
         userMapper.updateEntity(request, user);
-
-        if (request.password() != null && !request.password().isBlank()) {
-            user.setPassword(passwordEncoder.encode(request.password()));
-        }
 
         if (request.role() == Role.MANAGER && request.orgId() != null) {
             updateManagerOrganization(user, request.orgId());
@@ -149,6 +167,8 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public UserProfileDTO getProfile(Long id) {
+        accessControlService.requireAdminOrManagerOfUser(id);
+
         User user = getUserOrThrow(id);
         UserProfileDTO profile = userMapper.toProfileDto(user);
 
@@ -182,5 +202,27 @@ public class UserServiceImpl implements UserService {
         if (!password.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$")) {
             throw new ValidationException("Пароль має містити мінімум 8 символів, велику і малу літеру, цифру та спецсимвол (@$!%*?&)");
         }
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(Long id, ChangePasswordRequestDTO request) {
+        AuthenticatedUser currentUser = SecurityUtils.getCurrentUser();
+
+        if (!currentUser.isAdmin() && !currentUser.getUserId().equals(id)) {
+            throw new AccessDeniedException("Ви можете змінювати тільки свій пароль");
+        }
+
+        if (currentUser.isAdmin() && !currentUser.getUserId().equals(id)) {
+            User target = getUserOrThrow(id);
+            if (target.getRole() == Role.ADMIN) {
+                throw new AccessDeniedException("Адміністратор не може змінювати пароль іншому адміністратору");
+            }
+        }
+
+        User user = getUserOrThrow(id);
+        validatePassword(request.newPassword());
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
     }
 }

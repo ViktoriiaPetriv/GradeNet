@@ -5,6 +5,7 @@ import { Organization, OrgType } from '../../../models/org.model';
 import { ToastService } from '../../../core/services/toast.service';
 import { PaginationComponent } from '../../../shared/pagination/pagination.component';
 import { OrgModalComponent } from '../org-modal/org-modal.component';
+import { AuthStateService } from '../../../core/services/auth-state.service';
 
 @Component({
   selector: 'app-org-list',
@@ -35,6 +36,9 @@ export class OrgListComponent implements OnInit {
   private orgService = inject(OrgService);
   private toastService = inject(ToastService);
   private router = inject(Router);
+
+  private authState = inject(AuthStateService);
+  isAdmin = this.authState.isAdmin;
 
   currentPageUi = computed(() => this.currentPage() + 1);
 

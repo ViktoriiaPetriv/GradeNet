@@ -2,14 +2,14 @@ package org.bachelor.userservice.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.bachelor.userservice.model.dto.ChangePasswordRequestDTO;
 import org.bachelor.userservice.model.dto.UserDTO;
 import org.bachelor.userservice.model.dto.UserProfileDTO;
 import org.bachelor.userservice.model.dto.UserRequestDTO;
 import org.bachelor.userservice.service.UserService;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -53,16 +53,13 @@ public class UserController {
         userService.delete(id);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}/profile")
     public UserProfileDTO getProfile(@PathVariable Long id) {
         return userService.getProfile(id);
     }
 
-    @GetMapping("/me/profile")
-    public UserProfileDTO getMyProfile(Authentication authentication) {
-        Long userId = (Long) authentication.getPrincipal();
-        return userService.getProfile(userId);
+    @PatchMapping("/{id}/password")
+    public void changePassword(@PathVariable Long id, @Valid @RequestBody ChangePasswordRequestDTO request) {
+        userService.changePassword(id, request);
     }
-
 }

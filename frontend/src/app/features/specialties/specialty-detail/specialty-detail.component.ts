@@ -4,6 +4,7 @@ import { SpecialtyService } from '../../../core/services/specialty.service';
 import { Specialty, OrgInfo } from '../../../models/org.model';
 import { ToastService } from '../../../core/services/toast.service';
 import { SpecialtyFormComponent } from '../specialty-form/specialty-form.component';
+import { AuthStateService } from '../../../core/services/auth-state.service';
 
 @Component({
   selector: 'app-specialty-detail',
@@ -22,6 +23,9 @@ export class SpecialtyDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private toastService = inject(ToastService);
+
+  private authState = inject(AuthStateService);
+  isAdmin = this.authState.isAdmin;
 
   constructor(private specialtyService: SpecialtyService) {}
 

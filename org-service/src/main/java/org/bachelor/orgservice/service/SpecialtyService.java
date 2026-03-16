@@ -8,6 +8,7 @@ import org.bachelor.orgservice.model.entity.Degree;
 import org.bachelor.orgservice.model.entity.EduType;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 
 public interface SpecialtyService {
     SpecialtyDTO create(SpecialtyRequestDTO dto);
@@ -23,4 +24,6 @@ public interface SpecialtyService {
     void delete(Long id);
 
     OrgInfoDTO getOrgInfo(Long specialtyId);
+
+    List<Long> getIdsByOrgIds(List<Long> orgIds);
 }

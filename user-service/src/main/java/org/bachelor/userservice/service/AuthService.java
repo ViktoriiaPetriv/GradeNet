@@ -31,7 +31,7 @@ public class AuthService {
     private final JwtProperties jwtProperties;
 
     public AuthResponseDTO login(LoginRequestDTO request, HttpServletResponse response) {
-        User user = userRepository.findByEmail(request.email())
+        User user = userRepository.findByEmailWithOrgs(request.email())
                 .orElseThrow(() -> new NotFoundException("Користувача не знайдено"));
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
@@ -54,7 +54,7 @@ public class AuthService {
         }
 
         String email = jwtService.extractClaims(refreshToken).getSubject();
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmailWithOrgs(email)
                 .orElseThrow(() -> new NotFoundException("Користувача не знайдено"));
 
         String newAccessToken = jwtService.generateToken(user);

@@ -1,13 +1,15 @@
 import { Component, signal, inject } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { AuthStateService } from '../../../core/services/auth-state.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, CommonModule],
   templateUrl: './login.component.html',
   styleUrl: './login.component.css',
 })
@@ -18,6 +20,7 @@ export class LoginComponent {
   showPassword = signal(false);
 
   private toastService = inject(ToastService);
+  private authState = inject(AuthStateService);
 
   constructor(
     private fb: FormBuilder,
@@ -26,7 +29,7 @@ export class LoginComponent {
   ) {
     this.form = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
+      password: ['', [Validators.required, Validators.minLength(8)]],
     });
   }
 
@@ -52,7 +55,12 @@ export class LoginComponent {
       next: () => {
         this.loading.set(false);
         this.toastService.success('Ласкаво просимо!');
-        this.router.navigate(['/users']);
+
+        if (this.authState.isAdminOrManager()) {
+          this.router.navigate(['/users']);
+        } else {
+          this.router.navigate(['/profile', this.authState.currentUserId()]);
+        }
       },
       error: (err) => {
         this.loading.set(false);

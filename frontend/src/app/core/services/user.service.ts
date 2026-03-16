@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { User, UserRequest, UserProfile } from '../../models/user.model';
+import { User, UserRequest, UserProfile, ChangePasswordRequest } from '../../models/user.model';
 
 @Injectable({ providedIn: 'root' })
 export class UserService {
@@ -35,5 +35,9 @@ export class UserService {
 
   getMyProfile(): Observable<UserProfile> {
     return this.http.get<UserProfile>(`${this.apiUrl}/me/profile`);
+  }
+
+  changePassword(id: number, request: ChangePasswordRequest): Observable<void> {
+    return this.http.patch<void>(`${this.apiUrl}/${id}/password`, request);
   }
 }

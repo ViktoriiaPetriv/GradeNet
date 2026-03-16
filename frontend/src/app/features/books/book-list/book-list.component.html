@@ -4,9 +4,11 @@
             <div class="page-title">Залікові книжки</div>
             <div class="page-subtitle">Реєстрація та управління заліковими книжками</div>
         </div>
+        @if (isAdminOrManager()) {
         <button class="btn-primary" (click)="openCreate()">
             <i class="pi pi-plus"></i> Зареєструвати
         </button>
+        }
     </div>
 
     <div class="filters">
@@ -56,33 +58,32 @@
                         </span>
                     </td>
                     <td>
-                        <button class="action-btn edit" (click)="openEdit(book); $event.stopPropagation()"
-                            title="Редагувати">
+                        @if (isAdminOrManager()) {
+                        <button class="action-btn edit" (click)="openEdit(book); $event.stopPropagation()">
                             <i class="pi pi-file-edit"></i>
                         </button>
-                        @if (book.status === 'REGISTERED') {
-                        <button class="action-btn fill" (click)="openFillModal(book); $event.stopPropagation()"
-                            title="Позначити заповненою">
+                        }
+                        @if (isAdminOrManager() && book.status === 'REGISTERED') {
+                        <button class="action-btn fill" (click)="openFillModal(book); $event.stopPropagation()">
                             <i class="pi pi-check" style="color: #D97706;"></i>
                         </button>
                         }
-                        @if (book.status === 'FILLED') {
-                        <button class="action-btn hand" (click)="openHandModal(book); $event.stopPropagation()"
-                            title="Видати студенту">
+                        @if (isAdminOrManager() && book.status === 'FILLED') {
+                        <button class="action-btn hand" (click)="openHandModal(book); $event.stopPropagation()">
                             <i class="pi pi-send" style="color: #7C3AED;"></i>
                         </button>
                         }
-                        <button class="action-btn delete" (click)="openDeleteModal(book); $event.stopPropagation()"
-                            title="Видалити">
+                        @if (isAdmin()) {
+                        <button class="action-btn delete" (click)="openDeleteModal(book); $event.stopPropagation()">
                             <i class="pi pi-trash"></i>
                         </button>
+                        }
                     </td>
                 </tr>
                 }
             </tbody>
         </table>
 
-        <!-- ── PAGINATION ── -->
         <div class="pagination">
             <div class="pagination-left">
                 <span class="pagination-info">{{ paginationInfo() }}</span>
@@ -128,9 +129,8 @@
     </div>
 </div>
 
-<!-- Edit / Create modal -->
 @if (modalOpen()) {
-<div class="modal-backdrop" (click)="closeModal()">
+<div class="modal-backdrop">
     <div class="modal" (click)="$event.stopPropagation()">
         <app-book-modal [book]="editingBook()" [mode]="isEdit() ? 'edit' : 'create'" (saved)="onSaved()"
             (cancelled)="closeModal()" />
@@ -138,7 +138,6 @@
 </div>
 }
 
-<!-- Delete confirmation modal -->
 @if (deleteModalOpen()) {
 <div class="modal-backdrop" (click)="closeDeleteModal()">
     <div class="modal modal-sm" (click)="$event.stopPropagation()">
@@ -157,14 +156,14 @@
             <p class="delete-subtext">Цю дію неможливо скасувати.</p>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn-cancel" (click)="closeDeleteModal()"><i class="pi pi-times"></i>Скасувати</button>
+            <button type="button" class="btn-cancel" (click)="closeDeleteModal()"><i
+                    class="pi pi-times"></i>Скасувати</button>
             <button type="button" class="btn-danger" (click)="confirmDelete()">Видалити</button>
         </div>
     </div>
 </div>
 }
 
-<!-- Fill confirmation modal -->
 @if (fillModalOpen()) {
 <div class="modal-backdrop" (click)="closeFillModal()">
     <div class="modal modal-sm" (click)="$event.stopPropagation()">
@@ -182,14 +181,14 @@
             <p class="delete-subtext">Статус буде змінено на «Заповнено».</p>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn-cancel" (click)="closeFillModal()"><i class="pi pi-times"></i>Скасувати</button>
+            <button type="button" class="btn-cancel" (click)="closeFillModal()"><i
+                    class="pi pi-times"></i>Скасувати</button>
             <button type="button" class="btn-confirm-warning" (click)="confirmFill()">Підтвердити</button>
         </div>
     </div>
 </div>
 }
 
-<!-- Hand confirmation modal -->
 @if (handModalOpen()) {
 <div class="modal-backdrop" (click)="closeHandModal()">
     <div class="modal modal-sm" (click)="$event.stopPropagation()">
@@ -207,7 +206,8 @@
             <p class="delete-subtext">Статус буде змінено на «Видано».</p>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn-cancel" (click)="closeHandModal()"><i class="pi pi-times"></i>Скасувати</button>
+            <button type="button" class="btn-cancel" (click)="closeHandModal()"><i
+                    class="pi pi-times"></i>Скасувати</button>
             <button type="button" class="btn-confirm-purple" (click)="confirmHand()">Видати</button>
         </div>
     </div>

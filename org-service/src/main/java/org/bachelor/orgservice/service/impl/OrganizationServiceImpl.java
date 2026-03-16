@@ -1,10 +1,12 @@
 package org.bachelor.orgservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.bachelor.orgservice.exception.EntityExistsException;
 import org.bachelor.orgservice.exception.NotFoundException;
 import org.bachelor.orgservice.exception.RestException;
 import org.bachelor.orgservice.mapper.OrganizationMapper;
+import org.bachelor.orgservice.model.dto.AuthenticatedUser;
 import org.bachelor.orgservice.model.dto.OrganizationDTO;
 import org.bachelor.orgservice.model.dto.OrganizationRequestDTO;
 import org.bachelor.orgservice.model.dto.OrganizationShortDTO;
@@ -13,11 +15,13 @@ import org.bachelor.orgservice.model.entity.OrgType;
 import org.bachelor.orgservice.model.entity.Organization;
 import org.bachelor.orgservice.repository.OrganizationRepository;
 import org.bachelor.orgservice.service.OrganizationService;
+import org.bachelor.orgservice.utils.SecurityUtils;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class OrganizationServiceImpl implements OrganizationService {
@@ -27,6 +31,8 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     @Override
     public OrganizationDTO create(OrganizationRequestDTO dto) {
+        SecurityUtils.requireAdmin();
+
         if (organizationRepository.findByName(dto.name()).isPresent()) {
             throw new EntityExistsException("Організація з такою назвою вже існує");
         }
@@ -41,6 +47,8 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     @Override
     public OrganizationDTO update(Long id, OrganizationRequestDTO dto) {
+        SecurityUtils.requireAdmin();
+
         Organization organization = organizationRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Організацію не знайдено"));
 
@@ -85,6 +93,8 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     @Override
     public OrganizationDTO getById(Long id) {
+        SecurityUtils.requireAdminOrManager();
+
         return organizationRepository.findById(id)
                 .map(organizationMapper::toDto)
                 .orElseThrow(() -> new NotFoundException("Організацію не знайдено"));
@@ -92,6 +102,8 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     @Override
     public void delete(Long id) {
+        SecurityUtils.requireAdmin();
+
         Organization organization = organizationRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Організацію не знайдено"));
 
@@ -104,6 +116,8 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     @Override
     public PageResponse<OrganizationDTO> getAll(OrgType orgType, Pageable pageable) {
+        SecurityUtils.requireAdminOrManager();
+
         if (orgType != null) {
             return PageResponse.of(
                     organizationRepository.findAllByOrgType(orgType, pageable)
@@ -118,6 +132,10 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     @Override
     public List<OrganizationShortDTO> getAllShort(OrgType orgType) {
+        AuthenticatedUser user = SecurityUtils.getCurrentUser();
+        log.debug("getAllShort called by: userId={}, role={}", user.getUserId(), user.role());
+        SecurityUtils.requireAdminOrManager();
+
         if (orgType != null) {
             return organizationRepository.findAllByOrgType(orgType)
                     .stream()
@@ -144,5 +162,15 @@ public class OrganizationServiceImpl implements OrganizationService {
             }
             current = current.getParent();
         }
+    }
+
+    @Override
+    public List<OrganizationShortDTO> getDepartmentsByFaculty(Long facultyId) {
+        SecurityUtils.requireAdminOrManager();
+        return organizationRepository
+                .findAllByParentIdAndOrgType(facultyId, OrgType.DEPARTMENT)
+                .stream()
+                .map(organizationMapper::toShortDto)
+                .toList();
     }
 }

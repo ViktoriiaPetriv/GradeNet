@@ -7,6 +7,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.bachelor.userservice.model.dto.AuthenticatedUser;
+import org.bachelor.userservice.model.entity.Role;
 import org.bachelor.userservice.service.JwtService;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -29,16 +31,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         String authHeader = request.getHeader("Authorization");
-        log.info("Auth header: {}", authHeader);
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            log.info("No Bearer token found");
             filterChain.doFilter(request, response);
             return;
         }
 
         String token = authHeader.substring(7);
-        log.info("Token valid: {}", jwtService.isTokenValid(token));
 
         if (!jwtService.isTokenValid(token)) {
             filterChain.doFilter(request, response);
@@ -46,18 +45,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         Claims claims = jwtService.extractClaims(token);
-        Number userIdNumber = (Number) claims.get("userId");
-        Long userId = userIdNumber != null ? userIdNumber.longValue() : null;
-        String role = claims.get("role", String.class);
 
-        log.info("userId: {}, role: {}", userId, role);
+        Long userId = ((Number) claims.get("userId")).longValue();
+        Role role = Role.valueOf(claims.get("role", String.class));
+        Long orgId = claims.get("orgId") != null
+                ? ((Number) claims.get("orgId")).longValue()
+                : null;
 
-        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                userId, token, List.of(new SimpleGrantedAuthority("ROLE_" + role))
-        );
+        AuthenticatedUser authUser = new AuthenticatedUser(userId, role, orgId);
+
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                        authUser, token,
+                        List.of(new SimpleGrantedAuthority("ROLE_" + role))
+                );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        log.info("Authentication set: {}", SecurityContextHolder.getContext().getAuthentication());
         filterChain.doFilter(request, response);
     }
 }

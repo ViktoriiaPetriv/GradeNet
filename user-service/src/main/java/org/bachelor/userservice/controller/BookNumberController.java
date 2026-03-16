@@ -41,7 +41,9 @@ public class BookNumberController {
 
         Pageable pageable = PageRequest.of(
                 pageNumber, size,
-                sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending()
+                sortDir.equalsIgnoreCase("desc")
+                        ? Sort.by(sortBy).descending()
+                        : Sort.by(sortBy).ascending()
         );
 
         return bookNumberService.findAll(number, pageable);

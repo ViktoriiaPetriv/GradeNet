@@ -42,3 +42,7 @@ export interface UserProfile {
   role: string;
   books: StudentInfo[];
 }
+
+export interface ChangePasswordRequest {
+  newPassword: string;
+}

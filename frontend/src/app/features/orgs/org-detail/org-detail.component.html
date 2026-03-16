@@ -9,11 +9,11 @@
     @if (!loading() && org(); as o) {
     <div class="detail-layout">
 
-        <!-- Header -->
         <div class="detail-header">
             <button class="back-btn" (click)="goBack()">
                 <i class="pi pi-arrow-left"></i> Назад до списку
             </button>
+            @if (isAdmin()) {
             <div class="header-actions">
                 <button class="btn-edit" (click)="openEdit()">
                     <i class="pi pi-file-edit"></i> Редагувати
@@ -22,9 +22,9 @@
                     <i class="pi pi-trash"></i> Видалити
                 </button>
             </div>
+            }
         </div>
 
-        <!-- Hero card -->
         <div class="hero-card">
             <div class="hero-avatar" [style.background]="getAvatarColor(o.id)">
                 {{ o.name[0] }}
@@ -42,10 +42,8 @@
             </div>
         </div>
 
-        <!-- Content -->
         <div class="content-grid">
 
-            <!-- Основна інформація -->
             <div class="info-card">
                 <div class="card-title"><i class="pi pi-info-circle"></i> Основна інформація</div>
                 <div class="info-rows">
@@ -71,7 +69,6 @@
                 </div>
             </div>
 
-            <!-- Список кафедр (тільки для факультету) -->
             @if (isFaculty()) {
             <div class="info-card">
                 <div class="card-title">
@@ -105,16 +102,14 @@
     }
 </div>
 
-<!-- Edit modal -->
 @if (editModalOpen()) {
-<div class="modal-backdrop" (click)="closeEdit()">
+<div class="modal-backdrop">
     <div class="modal" (click)="$event.stopPropagation()">
         <app-org-modal [org]="org()" mode="edit" (saved)="onSaved()" (cancelled)="closeEdit()" />
     </div>
 </div>
 }
 
-<!-- Delete modal -->
 @if (deleteModalOpen()) {
 <div class="modal-backdrop" (click)="closeDeleteModal()">
     <div class="modal modal-sm" (click)="$event.stopPropagation()">
@@ -132,7 +127,8 @@
             <p class="confirm-subtext">Цю дію неможливо скасувати.</p>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn-cancel" (click)="closeDeleteModal()"><i class="pi pi-times"></i>Скасувати</button>
+            <button type="button" class="btn-cancel" (click)="closeDeleteModal()"><i
+                    class="pi pi-times"></i>Скасувати</button>
             <button type="button" class="btn-danger" (click)="confirmDelete()">Видалити</button>
         </div>
     </div>

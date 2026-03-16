@@ -9,18 +9,22 @@
     @if (!loading() && specialty()) {
     <div class="detail-layout">
 
-        <!-- Header -->
         <div class="detail-header">
             <button class="back-btn" (click)="goBack()">
                 <i class="pi pi-arrow-left"></i> Назад до списку
             </button>
             <div class="header-actions">
-                <button class="btn-edit" (click)="openEdit()"><i class="pi pi-file-edit"></i> Редагувати</button>
-                <button class="btn-delete" (click)="openDelete()"><i class="pi pi-trash"></i> Видалити</button>
+                @if (isAdmin()) {
+                <button class="btn-edit" (click)="openEdit()">
+                    <i class="pi pi-file-edit"></i> Редагувати
+                </button>
+                <button class="btn-delete" (click)="openDelete()">
+                    <i class="pi pi-trash"></i> Видалити
+                </button>
+                }
             </div>
         </div>
 
-        <!-- Hero card -->
         <div class="hero-card">
             <div class="hero-avatar" [style.background]="getAvatarColor(specialty()!.id)">
                 {{ specialty()!.nameUA[0] }}
@@ -40,10 +44,8 @@
             </div>
         </div>
 
-        <!-- Main content -->
         <div class="content-grid">
 
-            <!-- Programs card -->
             <div class="info-card">
                 <div class="card-title"><i class="pi pi-file-edit"></i> Програми</div>
                 <div class="info-rows">
@@ -66,10 +68,8 @@
                 </div>
             </div>
 
-            <!-- Right column -->
             <div class="right-col">
 
-                <!-- Org info card -->
                 @if (orgInfo()) {
                 <div class="info-card">
                     <div class="card-title"><i class="pi pi-sitemap"></i> Організація</div>
@@ -93,7 +93,6 @@
                 </div>
                 }
 
-                <!-- Dates card -->
                 <div class="info-card">
                     <div class="card-title"><i class="pi pi-calendar"></i> Терміни дії</div>
                     <div class="info-rows">

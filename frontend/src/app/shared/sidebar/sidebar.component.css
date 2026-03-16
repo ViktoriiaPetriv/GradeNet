@@ -172,10 +172,16 @@
     min-width: 0;
 }
 
+.user-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
 .user-avatar {
     width: 32px;
     height: 32px;
-    background: linear-gradient(135deg, var(--accent), #7C3AED);
+    background: #0D9E6E;
     border-radius: 8px;
     display: flex;
     align-items: center;
