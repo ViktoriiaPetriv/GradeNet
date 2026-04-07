@@ -12,6 +12,8 @@ public record AuthenticatedUser(Long userId, String role, Long orgId) {
         return Objects.equals(role, "MANAGER");
     }
 
+    public boolean isProfessor() { return Objects.equals(role, "PROFESSOR"); }
+
     public boolean isStudent() {
         return Objects.equals(role, "STUDENT");
     }

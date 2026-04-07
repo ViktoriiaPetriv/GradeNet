@@ -1,7 +1,7 @@
 services:
-  org_service_db:
+  org-service-db:
     image: postgres:16
-    container_name: org_postgres_db
+    container_name: org-postgres-db
     restart: always
     env_file:
       - .env
@@ -27,12 +27,12 @@ services:
       retries: 5
     networks: [ grade-net-network ]
 
-  org_service_app:
+  org-service-app:
     image: gradenet-org-service:${IMAGE_TAG:-latest}
     build:
       context: ./org-service
       dockerfile: Dockerfile
-    container_name: org_service_app
+    container_name: org-service-app
     restart: always
     env_file:
       - .env
@@ -42,11 +42,11 @@ services:
     volumes:
       - ${DATA_PATH:-.}/logs/org_app:/logs
     depends_on:
-      org_service_db:
+      org-service-db:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://org_service_db:5432/${ORG_POSTGRES_DB}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://org-service-db:5432/${ORG_POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${ORG_POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${ORG_POSTGRES_PASSWORD}
       SERVER_PORT: ${ORG_APP_PORT:-8081}
@@ -59,9 +59,9 @@ services:
     tty: true
     networks: [ grade-net-network ]
 
-  user_service_db:
+  user-service-db:
     image: postgres:16
-    container_name: user_postgres_db
+    container_name: user-postgres-db
     restart: always
     env_file:
       - .env
@@ -87,12 +87,12 @@ services:
       retries: 5
     networks: [ grade-net-network ]
 
-  user_service_app:
+  user-service-app:
     image: gradenet-user-service:${IMAGE_TAG:-latest}
     build:
       context: ./user-service
       dockerfile: Dockerfile
-    container_name: user_service_app
+    container_name: user-service-app
     restart: always
     env_file:
       - .env
@@ -102,16 +102,16 @@ services:
     volumes:
       - ${DATA_PATH:-.}/logs/user_app:/logs
     depends_on:
-      user_service_db:
+      user-service-db:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://user_service_db:5432/${USER_POSTGRES_DB}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://user-service-db:5432/${USER_POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${USER_POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${USER_POSTGRES_PASSWORD}
       SERVER_PORT: ${USER_APP_PORT:-8080}
       JWT_SECRET: ${JWT_SECRET}
-      ORG_SERVICE_URL: http://org_service_app:${ORG_APP_PORT:-8081}
+      ORG_SERVICE_URL: http://org-service-app:${ORG_APP_PORT:-8081}
     logging:
       driver: "json-file"
       options:
@@ -121,9 +121,9 @@ services:
     networks: [ grade-net-network ]
 
 
-  grade_service_db:
+  grade-service-db:
     image: postgres:16
-    container_name: grade_postgres_db
+    container_name: grade-postgres-db
     restart: always
     env_file:
       - .env
@@ -149,12 +149,12 @@ services:
       retries: 5
     networks: [ grade-net-network ]
 
-  grade_service_app:
+  grade-service-app:
     image: gradenet-grade-service:${IMAGE_TAG:-latest}
     build:
       context: ./grade-service
       dockerfile: Dockerfile
-    container_name: grade_service_app
+    container_name: grade-service-app
     restart: always
     env_file:
       - .env
@@ -164,17 +164,17 @@ services:
     volumes:
       - ${DATA_PATH:-.}/logs/grade_app:/logs
     depends_on:
-      grade_service_db:
+      grade-service-db:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://grade_service_db:5432/${GRADE_POSTGRES_DB}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://grade-service-db:5432/${GRADE_POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${GRADE_POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${GRADE_POSTGRES_PASSWORD}
       SERVER_PORT: ${GRADE_APP_PORT:-8082}
       JWT_SECRET: ${JWT_SECRET}
-      ORG_SERVICE_URL: http://org_service_app:${ORG_APP_PORT:-8081}
-      USER_SERVICE_URL: http://user_service_app:${USER_APP_PORT:-8080}
+      ORG_SERVICE_URL: http://org-service-app:${ORG_APP_PORT:-8081}
+      USER_SERVICE_URL: http://user-service-app:${USER_APP_PORT:-8080}
     logging:
       driver: "json-file"
       options:

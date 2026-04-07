@@ -1,10 +1,17 @@
 package org.bachelor.gradeservice.model.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 
+@Getter
+@Setter
+@Entity
+@Table(name = "specialty_discipline")
 public class SpecialtyDiscipline {
 
     @Id
@@ -23,10 +30,10 @@ public class SpecialtyDiscipline {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "discipline_id", nullable = false)
     private Discipline discipline;
-//
-//    @OneToOne(mappedBy = "specialtyDiscipline", cascade = CascadeType.ALL)
-//    private Hours hours;
-//
-//    @OneToMany(mappedBy = "specialtyDiscipline")
-//    private List<Grade> grades = new ArrayList<>();
+
+    @OneToOne(mappedBy = "specialtyDiscipline", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Hours hours;
+
+    @OneToMany(mappedBy = "specialtyDiscipline", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Grade> grades = new ArrayList<>();
 }
