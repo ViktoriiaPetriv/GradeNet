@@ -73,7 +73,6 @@ public class BookNumberServiceImpl implements BookNumberService {
         }
 
         if (currentUser.isManager()) {
-            // Перевіряємо чи студент належить факультету менеджера
             Set<Long> allowedIds = accessControlService.getAllowedUserIdsForManager();
             if (!allowedIds.contains(studentId)) {
                 throw new AccessDeniedException("Немає доступу до цього студента");
@@ -82,7 +81,6 @@ public class BookNumberServiceImpl implements BookNumberService {
                     .stream().map(bookNumberMapper::toDto).toList();
         }
 
-        // Студент бачить тільки свої
         if (currentUser.getUserId().equals(studentId)) {
             return bookNumberRepository.findAllByStudentId(studentId)
                     .stream().map(bookNumberMapper::toDto).toList();

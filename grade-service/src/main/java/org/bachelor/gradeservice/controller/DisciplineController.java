@@ -35,7 +35,10 @@ public class DisciplineController {
     }
 
     @GetMapping
-    public List<DisciplineDTO> getAll() {
+    public List<DisciplineDTO> getAll(@RequestParam(required = false) Long specialtyId) {
+        if (specialtyId != null) {
+            return disciplineService.getAllBySpecialty(specialtyId);
+        }
         return disciplineService.getAll();
     }
 

@@ -10,5 +10,6 @@ public interface DisciplineService {
     DisciplineDTO update(Long id, DisciplineRequestDTO dto);
     DisciplineDTO getById(Long id);
     List<DisciplineDTO> getAll();
+    List<DisciplineDTO> getAllBySpecialty(Long specialtyId);
     void delete(Long id);
 }
