@@ -15,4 +15,5 @@ public interface UserService {
     void delete(Long id);
     UserProfileDTO getProfile(Long id);
     void changePassword(Long id, ChangePasswordRequestDTO request);
+    List<UserDTO> findStudentsBySpecialty(Long specialtyId, Integer enrollYear);
 }

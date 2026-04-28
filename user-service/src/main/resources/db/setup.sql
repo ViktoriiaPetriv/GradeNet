@@ -1,2 +1,2 @@
 insert into user_app(email, password, role)
-    values ('vika.petriv.05@gmail.com', '$2a$10$C6ViT65N2ZhgCSTOmjBb8erxvzZwaPWPAAg066eRTtbRGVtpfjid6', 'ADMIN') ;
+    values ('qwerty@pnu.edu.ua', '$2a$10$Vge2eEGA7sTme7PZOz9dNeHdBzQMjg1mdik..U7zyxAnE6nTjJkye', 'ADMIN'); --password: pass1234
