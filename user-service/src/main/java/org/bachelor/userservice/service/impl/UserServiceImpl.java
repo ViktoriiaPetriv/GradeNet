@@ -10,6 +10,7 @@ import org.bachelor.userservice.model.dto.StudentInfoDTO;
 import org.bachelor.userservice.model.dto.UserDTO;
 import org.bachelor.userservice.model.dto.UserProfileDTO;
 import org.bachelor.userservice.model.dto.UserRequestDTO;
+import org.bachelor.userservice.model.entity.BookNumber;
 import org.bachelor.userservice.model.entity.Role;
 import org.bachelor.userservice.model.entity.User;
 import org.bachelor.userservice.model.entity.UserOrganization;
@@ -224,5 +225,32 @@ public class UserServiceImpl implements UserService {
         validatePassword(request.newPassword());
         user.setPassword(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
+    }
+
+    // UserServiceImpl
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserDTO> findStudentsBySpecialty(Long specialtyId, Integer enrollYear) {
+        AuthenticatedUser currentUser = SecurityUtils.getCurrentUser();
+
+        if (!currentUser.isAdmin() && !currentUser.isManager()) {
+            throw new AccessDeniedException("Недостатньо прав");
+        }
+
+        List<BookNumber> books = enrollYear != null
+                ? bookNumberRepository.findAllBySpecialtyIdAndEnrollYear(specialtyId, enrollYear)
+                : bookNumberRepository.findAllBySpecialtyId(specialtyId);
+
+        List<Long> studentIds = books.stream()
+                .map(b -> b.getStudent().getId())
+                .distinct()
+                .toList();
+
+        if (studentIds.isEmpty()) return List.of();
+
+        return userRepository.findAllById(studentIds)
+                .stream()
+                .map(userMapper::toDto)
+                .toList();
     }
 }

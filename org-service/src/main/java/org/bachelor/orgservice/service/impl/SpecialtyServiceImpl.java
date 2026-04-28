@@ -103,30 +103,14 @@ public class SpecialtyServiceImpl implements SpecialtyService {
         AuthenticatedUser currentUser = SecurityUtils.getCurrentUser();
 
         if (currentUser.isManager()) {
-            Long facultyId = currentUser.getOrgId();
-            boolean hasAccess = facultyId != null && facultyId.equals(orgId);
-
-            if (!hasAccess) {
-                Organization org = organizationRepository.findById(orgId)
-                        .orElseThrow(() -> new NotFoundException("Організацію не знайдено"));
-                hasAccess = org.getParent() != null
-                        && facultyId != null
-                        && facultyId.equals(org.getParent().getId());
-            }
-
-            if (!hasAccess) {
-                throw new AccessDeniedException("Немає доступу до цієї організації");
-            }
+            checkManagerOrgAccess(currentUser, orgId);
         } else if (!currentUser.isAdmin()) {
             throw new AccessDeniedException("Недостатньо прав");
         }
 
-        Organization organization = organizationRepository.findById(orgId)
-                .orElseThrow(() -> new NotFoundException("Організацію не знайдено"));
+        List<Long> expandedOrgIds = getExpandedOrgIds(List.of(orgId));
 
-        List<Long> orgIds = resolveOrgIds(organization);
-
-        Specification<Specialty> spec = SpecialtySpecification.hasOrganizationIdIn(orgIds)
+        Specification<Specialty> spec = SpecialtySpecification.hasOrganizationIdIn(expandedOrgIds)
                 .and(SpecialtySpecification.hasDegree(degree))
                 .and(SpecialtySpecification.hasEduType(eduType));
 
@@ -141,17 +125,6 @@ public class SpecialtyServiceImpl implements SpecialtyService {
                 .orElseThrow(() -> new NotFoundException("Спеціальність не знайдено"));
 
         specialtyRepository.delete(specialty);
-    }
-
-    private List<Long> resolveOrgIds(Organization organization) {
-        return switch (organization.getOrgType()) {
-            case DEPARTMENT -> List.of(organization.getId());
-            case FACULTY -> organizationRepository
-                    .findAllByParentIdAndOrgType(organization.getId(), OrgType.DEPARTMENT)
-                    .stream()
-                    .map(Organization::getId)
-                    .toList();
-        };
     }
 
     private Organization resolveOrganization(Long orgId) {
@@ -204,19 +177,42 @@ public class SpecialtyServiceImpl implements SpecialtyService {
 
     @Override
     public List<Long> getIdsByOrgIds(List<Long> orgIds) {
-        List<Long> expandedIds = new ArrayList<>(orgIds);
+        if (orgIds == null || orgIds.isEmpty()) return List.of();
 
-        List<Long> departmentIds = organizationRepository
-                .findAllByParentIdInAndOrgType(orgIds, OrgType.DEPARTMENT)
-                .stream()
-                .map(Organization::getId)
-                .toList();
-
-        expandedIds.addAll(departmentIds);
-
-        return specialtyRepository.findAllByOrganizationIdIn(expandedIds)
+        return specialtyRepository
+                .findAllByOrganizationIdIn(getExpandedOrgIds(orgIds))
                 .stream()
                 .map(Specialty::getId)
                 .toList();
+    }
+
+    private List<Long> getExpandedOrgIds(List<Long> orgIds) {
+        List<Long> expanded = new ArrayList<>(orgIds);
+
+        organizationRepository
+                .findAllByParentIdInAndOrgType(orgIds, OrgType.DEPARTMENT)
+                .stream()
+                .map(Organization::getId)
+                .forEach(expanded::add);
+
+        return expanded;
+    }
+
+    private void checkManagerOrgAccess(AuthenticatedUser user, Long requestedOrgId) {
+        Long facultyId = user.getOrgId();
+
+        // Запитуваний orgId — це сам факультет менеджера
+        if (facultyId.equals(requestedOrgId)) return;
+
+        // Запитуваний orgId — це кафедра що належить факультету менеджера
+        Organization org = organizationRepository.findById(requestedOrgId)
+                .orElseThrow(() -> new NotFoundException("Організацію не знайдено"));
+
+        boolean isDepartmentOfFaculty = org.getParent() != null
+                && facultyId.equals(org.getParent().getId());
+
+        if (!isDepartmentOfFaculty) {
+            throw new AccessDeniedException("Немає доступу до цієї організації");
+        }
     }
 }

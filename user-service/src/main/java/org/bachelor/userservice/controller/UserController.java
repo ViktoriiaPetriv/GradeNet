@@ -7,15 +7,7 @@ import org.bachelor.userservice.model.dto.UserDTO;
 import org.bachelor.userservice.model.dto.UserProfileDTO;
 import org.bachelor.userservice.model.dto.UserRequestDTO;
 import org.bachelor.userservice.service.UserService;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -61,5 +53,12 @@ public class UserController {
     @PatchMapping("/{id}/password")
     public void changePassword(@PathVariable Long id, @Valid @RequestBody ChangePasswordRequestDTO request) {
         userService.changePassword(id, request);
+    }
+
+    @GetMapping("/students")
+    public List<UserDTO> findStudentsBySpecialty(
+            @RequestParam Long specialtyId,
+            @RequestParam(required = false) Integer enrollYear) {
+        return userService.findStudentsBySpecialty(specialtyId, enrollYear);
     }
 }
