@@ -1,0 +1,7 @@
+/* глобальні стилі .modal-backdrop, .modal, .modal-header, .modal-close вже є в styles.css,
+   тут лише додаткові класи */
+.modal-lg {
+  max-width: 700px;
+}
+
+/* Якщо потрібно, можна додати анімацію появи */

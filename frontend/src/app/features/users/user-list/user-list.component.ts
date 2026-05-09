@@ -8,11 +8,25 @@ import { Router } from '@angular/router';
 import { UserModalComponent } from '../user-modal/user-modal.component';
 import { PaginationComponent } from '../../../shared/pagination/pagination.component';
 import { AuthStateService } from '../../../core/services/auth-state.service';
+import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
+import { AvatarComponent } from '../../../shared/avatar/avatar.component';
+import { BadgeComponent } from '../../../shared/badge/badge.component';
+import { ModalComponent } from '../../../shared/modal/modal.component';
+import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-user-list',
   standalone: true,
-  imports: [CommonModule, UserModalComponent, PaginationComponent],
+  imports: [
+    CommonModule,
+    UserModalComponent,
+    PaginationComponent,
+    PageHeaderComponent,
+    AvatarComponent,
+    BadgeComponent,
+    ModalComponent,
+    ConfirmDialogComponent,
+  ],
   templateUrl: './user-list.component.html',
   styleUrl: './user-list.component.css',
 })
@@ -46,29 +60,6 @@ export class UserListComponent implements OnInit {
     return this.filtered().slice(start, start + this.perPage());
   });
 
-  pages = computed(() => {
-    const total = this.totalPages();
-    const current = this.currentPage();
-    const delta = 1;
-
-    if (total <= 5) {
-      return Array.from({ length: total }, (_, i) => i + 1);
-    }
-
-    const range: number[] = [];
-    range.push(1);
-
-    const leftBound = Math.max(2, current - delta);
-    const rightBound = Math.min(total - 1, current + delta);
-
-    if (leftBound > 2) range.push(-1);
-    for (let i = leftBound; i <= rightBound; i++) range.push(i);
-    if (rightBound < total - 1) range.push(-1);
-
-    range.push(total);
-    return range;
-  });
-
   paginationInfo = computed(() => {
     const total = this.filtered().length;
     if (total === 0) return 'Немає записів';
@@ -80,6 +71,7 @@ export class UserListComponent implements OnInit {
   onPageChange(page: number) {
     this.currentPage.set(page);
   }
+
   onPerPageChange(size: number) {
     this.perPage.set(size);
     this.currentPage.set(1);
@@ -161,24 +153,6 @@ export class UserListComponent implements OnInit {
   onRoleFilter(e: Event) {
     this.roleFilter.set((e.target as HTMLSelectElement).value);
     this.applyFilter();
-  }
-
-  setPage(p: number) {
-    if (p < 1 || p > this.totalPages()) return;
-    this.currentPage.set(p);
-  }
-
-  goFirst() {
-    this.setPage(1);
-  }
-  goLast() {
-    this.setPage(this.totalPages());
-  }
-  goPrev() {
-    this.setPage(this.currentPage() - 1);
-  }
-  goNext() {
-    this.setPage(this.currentPage() + 1);
   }
 
   getInitials(u: User): string {

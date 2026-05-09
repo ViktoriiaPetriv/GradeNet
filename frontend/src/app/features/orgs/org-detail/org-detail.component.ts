@@ -6,11 +6,26 @@ import { Organization, OrgType } from '../../../models/org.model';
 import { ToastService } from '../../../core/services/toast.service';
 import { OrgModalComponent } from '../org-modal/org-modal.component';
 import { AuthStateService } from '../../../core/services/auth-state.service';
+import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
+import { HeroCardComponent } from '../../../shared/hero-card/hero-card.component';
+import { InfoCardComponent } from '../../../shared/info-card/info-card.component';
+import { BadgeComponent } from '../../../shared/badge/badge.component';
+import { ModalComponent } from '../../../shared/modal/modal.component';
+import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-org-detail',
   standalone: true,
-  imports: [CommonModule, OrgModalComponent],
+  imports: [
+    CommonModule,
+    OrgModalComponent,
+    PageHeaderComponent,
+    HeroCardComponent,
+    InfoCardComponent,
+    BadgeComponent,
+    ModalComponent,
+    ConfirmDialogComponent,
+  ],
   templateUrl: './org-detail.component.html',
   styleUrl: './org-detail.component.css',
 })

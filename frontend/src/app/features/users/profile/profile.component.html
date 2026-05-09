@@ -1,183 +1,168 @@
 <div class="page">
-    @if (profile(); as p) {
+  @if (profile(); as p) {
 
     <div class="detail-header">
-        @if (canGoBack) {
+      @if (canGoBack) {
         <button class="back-btn" (click)="goBack()">
-            <i class="pi pi-arrow-left"></i> Назад до списку
+          <i class="pi pi-arrow-left"></i> Назад до списку
         </button>
+      }
+      <div class="header-actions">
+        @if (canEditFull) {
+          <button class="btn-edit" (click)="editProfile()">
+            <i class="pi pi-file-edit"></i> Редагувати
+          </button>
         }
-        <div class="header-actions">
-            @if (canEditFull) {
-            <button class="btn-edit" (click)="editProfile()">
-                <i class="pi pi-file-edit"></i> Редагувати
-            </button>
-            }
-            @if (canChangePassword) {
-            <button class="btn-edit" (click)="changePassword()">
-                <i class="pi pi-lock"></i> Змінити пароль
-            </button>
-            }
-            @if (canDelete) {
-            <button class="btn-delete" (click)="deleteProfile()">
-                <i class="pi pi-trash"></i> Видалити
-            </button>
-            }
-        </div>
+        @if (canChangePassword) {
+          <button class="btn-edit" (click)="changePassword()">
+            <i class="pi pi-lock"></i> Змінити пароль
+          </button>
+        }
+        @if (canDelete) {
+          <button class="btn-delete" (click)="deleteProfile()">
+            <i class="pi pi-trash"></i> Видалити
+          </button>
+        }
+      </div>
     </div>
 
     <div class="profile-hero">
-        <div class="avatar">
-            <i class="pi pi-user"></i>
-        </div>
-        <div class="profile-info">
-            @if (p.lastName || p.firstName) {
-            <div class="profile-name">{{ p.lastName || '' }} {{ p.firstName || '' }} {{ p.patronymic || '' }}</div>
-            } @else {
-            <div class="profile-name">{{ p.email }}</div>
-            }
-            <span class="role-badge role-{{ p.role }}">{{ roleLabel(p.role) }}</span>
-        </div>
+      <app-avatar
+        [letter]="getInitials() || p.email[0]"
+        [backgroundColor]="getAvatarColor()"
+        size="lg" />
+      <div class="profile-info">
+        @if (p.lastName || p.firstName) {
+          <div class="profile-name">{{ p.lastName || '' }} {{ p.firstName || '' }} {{ p.patronymic || '' }}</div>
+        } @else {
+          <div class="profile-name">{{ p.email }}</div>
+        }
+        <app-badge [type]="'role-' + p.role">{{ roleLabel(p.role) }}</app-badge>
+      </div>
     </div>
 
     <div class="profile-sections">
 
-        <div class="section">
-            <div class="section-header">
-                <div class="section-icon"><i class="pi pi-user"></i></div>
-                <div class="section-title">Основна інформація</div>
-            </div>
-            <div class="info-grid">
-                <div class="info-item">
-                    <div class="info-label">Прізвище</div>
-                    <div class="info-value" [class.empty]="!p.lastName">{{ p.lastName || 'Не вказано' }}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Ім'я</div>
-                    <div class="info-value" [class.empty]="!p.firstName">{{ p.firstName || 'Не вказано' }}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">По батькові</div>
-                    <div class="info-value" [class.empty]="!p.patronymic">{{ p.patronymic || 'Не вказано' }}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Дата народження</div>
-                    <div class="info-value" [class.empty]="!p.birthDate">{{ formatDate(p.birthDate) }}</div>
-                </div>
-                <div class="info-item full">
-                    <div class="info-label">Email</div>
-                    <div class="info-value">{{ p.email }}</div>
-                </div>
-            </div>
+      <div class="section">
+        <div class="section-header">
+          <div class="section-icon"><i class="pi pi-user"></i></div>
+          <div class="section-title">Основна інформація</div>
         </div>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">Прізвище</div>
+            <div class="info-value" [class.empty]="!p.lastName">{{ p.lastName || 'Не вказано' }}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Ім'я</div>
+            <div class="info-value" [class.empty]="!p.firstName">{{ p.firstName || 'Не вказано' }}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">По батькові</div>
+            <div class="info-value" [class.empty]="!p.patronymic">{{ p.patronymic || 'Не вказано' }}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Дата народження</div>
+            <div class="info-value" [class.empty]="!p.birthDate">{{ formatDate(p.birthDate) }}</div>
+          </div>
+          <div class="info-item full">
+            <div class="info-label">Email</div>
+            <div class="info-value">{{ p.email }}</div>
+          </div>
+        </div>
+      </div>
 
-        @if (books().length > 0) {
+      @if (books().length > 0) {
         @for (b of books(); track b.info.bookId; let i = $index) {
-        <div class="section">
+          <div class="section">
             <div class="section-header">
-                <div class="section-icon"><i class="pi pi-book"></i></div>
-                <div class="section-title">
-                    Залікова книжка {{ books().length > 1 ? '#' + (i + 1) : '' }}
-                </div>
-                <span class="status-badge status-{{ b.info.bookNumberStatus }}" style="margin-left: auto;">
-                    {{ bookStatusLabel(b.info.bookNumberStatus) }}
-                </span>
+              <div class="section-icon"><i class="pi pi-book"></i></div>
+              <div class="section-title">
+                Залікова книжка {{ books().length > 1 ? '#' + (i + 1) : '' }}
+              </div>
+              <app-badge [type]="'status-' + b.info.bookNumberStatus" style="margin-left: auto;">
+                {{ bookStatusLabel(b.info.bookNumberStatus) }}
+              </app-badge>
             </div>
             <div class="info-grid">
-                <div class="info-item">
-                    <div class="info-label">Номер</div>
-                    <div class="info-value" [class.empty]="!b.info.bookNumber">
-                        {{ b.info.bookNumber || 'Не вказано' }}
-                    </div>
+              <div class="info-item">
+                <div class="info-label">Номер</div>
+                <div class="info-value" [class.empty]="!b.info.bookNumber">
+                  {{ b.info.bookNumber || 'Не вказано' }}
                 </div>
-                <div class="info-item">
-                    <div class="info-label">Дата реєстрації</div>
-                    <div class="info-value" [class.empty]="!b.info.startDate">
-                        {{ formatDate(b.info.startDate || undefined) }}
-                    </div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Дата реєстрації</div>
+                <div class="info-value" [class.empty]="!b.info.startDate">
+                  {{ formatDate(b.info.startDate || undefined) }}
                 </div>
-                <div class="info-item">
-                    <div class="info-label">Дата завершення</div>
-                    <div class="info-value" [class.empty]="!b.info.endDate">
-                        {{ formatDate(b.info.endDate ?? undefined) }}
-                    </div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Дата завершення</div>
+                <div class="info-value" [class.empty]="!b.info.endDate">
+                  {{ formatDate(b.info.endDate ?? undefined) }}
                 </div>
-                <div class="info-item">
-                    <div class="info-label">Факультет</div>
-                    <div class="info-value" [class.empty]="!b.orgInfo?.facultyName">
-                        {{ b.orgInfo?.facultyName || 'Не вказано' }}
-                    </div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Факультет</div>
+                <div class="info-value" [class.empty]="!b.orgInfo?.facultyName">
+                  {{ b.orgInfo?.facultyName || 'Не вказано' }}
                 </div>
-                <div class="info-item">
-                    <div class="info-label">Кафедра</div>
-                    <div class="info-value" [class.empty]="!b.orgInfo?.departmentName">
-                        {{ b.orgInfo?.departmentName || 'Не вказано' }}
-                    </div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Кафедра</div>
+                <div class="info-value" [class.empty]="!b.orgInfo?.departmentName">
+                  {{ b.orgInfo?.departmentName || 'Не вказано' }}
                 </div>
-                <div class="info-item full">
-                    <div class="info-label">Спеціальність</div>
-                    <div class="info-value" [class.empty]="!b.specialty">
-                        {{ b.specialty ? b.specialty.code + ' — ' + b.specialty.nameUA : 'Не вказано' }}
-                    </div>
+              </div>
+              <div class="info-item full">
+                <div class="info-label">Спеціальність</div>
+                <div class="info-value" [class.empty]="!b.specialty">
+                  {{ b.specialty ? b.specialty.code + ' — ' + b.specialty.nameUA : 'Не вказано' }}
                 </div>
+              </div>
             </div>
-        </div>
+          </div>
         }
-        } @else if (p.role === 'STUDENT') {
+      } @else if (p.role === 'STUDENT') {
         <div class="section">
-            <div class="section-header">
-                <div class="section-icon"><i class="pi pi-book"></i></div>
-                <div class="section-title">Залікова книжка</div>
-            </div>
-            <div class="empty-state" style="padding: 2rem;">
-                <div class="empty-icon"><i class="pi pi-book"></i></div>
-                <div>Залікову книжку ще не зареєстровано</div>
-            </div>
+          <div class="section-header">
+            <div class="section-icon"><i class="pi pi-book"></i></div>
+            <div class="section-title">Залікова книжка</div>
+          </div>
+          <div class="empty-state" style="padding: 2rem;">
+            <div class="empty-icon"><i class="pi pi-book"></i></div>
+            <div>Залікову книжку ще не зареєстровано</div>
+          </div>
         </div>
-        }
+      }
 
     </div>
-    }
+  }
 </div>
 
 @if (editModalOpen()) {
-<div class="modal-backdrop">
-    <div class="modal" (click)="$event.stopPropagation()">
-        <app-user-modal [user]="editingUser()" mode="edit" (saved)="onSaved()" (cancelled)="editModalOpen.set(false)" />
-    </div>
-</div>
+  <app-modal title="Редагувати профіль" (close)="editModalOpen.set(false)">
+    <app-user-modal [user]="editingUser()" mode="edit" (saved)="onSaved()" (cancelled)="editModalOpen.set(false)" />
+  </app-modal>
 }
 
 @if (deleteModalOpen()) {
-<div class="modal-backdrop" (click)="deleteModalOpen.set(false)">
-    <div class="modal modal-sm" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-            <div class="modal-title">Видалення користувача</div>
-            <button class="modal-close" (click)="deleteModalOpen.set(false)">
-                <i class="pi pi-times"></i>
-            </button>
-        </div>
-        <div class="confirm-body">
-            <div class="confirm-icon confirm-danger"><i class="pi pi-trash"></i></div>
-            <p class="confirm-text">
-                Ви впевнені, що хочете видалити користувача <strong>{{ profile()?.email }}</strong>?
-            </p>
-            <p class="confirm-subtext">Цю дію неможливо скасувати.</p>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn-cancel" (click)="deleteModalOpen.set(false)"><i
-                    class="pi pi-times"></i>Скасувати</button>
-            <button type="button" class="btn-danger" (click)="confirmDelete()">Видалити</button>
-        </div>
-    </div>
-</div>
+  <app-confirm-dialog
+    title="Видалення користувача"
+    [message]="'Ви впевнені, що хочете видалити користувача <strong>' + (profile()?.email ?? '') + '</strong>?'"
+    subtext="Цю дію неможливо скасувати."
+    iconType="danger"
+    confirmButtonClass="btn-danger"
+    confirmLabel="Видалити"
+    (confirm)="confirmDelete()"
+    (cancel)="deleteModalOpen.set(false)"
+  />
 }
 
 @if (changePasswordModalOpen()) {
-<div class="modal-backdrop">
-    <div class="modal" (click)="$event.stopPropagation()">
-        <app-change-password-modal [userId]="profile()!.id" (saved)="changePasswordModalOpen.set(false)"
-            (cancelled)="changePasswordModalOpen.set(false)" />
-    </div>
-</div>
+  <app-modal title="Зміна пароля" (close)="changePasswordModalOpen.set(false)">
+    <app-change-password-modal [userId]="profile()!.id" (saved)="changePasswordModalOpen.set(false)"
+                               (cancelled)="changePasswordModalOpen.set(false)" />
+  </app-modal>
 }

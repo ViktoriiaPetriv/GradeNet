@@ -4,11 +4,12 @@ import { AuthService } from '../../core/services/auth.service';
 import { TokenService } from '../../core/services/token.service';
 import { User } from '../../models/user.model';
 import { AuthStateService } from '../../core/services/auth-state.service';
+import {AvatarComponent} from '../avatar/avatar.component';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [RouterModule],
+  imports: [RouterModule, AvatarComponent],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.css',
 })
@@ -21,6 +22,7 @@ export class SidebarComponent {
   private authState = inject(AuthStateService);
   isAdmin = this.authState.isAdmin;
   isAdminOrManager = this.authState.isAdminOrManager;
+  isProfessor = this.authState.isProfessor;
 
   currentUser = this.tokenService.currentUser;
 

@@ -26,8 +26,19 @@
         <li routerLink="/books" routerLinkActive="active" (click)="close()">
             <i class="pi pi-book"></i> Залікова книжка
         </li>
+        <li routerLink="/groups" routerLinkActive="active" (click)="close()">
+            <i class="pi pi-users"></i> Групи студентів
+        </li>
         <li routerLink="/specialties" routerLinkActive="active" (click)="close()">
             <i class="pi pi-graduation-cap"></i> Спеціальності
+        </li>
+        <li routerLink="/disciplines" routerLinkActive="active" (click)="close()">
+            <i class="pi pi-list"></i> Дисципліни
+        </li>
+        }
+        @if (isAdmin() || isProfessor()) {
+        <li routerLink="/grades" routerLinkActive="active" (click)="close()">
+            <i class="pi pi-star"></i> Оцінки
         </li>
         }
     </ul>
@@ -41,16 +52,19 @@
         </li>
     </ul>
 
-    <div class="nav-bottom">
-        <div class="user-card" (click)="goToProfile()" style="cursor: pointer;">
-            <div class="user-avatar"><i class="pi pi-user"></i></div>
-            <div class="user-info">
-                <div class="user-info-name">{{ currentUser()?.email }}</div>
-                <div class="user-info-role">{{ roleLabel(currentUser()?.role) }}</div>
-            </div>
-            <button class="logout-btn" (click)="logout(); $event.stopPropagation()">
-                <i class="pi pi-sign-out"></i>
-            </button>
-        </div>
+  <div class="nav-bottom">
+    <div class="user-card" (click)="goToProfile()" style="cursor: pointer;">
+      <app-avatar
+        [letter]="getInitials(currentUser()) || (currentUser()?.email?.[0] ?? '?')"
+        backgroundColor="#0D9E6E"
+        size="sm" />
+      <div class="user-info">
+        <div class="user-info-name">{{ currentUser()?.email }}</div>
+        <div class="user-info-role">{{ roleLabel(currentUser()?.role) }}</div>
+      </div>
+      <button class="logout-btn" (click)="logout(); $event.stopPropagation()">
+        <i class="pi pi-sign-out"></i>
+      </button>
     </div>
+  </div>
 </nav>

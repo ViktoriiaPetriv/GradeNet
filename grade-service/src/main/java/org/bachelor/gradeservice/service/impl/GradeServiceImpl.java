@@ -1,24 +1,25 @@
 package org.bachelor.gradeservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.bachelor.gradeservice.model.dto.AuthenticatedUser;
-import org.bachelor.gradeservice.utils.AcademicCalendar;
-import org.bachelor.gradeservice.utils.GradeConverter;
 import org.bachelor.gradeservice.exception.NotFoundException;
+import org.bachelor.gradeservice.exception.RestException;
 import org.bachelor.gradeservice.mapper.GradeMapper;
+import org.bachelor.gradeservice.model.dto.AuthenticatedUser;
+import org.bachelor.gradeservice.model.dto.BulkGradeCreateDTO;
+import org.bachelor.gradeservice.model.dto.GradeCreateDTO;
 import org.bachelor.gradeservice.model.dto.GradeDTO;
-import org.bachelor.gradeservice.model.dto.GradeRequestDTO;
+import org.bachelor.gradeservice.model.dto.GradeUpdateDTO;
+import org.bachelor.gradeservice.model.entity.EntryStatus;
 import org.bachelor.gradeservice.model.entity.Grade;
-import org.bachelor.gradeservice.model.entity.SpecialtyDiscipline;
+import org.bachelor.gradeservice.model.entity.GradeBookEntry;
+import org.bachelor.gradeservice.repository.GradeBookEntryRepository;
 import org.bachelor.gradeservice.repository.GradeRepository;
-import org.bachelor.gradeservice.repository.SpecialtyDisciplineRepository;
 import org.bachelor.gradeservice.service.GradeService;
-import org.bachelor.gradeservice.utils.SecurityUtils;
-import org.springframework.security.access.AccessDeniedException;
+import org.bachelor.gradeservice.utils.GradeConverter;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -26,134 +27,92 @@ import java.util.List;
 public class GradeServiceImpl implements GradeService {
 
     private final GradeRepository gradeRepository;
-    private final SpecialtyDisciplineRepository specialtyDisciplineRepository;
+    private final GradeBookEntryRepository entryRepository;
     private final GradeMapper gradeMapper;
     private final GradeConverter gradeConverter;
-    private final AcademicCalendar academicCalendar;
 
-    @Override
     @Transactional
-    public GradeDTO create(GradeRequestDTO dto) {
-        SpecialtyDiscipline sd = getSpecialtyDisciplineOrThrow(dto.specialtyDisciplineId());
+    @Override
+    public GradeDTO create(GradeCreateDTO dto, AuthenticatedUser user) {
+        GradeBookEntry entry = entryRepository.findById(dto.getEntryId())
+                .orElseThrow(() -> new NotFoundException("Запис не знайдено"));
 
-        validateReportDateAccess(sd);
-
-        AuthenticatedUser currentUser = SecurityUtils.getCurrentUser();
-
-        String academicYear;
-        int semester;
-
-        if (currentUser.isProfessor()) {
-            academicYear = academicCalendar.getCurrentAcademicYear();
-            semester = academicCalendar.getCurrentSemester();
-        } else {
-            academicYear = dto.academicYear() != null
-                    ? dto.academicYear()
-                    : academicCalendar.getCurrentAcademicYear();
-            semester = dto.semester() != null
-                    ? dto.semester()
-                    : academicCalendar.getCurrentSemester();
+        if (entry.getStatus() == EntryStatus.COMPLETED) {
+            throw new RestException("Запис вже закрито, додавання оцінки неможливе");
         }
 
-        int attempt = gradeRepository
-                .findMaxAttemptBySpecialtyDisciplineIdAndStudentId(
-                        dto.specialtyDisciplineId(), dto.studentId())
-                .map(max -> max + 1)
-                .orElse(1);
+        checkReportDateRestriction(entry, user);
 
         Grade grade = gradeMapper.toEntity(dto);
-        grade.setSpecialtyDiscipline(sd);
-        grade.setAttempt(attempt);
-        grade.setAcademicYear(academicYear);
-        grade.setSemester(semester);
-        convertGrades(grade, dto.universityGrade());
+        grade.setEntry(entry);
+        grade.setNationalGrade(gradeConverter.toNational(dto.getUniversityGrade(), dto.getAssessmentType()));
+        grade.setEctsGrade(gradeConverter.toEcts(dto.getUniversityGrade()));
+        gradeRepository.save(grade);
 
-        return gradeMapper.toDto(gradeRepository.save(grade));
+        return gradeMapper.toDTO(grade);
     }
 
-    @Override
     @Transactional
-    public GradeDTO update(Long id, GradeRequestDTO dto) {
+    @Override
+    public List<GradeDTO> createBulk(BulkGradeCreateDTO bulkDto, AuthenticatedUser user) {
+        return bulkDto.getGrades().stream()
+                .map(dto -> create(dto, user))
+                .toList();
+    }
+
+    @Transactional
+    @Override
+    public GradeDTO update(Long id, GradeUpdateDTO dto, AuthenticatedUser user) {
         Grade grade = gradeRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Оцінку не знайдено"));
 
-        validateReportDateAccess(grade.getSpecialtyDiscipline());
+        GradeBookEntry entry = grade.getEntry();
 
-        grade.setAssessmentDate(dto.assessmentDate());
-        grade.setAssessment(dto.assessment());
-        grade.setState(dto.state());
-        convertGrades(grade, dto.universityGrade());
-
-        return gradeMapper.toDto(gradeRepository.save(grade));
-    }
-
-    @Override
-    public GradeDTO getById(Long id) {
-        return gradeRepository.findById(id)
-                .map(gradeMapper::toDto)
-                .orElseThrow(() -> new NotFoundException("Оцінку не знайдено"));
-    }
-
-    @Override
-    public List<GradeDTO> getAllBySpecialtyDiscipline(Long specialtyDisciplineId) {
-        AuthenticatedUser currentUser = SecurityUtils.getCurrentUser();
-
-        if (currentUser.isProfessor()) {
-            SpecialtyDiscipline sd = getSpecialtyDisciplineOrThrow(specialtyDisciplineId);
-            if (!currentUser.getUserId().equals(sd.getProfessorId())) {
-                throw new AccessDeniedException("Ви не є викладачем цієї дисципліни");
-            }
+        if (entry.getStatus() == EntryStatus.COMPLETED) {
+            throw new RestException("Запис закрито, редагування оцінки неможливе");
         }
 
-        return gradeRepository.findAllBySpecialtyDisciplineId(specialtyDisciplineId)
-                .stream().map(gradeMapper::toDto).toList();
+        checkReportDateRestriction(entry, user);
+
+        grade.setAssessmentDate(dto.getAssessmentDate());
+        grade.setUniversityGrade(dto.getUniversityGrade());
+        grade.setAssessmentType(dto.getAssessmentType());
+        grade.setNationalGrade(gradeConverter.toNational(dto.getUniversityGrade(), dto.getAssessmentType()));
+        grade.setEctsGrade(gradeConverter.toEcts(dto.getUniversityGrade()));
+
+        return gradeMapper.toDTO(grade);
     }
 
-    @Override
-    public List<GradeDTO> getAllByStudent(Long studentId) {
-        return gradeRepository.findAllByStudentId(studentId)
-                .stream().map(gradeMapper::toDto).toList();
-    }
-
-    @Override
     @Transactional
-    public void delete(Long id) {
+    @Override
+    public void delete(Long id, AuthenticatedUser user) {
         Grade grade = gradeRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Оцінку не знайдено"));
 
-        validateReportDateAccess(grade.getSpecialtyDiscipline());
+        GradeBookEntry entry = grade.getEntry();
+
+        if (entry.getStatus() == EntryStatus.COMPLETED) {
+            throw new RestException("Запис закрито, видалення оцінки неможливе");
+        }
+
+        checkReportDateRestriction(entry, user);
 
         gradeRepository.delete(grade);
     }
 
-    private SpecialtyDiscipline getSpecialtyDisciplineOrThrow(Long id) {
-        return specialtyDisciplineRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Дисципліну не знайдено"));
+    @Override
+    public List<GradeDTO> getByEntryId(Long entryId) {
+        return gradeRepository.findAllByEntryId(entryId)
+                .stream()
+                .map(gradeMapper::toDTO)
+                .toList();
     }
 
-    private void convertGrades(Grade grade, Integer universityGrade) {
-        grade.setUniversityGrade(universityGrade);
-        grade.setNationalGrade(gradeConverter.toNational(universityGrade, grade.getAssessment()));
-        grade.setEctsGrade(gradeConverter.toEcts(universityGrade));
-    }
-
-    private void validateReportDateAccess(SpecialtyDiscipline sd) {
-        AuthenticatedUser currentUser = SecurityUtils.getCurrentUser();
-
-        if (currentUser.isAdmin() || currentUser.isManager()) return;
-
-        if (sd.getReportDate() == null) return;
-
-        if (Instant.now().isAfter(sd.getReportDate())) {
-            throw new AccessDeniedException(
-                    "Термін виставлення оцінок закінчився %s"
-                            .formatted(sd.getReportDate()));
-        }
-
-        if (currentUser.isProfessor()) {
-            if (!currentUser.getUserId().equals(sd.getProfessorId())) {
-                throw new AccessDeniedException("Ви не є викладачем цієї дисципліни");
-            }
+    private void checkReportDateRestriction(GradeBookEntry entry, AuthenticatedUser user) {
+        if (entry.getReportDate() != null
+                && LocalDate.now().isAfter(entry.getReportDate())
+                && !user.isAdmin()) {
+            throw new RestException("Термін подання звіту минув. Зміни дозволені тільки адміністратору.");
         }
     }
 }

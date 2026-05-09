@@ -1,0 +1,25 @@
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <div class="form-grid">
+    <div class="form-group full">
+      <label class="form-label">Назва *</label>
+      <input
+        class="form-input"
+        formControlName="name"
+        placeholder="КН-11"
+        [class.error]="isInvalid('name')"
+      />
+      @if (isInvalid('name')) {
+        <span class="form-error">Обов'язкове поле (макс. 20 символів)</span>
+      }
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn-cancel" (click)="cancelled.emit()">
+      <i class="pi pi-times"></i> Скасувати
+    </button>
+    <button type="submit" class="btn-primary">
+      {{ isEdit ? 'Зберегти' : 'Створити' }}
+    </button>
+  </div>
+</form>

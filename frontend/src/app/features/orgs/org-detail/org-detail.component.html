@@ -1,136 +1,105 @@
 <div class="page">
 
-    @if (loading()) {
+  @if (loading()) {
     <div class="loading-page">
-        <div class="spinner"></div>
+      <div class="spinner"></div>
     </div>
-    }
+  }
 
-    @if (!loading() && org(); as o) {
+  @if (!loading() && org(); as o) {
     <div class="detail-layout">
 
-        <div class="detail-header">
-            <button class="back-btn" (click)="goBack()">
-                <i class="pi pi-arrow-left"></i> Назад до списку
+      <app-page-header [showBack]="true" (back)="goBack()">
+        @if (isAdmin()) {
+          <div actions class="header-actions">
+            <button class="btn-edit" (click)="openEdit()">
+              <i class="pi pi-file-edit"></i> Редагувати
             </button>
-            @if (isAdmin()) {
-            <div class="header-actions">
-                <button class="btn-edit" (click)="openEdit()">
-                    <i class="pi pi-file-edit"></i> Редагувати
-                </button>
-                <button class="btn-delete" (click)="openDeleteModal()">
-                    <i class="pi pi-trash"></i> Видалити
-                </button>
-            </div>
-            }
-        </div>
+            <button class="btn-delete" (click)="openDeleteModal()">
+              <i class="pi pi-trash"></i> Видалити
+            </button>
+          </div>
+        }
+      </app-page-header>
 
-        <div class="hero-card">
-            <div class="hero-avatar" [style.background]="getAvatarColor(o.id)">
-                {{ o.name[0] }}
-            </div>
-            <div class="hero-info">
-                <div class="hero-type">
-                    <span class="type-badge type-{{ o.orgType }}">{{ orgTypeLabel(o.orgType) }}</span>
-                </div>
-                <h1 class="hero-title">{{ o.name }}</h1>
-                @if (parentOrg()) {
-                <p class="hero-subtitle">
-                    <i class="pi pi-sitemap"></i> {{ parentOrg()!.name }}
-                </p>
-                }
-            </div>
-        </div>
+      <app-hero-card
+        [avatarLetter]="o.name[0]"
+        [avatarColor]="getAvatarColor(o.id)"
+        [title]="o.name"
+        [subtitle]="parentOrg() ? parentOrg()!.name : ''"
+        [topLine]="o.orgType">
+        <app-badge badge [type]="'type-' + o.orgType">{{ orgTypeLabel(o.orgType) }}</app-badge>
+      </app-hero-card>
 
-        <div class="content-grid">
+      <div class="content-grid">
 
-            <div class="info-card">
-                <div class="card-title"><i class="pi pi-info-circle"></i> Основна інформація</div>
-                <div class="info-rows">
-                    <div class="info-row">
-                        <span class="info-label">Назва</span>
-                        <span class="info-value">{{ o.name }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Тип</span>
-                        <span class="info-value">
-                            <span class="type-badge type-{{ o.orgType }}">{{ orgTypeLabel(o.orgType) }}</span>
+        <app-info-card title="Основна інформація" icon="pi pi-info-circle">
+          <div class="info-rows">
+            <div class="info-row">
+              <span class="info-label">Назва</span>
+              <span class="info-value">{{ o.name }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Тип</span>
+              <span class="info-value">
+                            <app-badge [type]="'type-' + o.orgType">{{ orgTypeLabel(o.orgType) }}</app-badge>
                         </span>
-                    </div>
-                    @if (parentOrg()) {
-                    <div class="info-row">
-                        <span class="info-label">Факультет</span>
-                        <span class="info-value link-value" (click)="goToOrg(parentOrg()!.id)">
+            </div>
+            @if (parentOrg()) {
+              <div class="info-row">
+                <span class="info-label">Факультет</span>
+                <span class="info-value link-value" (click)="goToOrg(parentOrg()!.id)">
                             {{ parentOrg()!.name }}
-                            <i class="pi pi-arrow-up-right" style="font-size: 11px;"></i>
+                  <i class="pi pi-arrow-up-right" style="font-size: 11px;"></i>
                         </span>
-                    </div>
-                    }
-                </div>
-            </div>
-
-            @if (isFaculty()) {
-            <div class="info-card">
-                <div class="card-title">
-                    <i class="pi pi-building"></i> Кафедри
-                    <span class="count-badge">{{ departments().length }}</span>
-                </div>
-
-                @if (departments().length === 0) {
-                <div class="empty-small">
-                    <i class="pi pi-inbox"></i>
-                    <span>Кафедр не знайдено</span>
-                </div>
-                } @else {
-                <div class="dept-list">
-                    @for (d of departments(); track d.id) {
-                    <div class="dept-item" (click)="goToOrg(d.id)">
-                        <div class="dept-dot" [style.background]="getAvatarColor(d.id)">
-                            {{ d.name[0] }}
-                        </div>
-                        <span class="dept-name">{{ d.name }}</span>
-                        <i class="pi pi-angle-right dept-arrow"></i>
-                    </div>
-                    }
-                </div>
-                }
-            </div>
+              </div>
             }
+          </div>
+        </app-info-card>
 
-        </div>
+        @if (isFaculty()) {
+          <app-info-card title="Кафедри" icon="pi pi-building" [count]="departments().length">
+            @if (departments().length === 0) {
+              <div class="empty-small">
+                <i class="pi pi-inbox"></i>
+                <span>Кафедр не знайдено</span>
+              </div>
+            } @else {
+              <div class="dept-list">
+                @for (d of departments(); track d.id) {
+                  <div class="dept-item" (click)="goToOrg(d.id)">
+                    <div class="dept-dot" [style.background]="getAvatarColor(d.id)">
+                      {{ d.name[0] }}
+                    </div>
+                    <span class="dept-name">{{ d.name }}</span>
+                    <i class="pi pi-angle-right dept-arrow"></i>
+                  </div>
+                }
+              </div>
+            }
+          </app-info-card>
+        }
+
+      </div>
     </div>
-    }
+  }
 </div>
 
 @if (editModalOpen()) {
-<div class="modal-backdrop">
-    <div class="modal" (click)="$event.stopPropagation()">
-        <app-org-modal [org]="org()" mode="edit" (saved)="onSaved()" (cancelled)="closeEdit()" />
-    </div>
-</div>
+  <app-modal title="Редагувати організацію" (close)="closeEdit()">
+    <app-org-modal [org]="org()" mode="edit" (saved)="onSaved()" (cancelled)="closeEdit()" />
+  </app-modal>
 }
 
 @if (deleteModalOpen()) {
-<div class="modal-backdrop" (click)="closeDeleteModal()">
-    <div class="modal modal-sm" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-            <div class="modal-title">Видалення організації</div>
-            <button class="modal-close" (click)="closeDeleteModal()">
-                <i class="pi pi-times"></i>
-            </button>
-        </div>
-        <div class="confirm-body">
-            <div class="confirm-icon confirm-danger"><i class="pi pi-trash"></i></div>
-            <p class="confirm-text">
-                Ви впевнені, що хочете видалити <strong>{{ org()?.name }}</strong>?
-            </p>
-            <p class="confirm-subtext">Цю дію неможливо скасувати.</p>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn-cancel" (click)="closeDeleteModal()"><i
-                    class="pi pi-times"></i>Скасувати</button>
-            <button type="button" class="btn-danger" (click)="confirmDelete()">Видалити</button>
-        </div>
-    </div>
-</div>
+  <app-confirm-dialog
+    title="Видалення організації"
+    [message]="'Ви впевнені, що хочете видалити <strong>' + (org()?.name ?? '') + '</strong>?'"
+    subtext="Цю дію неможливо скасувати."
+    iconType="danger"
+    confirmButtonClass="btn-danger"
+    confirmLabel="Видалити"
+    (confirm)="confirmDelete()"
+    (cancel)="closeDeleteModal()"
+  />
 }

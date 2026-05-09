@@ -1,0 +1,153 @@
+<div class="page">
+
+  @if (loading()) {
+    <div class="loading-page">
+      <div class="spinner"></div>
+    </div>
+  }
+
+  @if (!loading() && discipline()) {
+    <div class="detail-layout">
+
+      <app-page-header [showBack]="true" [backLink]="'/disciplines'">
+        <div actions class="header-actions">
+          @if (isAdmin()) {
+            <button class="btn-edit" (click)="editModalOpen.set(true)">
+              <i class="pi pi-file-edit"></i> Редагувати
+            </button>
+          }
+        </div>
+      </app-page-header>
+
+      <app-hero-card
+        [avatarLetter]="discipline()!.name[0].toUpperCase()"
+        [avatarColor]="getAvatarColor(discipline()!.id)"
+        [title]="discipline()!.name"
+        subtitle="Навчальна дисципліна">
+        <ng-container badges>
+          <span class="id-chip"># {{ discipline()!.id }}</span>
+          <span class="count-chip">
+            <i class="pi pi-sitemap"></i>
+            {{ specialtyDisciplines().length }} {{ specialtyDisciplines().length === 1 ? 'спеціальність' : 'спеціальностей' }}
+          </span>
+        </ng-container>
+      </app-hero-card>
+
+      <div class="content-grid">
+
+        <div class="left-col">
+          <app-info-card title="Прив'язки до спеціальностей" icon="pi pi-list"
+                         [count]="specialtyDisciplines().length">
+        @if (isAdmin()) {
+          <div class="sd-card-actions">
+            <button class="btn-add-sd" (click)="addSdModalOpen.set(true)">
+              <i class="pi pi-plus"></i> Додати спеціальність
+            </button>
+          </div>
+        }
+            @if (specialtyDisciplines().length === 0) {
+              <div class="empty-sd">
+                <i class="pi pi-info-circle"></i>
+                Дисципліна не прив'язана до жодної спеціальності
+              </div>
+            }
+            @for (sd of specialtyDisciplines(); track sd.id) {
+              <div class="sd-entry">
+                <div class="sd-header">
+                  <i class="pi pi-graduation-cap sd-icon"></i>
+                  <span class="sd-specialty-name">{{ getSpecialtyName(sd.specialtyId) }}</span>
+                  @if (sortedHours(sd.hours).length > 0) {
+                    <button class="btn-toggle-hours" (click)="toggleHoursExpanded(sd.id)" title="Розгорнути/Згорнути">
+                      <i class="pi" [ngClass]="isHoursExpanded(sd.id) ? 'pi-chevron-down' : 'pi-chevron-right'"></i>
+                    </button>
+                  }
+                  @if (isAdmin()) {
+                    <button class="btn-add-hours" (click)="addHoursTargetSdId.set(sd.id)" title="Додати години">
+                      <i class="pi pi-plus"></i> Нові години
+                    </button>
+                  }
+                </div>
+
+                @if (sortedHours(sd.hours).length > 0 && isHoursExpanded(sd.id)) {
+                  <div class="hours-table-wrap">
+                    <table class="hours-table">
+                      <thead>
+                        <tr>
+                          <th>Навч. рік</th>
+                          <th>ЄКТС</th>
+                          <th>Всього</th>
+                          <th>Ауд.</th>
+                          <th>Лекції</th>
+                          <th>Сем.</th>
+                          <th>Лаб.</th>
+                          <th>Інд.</th>
+                          <th>СРС</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (h of sortedHours(sd.hours); track h.id) {
+                          <tr>
+                            <td class="year-cell">{{ h.academicYear }}</td>
+                            <td>{{ h.ectsCredits }}</td>
+                            <td>{{ h.totalHours }}</td>
+                            <td>{{ h.classroomHours }}</td>
+                            <td>{{ h.lectureHours }}</td>
+                            <td>{{ h.seminarHours }}</td>
+                            <td>{{ h.laboratoryHours }}</td>
+                            <td>{{ h.individualHours }}</td>
+                            <td>{{ h.selfWorkHours }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              </div>
+            }
+          </app-info-card>
+        </div>
+
+        <div class="right-col">
+          <app-info-card title="Загальна інформація" icon="pi pi-info-circle">
+            <div class="info-rows">
+              <div class="info-row">
+                <span class="info-label">ID дисципліни</span>
+                <span class="info-value mono">{{ discipline()!.id }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Повна назва</span>
+                <span class="info-value">{{ discipline()!.name }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Кількість спеціальностей</span>
+                <span class="info-value">{{ specialtyDisciplines().length }}</span>
+              </div>
+            </div>
+          </app-info-card>
+        </div>
+
+      </div>
+    </div>
+  }
+
+</div>
+
+@if (editModalOpen() && discipline()) {
+  <app-discipline-modal [discipline]="discipline()" (saved)="onSaved()" (cancelled)="editModalOpen.set(false)" />
+}
+
+@if (addSdModalOpen() && discipline()) {
+  <app-specialty-discipline-modal
+    [disciplineId]="discipline()!.id"
+    [existingSpecialtyIds]="existingSpecialtyIds()"
+    (saved)="onSdAdded()"
+    (cancelled)="addSdModalOpen.set(false)" />
+}
+
+@if (addHoursTargetSdId() !== null) {
+  <app-add-hours-modal
+    [specialtyDisciplineId]="addHoursTargetSdId()!"
+    [specialtyName]="getSpecialtyNameForSd(addHoursTargetSdId()!)"
+    (saved)="onHoursAdded()"
+    (cancelled)="addHoursTargetSdId.set(null)" />
+}

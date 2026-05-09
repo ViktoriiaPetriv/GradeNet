@@ -1,0 +1,249 @@
+<div class="page">
+  @if (loading()) {
+    <div class="loading-page">
+      <div class="spinner"></div>
+    </div>
+  }
+
+  @if (!loading() && group(); as g) {
+    <div class="detail-layout">
+
+      <app-page-header [showBack]="true" (back)="goBack()">
+        <div actions class="header-actions">
+          @if (isAdmin()) {
+            <button class="btn-edit" (click)="openEdit()">
+              <i class="pi pi-file-edit"></i> Редагувати
+            </button>
+            <button class="btn-delete" (click)="openDeleteModal()">
+              <i class="pi pi-trash"></i> Видалити
+            </button>
+          }
+        </div>
+      </app-page-header>
+
+      <app-hero-card
+        [avatarLetter]="g.name[0]"
+        [avatarColor]="getAvatarColor(g.id)"
+        [title]="g.name"
+        subtitle="Навчальна група"
+        topLine="GROUP">
+        <div badges>
+          <div class="badge-info">
+            <i class="pi pi-users"></i>
+            <span>{{ members().length }} студентів</span>
+          </div>
+        </div>
+      </app-hero-card>
+
+      <div class="content-grid">
+
+        <app-info-card
+          title="Студенти"
+          icon="pi pi-users"
+          [count]="members().length"
+        >
+          @if (isAdminOrManager()) {
+            <div class="member-add-row">
+              <button class="btn-add-member" (click)="openAddMember()">
+                <i class="pi pi-plus"></i> Додати студента
+              </button>
+            </div>
+          }
+
+          @if (members().length === 0) {
+            <div class="empty-small">
+              <i class="pi pi-inbox"></i>
+              <span>Студентів у групі немає</span>
+            </div>
+          } @else {
+            <div class="member-list">
+              @for (m of members(); track m.bookNumberId) {
+                <div class="member-item">
+                  <div class="member-dot" [style.background]="getAvatarColor(m.bookNumberId)">
+                    {{ m.studentName?.[0] || '?' }}
+                  </div>
+                  <div class="member-info">
+                    <span class="member-name">{{ m.studentName || '—' }}</span>
+                    <span class="member-email">{{ m.studentEmail || '—' }}</span>
+                  </div>
+                  @if (isAdminOrManager()) {
+                    <button
+                      class="member-remove"
+                      (click)="openRemoveModal(m)"
+                      title="Видалити зі списку"
+                    >
+                      <i class="pi pi-times"></i>
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </app-info-card>
+
+      </div>
+    </div>
+  }
+</div>
+
+@if (editModalOpen()) {
+  <app-modal title="Редагувати групу" (close)="closeEdit()">
+    <app-group-modal
+      [group]="group()"
+      mode="edit"
+      (saved)="onSaved()"
+      (cancelled)="closeEdit()"
+    />
+  </app-modal>
+}
+
+@if (deleteModalOpen()) {
+  <app-confirm-dialog
+    title="Видалення групи"
+    [message]="'Ви впевнені, що хочете видалити групу <strong>' + (group()?.name ?? '') + '</strong>?'"
+    subtext="Цю дію неможливо скасувати."
+    iconType="danger"
+    confirmButtonClass="btn-danger"
+    confirmLabel="Видалити"
+    (confirm)="confirmDelete()"
+    (cancel)="closeDeleteModal()"
+  />
+}
+
+@if (addMemberOpen()) {
+  <app-modal title="Додати студента до групи" size="sm" (close)="closeAddMember()">
+    <div class="add-member-form">
+      @if (selectedStudent()) {
+        <div class="selected-student">
+          <div class="selected-header">
+            <i class="pi pi-check"></i>
+            <span>Вибраний студент</span>
+          </div>
+          <div class="selected-item">
+            <div class="avatar-preview" [style.background]="getAvatarColor(selectedStudent()!.id)">
+              {{ getStudentInitials(selectedStudent()!) }}
+            </div>
+            <div class="student-details">
+              <div class="student-name">{{ getStudentFullName(selectedStudent()!) }}</div>
+              <div class="student-email">{{ selectedStudent()!.email }}</div>
+            </div>
+            <button class="btn-remove" (click)="removeMemberSelection()">
+              <i class="pi pi-times"></i>
+            </button>
+          </div>
+
+          @if (loadingBooks()) {
+            <div class="loading-books">
+              <div class="spinner-mini"></div>
+              <span>Завантаження залікових книжок...</span>
+            </div>
+          } @else if (studentBooks().length > 0) {
+            <div class="books-section">
+              @if (availableBooks().length === 0) {
+                <div class="no-books-warning">
+                  <i class="pi pi-exclamation-circle"></i>
+                  <span>Усі залік цього студента вже додані до груп</span>
+                </div>
+              } @else if (studentBooks().length > 1) {
+                <label class="form-label">Вибрати залікову книжку *</label>
+                <div class="books-list">
+                  @for (book of studentBooks(); track book.bookId) {
+                    <button
+                      type="button"
+                      class="book-item"
+                      [class.selected]="selectedBook()?.bookId === book.bookId"
+                      [class.disabled]="!isBookAvailable(book.bookId)"
+                      [disabled]="!isBookAvailable(book.bookId)"
+                      (click)="selectBook(book)"
+                    >
+                      <div class="book-radio">
+                        @if (selectedBook()?.bookId === book.bookId) {
+                          <i class="pi pi-check"></i>
+                        }
+                      </div>
+                      <div class="book-info">
+                        <div class="book-number">{{ book.bookNumber }}</div>
+                        <div class="book-status">{{ book.bookNumberStatus }}</div>
+                      </div>
+                      @if (!isBookAvailable(book.bookId)) {
+                        <div class="book-used">
+                          <i class="pi pi-lock"></i> Вже у групі
+                        </div>
+                      }
+                    </button>
+                  }
+                </div>
+              } @else if (availableBooks().length === 1) {
+                <div class="single-book-info">
+                  <i class="pi pi-info-circle"></i>
+                  <div>
+                    <div class="book-label">Залікова книжка:</div>
+                    <div class="book-value">{{ availableBooks()[0].bookNumber }}</div>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="no-books-warning">
+              <i class="pi pi-exclamation-circle"></i>
+              <span>Студент не має залікових книжок</span>
+            </div>
+          }
+        </div>
+      } @else {
+        <label class="form-label">Пошук студента *</label>
+        <div class="search-container">
+          <input
+            class="form-input search-input"
+            type="text"
+            placeholder="Введіть ім'я або email студента..."
+            [formControl]="searchControl"
+          />
+          @if (searching()) {
+            <div class="spinner-mini"></div>
+          }
+        </div>
+
+        @if (searchResults().length > 0) {
+          <div class="search-results">
+            @for (result of searchResults(); track result.id) {
+              <button
+                type="button"
+                class="result-item"
+                (click)="selectStudent(result)"
+              >
+                <div class="result-avatar" [style.background]="getAvatarColor(result.id)">
+                  {{ getStudentInitials(result) }}
+                </div>
+                <div class="result-info">
+                  <div class="result-name">{{ getStudentFullName(result) }}</div>
+                  <div class="result-email">{{ result.email }}</div>
+                </div>
+              </button>
+            }
+          </div>
+        }
+      }
+    </div>
+    <div footer class="modal-footer">
+      <button class="btn-cancel" (click)="closeAddMember()">
+        <i class="pi pi-times"></i> Скасувати
+      </button>
+      <button class="btn-primary" (click)="submitAddMember()" [disabled]="!selectedStudent()">
+        <i class="pi pi-plus"></i> Додати
+      </button>
+    </div>
+  </app-modal>
+}
+
+@if (removeModalOpen()) {
+  <app-confirm-dialog
+    title="Видалення студента"
+    [message]="'Видалити студента <strong>' + (memberToRemove()?.studentName ?? '—') + '</strong> з групи?'"
+    iconType="warning"
+    confirmButtonClass="btn-danger"
+    confirmLabel="Видалити"
+    (confirm)="confirmRemoveMember()"
+    (cancel)="closeRemoveModal()"
+  />
+}

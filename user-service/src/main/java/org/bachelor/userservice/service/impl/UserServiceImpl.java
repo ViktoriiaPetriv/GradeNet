@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.bachelor.userservice.exception.NotFoundException;
 import org.bachelor.userservice.exception.ValidationException;
 import org.bachelor.userservice.mapper.UserMapper;
+import org.bachelor.userservice.model.dto.AdminSetupRequestDTO;
 import org.bachelor.userservice.model.dto.AuthenticatedUser;
 import org.bachelor.userservice.model.dto.ChangePasswordRequestDTO;
 import org.bachelor.userservice.model.dto.StudentInfoDTO;
@@ -227,7 +228,33 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
-    // UserServiceImpl
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isSetupRequired() {
+        return !userRepository.existsByRole(Role.ADMIN);
+    }
+
+    @Override
+    @Transactional
+    public UserDTO createInitialAdmin(AdminSetupRequestDTO request) {
+        if (!isSetupRequired()) {
+            throw new ValidationException("Адміністратор вже існує в системі");
+        }
+
+        if (userRepository.findByEmail(request.email()).isPresent()) {
+            throw new ValidationException("Користувач з такою електронною поштою вже існує: %s".formatted(request.email()));
+        }
+
+        validatePassword(request.password());
+
+        User admin = new User();
+        admin.setEmail(request.email());
+        admin.setPassword(passwordEncoder.encode(request.password()));
+        admin.setRole(Role.ADMIN);
+
+        return userMapper.toDto(userRepository.save(admin));
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<UserDTO> findStudentsBySpecialty(Long specialtyId, Integer enrollYear) {
@@ -249,6 +276,21 @@ public class UserServiceImpl implements UserService {
         if (studentIds.isEmpty()) return List.of();
 
         return userRepository.findAllById(studentIds)
+                .stream()
+                .map(userMapper::toDto)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserDTO> searchStudents(String query) {
+        AuthenticatedUser currentUser = SecurityUtils.getCurrentUser();
+
+        if (!currentUser.isAdmin() && !currentUser.isManager()) {
+            throw new AccessDeniedException("Недостатньо прав");
+        }
+
+        return userRepository.search(query)
                 .stream()
                 .map(userMapper::toDto)
                 .toList();

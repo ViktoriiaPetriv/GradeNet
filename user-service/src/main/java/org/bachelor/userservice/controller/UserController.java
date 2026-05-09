@@ -61,4 +61,9 @@ public class UserController {
             @RequestParam(required = false) Integer enrollYear) {
         return userService.findStudentsBySpecialty(specialtyId, enrollYear);
     }
+
+    @GetMapping("/search")
+    public List<UserDTO> search(@RequestParam String query) {
+        return userService.searchStudents(query);
+    }
 }

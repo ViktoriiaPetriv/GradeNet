@@ -1,0 +1,12 @@
+<div class="info-card">
+  <div class="card-title">
+    @if (icon) {
+      <i [class]="icon"></i>
+    }
+    {{ title }}
+    @if (count !== null) {
+      <span class="count-badge">{{ count }}</span>
+    }
+  </div>
+  <ng-content></ng-content>
+</div>

@@ -1,0 +1,70 @@
+<div class="page">
+  <app-page-header title="Дисципліни" subtitle="Перелік навчальних дисциплін">
+    @if (isAdmin()) {
+      <button actions class="btn-primary" (click)="openCreate()">
+        <i class="pi pi-plus"></i> Додати дисципліну
+      </button>
+    }
+  </app-page-header>
+
+  <div class="filters">
+    <input class="search-input" type="text" placeholder="Пошук за назвою..."
+           [value]="search()" (input)="onSearch($event)" />
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+      <tr>
+        <th>#</th>
+        <th>Назва</th>
+        @if (isAdmin()) {
+          <th>Дії</th>
+        }
+      </tr>
+      </thead>
+      <tbody>
+        @if (paginatedItems().length === 0) {
+          <tr>
+            <td colspan="3">
+              <div class="empty-state">
+                <div class="empty-icon"><i class="pi pi-book"></i></div>
+                <div>Дисциплін не знайдено</div>
+              </div>
+            </td>
+          </tr>
+        }
+        @for (d of paginatedItems(); track d.id) {
+          <tr class="clickable-row" (click)="viewDiscipline(d.id)">
+            <td class="id-cell text-muted">{{ d.id }}</td>
+            <td>
+              <div class="table-cell">
+                <div class="discipline-icon" [style.background]="getAvatarColor(d.id)">
+                  <i class="pi pi-book"></i>
+                </div>
+                <span class="full-name">{{ d.name }}</span>
+              </div>
+            </td>
+            @if (isAdmin()) {
+              <td>
+                <button class="action-btn edit" (click)="openEdit(d); $event.stopPropagation()" title="Редагувати">
+                  <i class="pi pi-file-edit"></i>
+                </button>
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <app-pagination [currentPage]="currentPageUi()" [totalPages]="totalPages()"
+                    [perPage]="perPage()" [perPageOptions]="perPageOptions"
+                    [info]="paginationInfo()" (pageChange)="onPageChange($event)"
+                    (perPageChange)="onPerPageChange($event)" />
+  </div>
+</div>
+
+@if (modalOpen()) {
+  <app-discipline-modal [discipline]="editingDiscipline()"
+                        (saved)="onSaved()" (cancelled)="closeModal()" />
+}

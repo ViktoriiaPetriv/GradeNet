@@ -1,0 +1,109 @@
+<div class="page">
+  <app-page-header title="Групи студентів" subtitle="Управління навчальними групами">
+    @if (isAdmin()) {
+      <button actions class="btn-primary" (click)="openCreate()">
+        <i class="pi pi-plus"></i> Додати групу
+      </button>
+    }
+  </app-page-header>
+
+  <div class="filters">
+    <input
+      class="search-input"
+      type="text"
+      placeholder="Пошук за назвою..."
+      [value]="search()"
+      (input)="onSearch($event)"
+    />
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Назва</th>
+          <th>Дії</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (groups().length === 0) {
+          <tr>
+            <td colspan="2">
+              <div class="empty-state">
+                <div class="empty-icon">👥</div>
+                <div>Груп не знайдено</div>
+              </div>
+            </td>
+          </tr>
+        }
+        @for (group of groups(); track group.id) {
+          <tr class="clickable-row" (click)="viewGroup(group.id)">
+            <td>
+              <div class="table-cell">
+                <div class="group-avatar" [style.background]="getAvatarColor(group.id)">
+                  {{ group.name[0] }}
+                </div>
+                <span class="group-name">{{ group.name }}</span>
+              </div>
+            </td>
+            <td>
+              @if (isAdmin()) {
+                <button
+                  class="action-btn edit"
+                  (click)="openEdit(group); $event.stopPropagation()"
+                  title="Редагувати"
+                >
+                  <i class="pi pi-file-edit"></i>
+                </button>
+                <button
+                  class="action-btn delete"
+                  (click)="openDeleteModal(group); $event.stopPropagation()"
+                  title="Видалити"
+                >
+                  <i class="pi pi-trash"></i>
+                </button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <app-pagination
+      [currentPage]="currentPageUi()"
+      [totalPages]="totalPages()"
+      [perPage]="perPage()"
+      [perPageOptions]="perPageOptions"
+      [info]="paginationInfo()"
+      (pageChange)="onPageChange($event)"
+      (perPageChange)="onPerPageChange($event)"
+    />
+  </div>
+</div>
+
+@if (modalOpen()) {
+  <app-modal
+    [title]="isEdit() ? 'Редагувати групу' : 'Нова група'"
+    (close)="closeModal()"
+  >
+    <app-group-modal
+      [group]="editingGroup()"
+      [mode]="isEdit() ? 'edit' : 'create'"
+      (saved)="onSaved()"
+      (cancelled)="closeModal()"
+    />
+  </app-modal>
+}
+
+@if (deleteModalOpen()) {
+  <app-confirm-dialog
+    title="Видалення групи"
+    [message]="'Ви впевнені, що хочете видалити групу <strong>' + (groupToDelete()?.name ?? '') + '</strong>?'"
+    subtext="Цю дію неможливо скасувати."
+    iconType="danger"
+    confirmButtonClass="btn-danger"
+    confirmLabel="Видалити"
+    (confirm)="confirmDelete()"
+    (cancel)="closeDeleteModal()"
+  />
+}

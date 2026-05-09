@@ -1,0 +1,159 @@
+<div class="login-wrapper">
+    <div class="login-left">
+        <div class="brand">
+            <img src="/logo.png" alt="GradeNet Logo" class="brand-logo" />
+            <span class="brand-name">GradeNet</span>
+        </div>
+
+        <div class="login-content">
+            <div class="login-heading">
+                <h1>Перший запуск</h1>
+                <p>Зареєструйте обліковий запис адміністратора</p>
+            </div>
+
+            @if (error()) {
+            <div class="alert-error">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <circle cx="8" cy="8" r="7" stroke="#E53E3E" stroke-width="1.5" />
+                    <path d="M8 5V8.5" stroke="#E53E3E" stroke-width="1.5" stroke-linecap="round" />
+                    <circle cx="8" cy="11" r="0.75" fill="#E53E3E" />
+                </svg>
+                {{ error() }}
+            </div>
+            }
+
+            <form [formGroup]="form" (ngSubmit)="submit()" class="login-form" autocomplete="off">
+                <div class="field-group">
+                    <label class="field-label">Email адреса</label>
+                    <div class="field-wrap" [class.field-error]="isInvalid('email')">
+                        <svg class="field-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                            <rect x="2" y="4" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.5" />
+                            <path d="M2 7L9 11L16 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                        </svg>
+                        <input formControlName="email" type="email" class="field-input"
+                            placeholder="admin@pnu.edu.ua" autocomplete="email" />
+                    </div>
+                    @if (isInvalid('email')) {
+                    <span class="field-hint">Введіть коректний email (@pnu.edu.ua або @cnu.edu.ua)</span>
+                    }
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label">Пароль</label>
+                    <div class="field-wrap" [class.field-error]="isInvalid('password')">
+                        <svg class="field-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                            <rect x="4" y="8" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5" />
+                            <path d="M6 8V6a3 3 0 1 1 6 0v2" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round" />
+                        </svg>
+                        <input formControlName="password" [type]="showPassword() ? 'text' : 'password'"
+                            class="field-input" placeholder="Мінімум 8 символів" autocomplete="new-password" />
+                        <button type="button" class="toggle-pass" (click)="togglePassword()">
+                            @if (showPassword()) {
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                                <path d="M2 9C2 9 4.5 4 9 4C13.5 4 16 9 16 9C16 9 13.5 14 9 14C4.5 14 2 9 2 9Z"
+                                    stroke="currentColor" stroke-width="1.5" />
+                                <circle cx="9" cy="9" r="2" stroke="currentColor" stroke-width="1.5" />
+                                <path d="M3 3L15 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                            </svg>
+                            } @else {
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                                <path d="M2 9C2 9 4.5 4 9 4C13.5 4 16 9 16 9C16 9 13.5 14 9 14C4.5 14 2 9 2 9Z"
+                                    stroke="currentColor" stroke-width="1.5" />
+                                <circle cx="9" cy="9" r="2" stroke="currentColor" stroke-width="1.5" />
+                            </svg>
+                            }
+                        </button>
+                    </div>
+                    @if (isInvalid('password')) {
+                    <span class="field-hint">Мінімум 8 символів</span>
+                    }
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label">Підтвердження пароля</label>
+                    <div class="field-wrap" [class.field-error]="isInvalid('confirmPassword') || isConfirmMismatch()">
+                        <svg class="field-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                            <rect x="4" y="8" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5" />
+                            <path d="M6 8V6a3 3 0 1 1 6 0v2" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round" />
+                        </svg>
+                        <input formControlName="confirmPassword" [type]="showConfirm() ? 'text' : 'password'"
+                            class="field-input" placeholder="Повторіть пароль" autocomplete="new-password" />
+                        <button type="button" class="toggle-pass" (click)="toggleConfirm()">
+                            @if (showConfirm()) {
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                                <path d="M2 9C2 9 4.5 4 9 4C13.5 4 16 9 16 9C16 9 13.5 14 9 14C4.5 14 2 9 2 9Z"
+                                    stroke="currentColor" stroke-width="1.5" />
+                                <circle cx="9" cy="9" r="2" stroke="currentColor" stroke-width="1.5" />
+                                <path d="M3 3L15 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                            </svg>
+                            } @else {
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                                <path d="M2 9C2 9 4.5 4 9 4C13.5 4 16 9 16 9C16 9 13.5 14 9 14C4.5 14 2 9 2 9Z"
+                                    stroke="currentColor" stroke-width="1.5" />
+                                <circle cx="9" cy="9" r="2" stroke="currentColor" stroke-width="1.5" />
+                            </svg>
+                            }
+                        </button>
+                    </div>
+                    @if (isConfirmMismatch()) {
+                    <span class="field-hint">Паролі не збігаються</span>
+                    }
+                </div>
+
+                <button type="submit" class="btn-login" [class.loading]="loading()" [disabled]="loading()">
+                    @if (loading()) {
+                    <span class="spinner"></span>
+                    <span>Реєстрація...</span>
+                    } @else {
+                    <span>Зареєструвати адміністратора</span>
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <path d="M3 9H15M10 4L15 9L10 14" stroke="currentColor" stroke-width="1.5"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    }
+                </button>
+            </form>
+        </div>
+
+        <div class="login-footer">
+            © 2026 GradeNet. Система управління навчанням.
+        </div>
+    </div>
+
+    <div class="login-right">
+        <div class="illustration">
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+            <div class="orb orb-3"></div>
+            <div class="setup-info">
+                <div class="setup-icon">
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                        <circle cx="24" cy="24" r="22" stroke="rgba(255,255,255,0.2)" stroke-width="2" />
+                        <path d="M24 14C20.134 14 17 17.134 17 21C17 24.866 20.134 28 24 28C27.866 28 31 24.866 31 21C31 17.134 27.866 14 24 14Z"
+                            stroke="white" stroke-width="1.5" />
+                        <path d="M12 36C12 31.582 17.373 28 24 28C30.627 28 36 31.582 36 36"
+                            stroke="white" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <h2 class="setup-title">Ласкаво просимо до GradeNet</h2>
+                <p class="setup-desc">Це перший запуск системи. Будь ласка, створіть обліковий запис адміністратора для початку роботи.</p>
+                <ul class="setup-steps">
+                    <li>
+                        <span class="step-num">1</span>
+                        <span>Вкажіть email у форматі університету</span>
+                    </li>
+                    <li>
+                        <span class="step-num">2</span>
+                        <span>Придумайте надійний пароль</span>
+                    </li>
+                    <li>
+                        <span class="step-num">3</span>
+                        <span>Увійдіть та налаштуйте систему</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

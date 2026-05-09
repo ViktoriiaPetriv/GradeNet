@@ -1,11 +1,21 @@
 package org.bachelor.gradeservice.model.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 
+/**
+ * Entity representing an individual grade record.
+ * Stores the actual grade values in different grading systems and the
+ * assessment date.
+ */
 @Getter
 @Setter
 @Entity
@@ -16,41 +26,34 @@ public class Grade {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "student_id", nullable = false)
-    private Long studentId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "entry_id", nullable = false,
+            foreignKey = @ForeignKey(name = "fk_grade_entry"))
+    private GradeBookEntry entry;
 
-    @Column(name = "attempt", nullable = false)
-    private Integer attempt;
-
-    @Column(name = "academic_year", nullable = false)
-    private String academicYear;
-
-    @Column(name = "semester", nullable = false)
-    private Integer semester;
-
-    @Column(name = "assessment_date")
-    private Instant assessmentDate;
+    @Column(name = "assessment_date", nullable = false)
+    private LocalDateTime assessmentDate;
 
     @Column(name = "university_grade")
     private Integer universityGrade;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "national_grade")
+    @Column(name = "national_grade", length = 20)
     private NationalGrade nationalGrade;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "ects_grade")
+    @Column(name = "ects_grade", length = 2)
     private EctsGrade ectsGrade;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "assessment")
-    private AssessmentType assessment;
+    @Column(name = "assessment_type", length = 20)
+    private AssessmentType assessmentType;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "state")
-    private GradeState state;
+    @CreationTimestamp
+    @Column(name = "created_at", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    private LocalDateTime createdAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "specialty_discipline_id", nullable = false)
-    private SpecialtyDiscipline specialtyDiscipline;
+    @UpdateTimestamp
+    @Column(name = "updated_at", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    private LocalDateTime updatedAt;
 }

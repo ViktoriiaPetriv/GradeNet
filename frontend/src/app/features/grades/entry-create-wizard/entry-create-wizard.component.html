@@ -1,0 +1,166 @@
+@if (loading()) {
+  <div class="wizard-loading">
+    <i class="pi pi-spin pi-spinner"></i> Завантаження...
+  </div>
+} @else if (step() === 1) {
+  <div class="wizard-body">
+    <div class="step-header">
+      <span class="step-badge">Крок 1 з 2</span>
+      <p class="step-desc">Оберіть параметри запису та групи студентів</p>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Спеціальність</label>
+      <select
+        class="form-input"
+        [ngModel]="selectedSpecialtyId()"
+        (ngModelChange)="onSpecialtyChange($event ? +$event : null)"
+        name="specialty"
+      >
+        <option [ngValue]="null">— Всі спеціальності —</option>
+        @for (s of specialties(); track s.id) {
+          <option [value]="s.id">{{ specialtyLabel(s) }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Дисципліна *</label>
+      <select
+        class="form-input"
+        [ngModel]="selectedDisciplineId()"
+        (ngModelChange)="selectedDisciplineId.set($event ? +$event : null)"
+        name="discipline"
+      >
+        <option [ngValue]="null">— Оберіть дисципліну —</option>
+        @for (sd of filteredDisciplines(); track sd.id) {
+          <option [value]="sd.id">{{ disciplineLabel(sd) }}</option>
+        }
+      </select>
+      @if (selectedSpecialtyId() && filteredDisciplines().length === 0) {
+        <span class="field-hint">Для цієї спеціальності немає дисциплін</span>
+      }
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Викладач *</label>
+      <select
+        class="form-input"
+        [ngModel]="selectedProfessorId()"
+        (ngModelChange)="selectedProfessorId.set($event ? +$event : null)"
+        name="professor"
+      >
+        <option [ngValue]="null">— Оберіть викладача —</option>
+        @for (p of professors(); track p.id) {
+          <option [value]="p.id">{{ professorLabel(p) }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Навчальний рік *</label>
+        <input
+          class="form-input"
+          type="text"
+          placeholder="2024/2025"
+          [ngModel]="academicYear()"
+          (ngModelChange)="academicYear.set($event)"
+          name="academicYear"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Дата звіту</label>
+        <input
+          class="form-input"
+          type="date"
+          [ngModel]="reportDate()"
+          (ngModelChange)="reportDate.set($event)"
+          name="reportDate"
+        />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">
+        Групи *
+        @if (groupsLoading()) {
+          <i class="pi pi-spin pi-spinner" style="font-size: 12px; margin-left: 6px;"></i>
+        } @else if (selectedSpecialtyId()) {
+          <span class="field-hint-inline">— відфільтровано по спеціальності</span>
+        }
+      </label>
+      <div class="group-grid">
+        @if (groups().length === 0 && !groupsLoading()) {
+          <div class="empty-hint">
+            {{ selectedSpecialtyId() ? 'Немає груп для цієї спеціальності' : 'Груп не знайдено' }}
+          </div>
+        }
+        @for (g of groups(); track g.id) {
+          <label class="group-chip" [class.selected]="isGroupSelected(g.id)">
+            <input type="checkbox" [checked]="isGroupSelected(g.id)" (change)="toggleGroup(g.id)" />
+            {{ g.name }}
+          </label>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="wizard-footer">
+    <button type="button" class="btn-cancel" (click)="cancelled.emit()">Скасувати</button>
+    <button type="button" class="btn-primary" (click)="goToStep2()">
+      Далі <i class="pi pi-arrow-right"></i>
+    </button>
+  </div>
+
+} @else {
+  <div class="wizard-body">
+    <div class="step-header">
+      <span class="step-badge">Крок 2 з 2</span>
+      <p class="step-desc">
+        Перевірте список студентів. Зніміть непотрібних перед підтвердженням.
+      </p>
+    </div>
+
+    <div class="students-summary">
+      <span class="summary-count">{{ activeStudents().length }}</span> з {{ students().length }} студентів будуть прив'язані
+    </div>
+
+    <div class="student-list">
+      @if (students().length === 0) {
+        <div class="empty-hint">У вибраних групах немає студентів</div>
+      }
+      @for (row of students(); track row.bookNumberId) {
+        <div class="student-row" [class.excluded]="row.excluded">
+          <div class="student-info">
+            <div class="student-name">
+              {{ row.studentName || row.studentEmail || 'Студент #' + row.studentId }}
+            </div>
+            <div class="student-meta">
+              <span class="meta-tag">Заліковка: {{ row.bookNumberId }}</span>
+              <span class="meta-tag">{{ row.groupName }}</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="exclude-btn"
+            [class.restore]="row.excluded"
+            (click)="toggleExclude(row)"
+            [title]="row.excluded ? 'Відновити' : 'Вилучити'"
+          >
+            <i [class]="row.excluded ? 'pi pi-undo' : 'pi pi-times'"></i>
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="wizard-footer">
+    <button type="button" class="btn-cancel" (click)="back()">
+      <i class="pi pi-arrow-left"></i> Назад
+    </button>
+    <button type="button" class="btn-primary" (click)="confirm()" [disabled]="activeStudents().length === 0">
+      <i class="pi pi-check"></i> Створити записи
+    </button>
+  </div>
+}

@@ -1,23 +1,20 @@
 package org.bachelor.gradeservice.model.dto;
 
+import lombok.Data;
 import org.bachelor.gradeservice.model.entity.AssessmentType;
 import org.bachelor.gradeservice.model.entity.EctsGrade;
-import org.bachelor.gradeservice.model.entity.GradeState;
-import org.bachelor.gradeservice.model.entity.NationalGrade;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
-public record GradeDTO(
-        Long id,
-        Long studentId,
-        Long specialtyDisciplineId,
-        Integer attempt,
-        String academicYear,
-        Integer semester,
-        Instant assessmentDate,
-        Integer universityGrade,
-        NationalGrade nationalGrade,
-        EctsGrade ectsGrade,
-        AssessmentType assessment,
-        GradeState state
-) {}
+@Data
+public class GradeDTO {
+    private Long id;
+    private Long entryId;
+    private LocalDateTime assessmentDate;
+    private Integer universityGrade;
+    private String nationalGrade;
+    private EctsGrade ectsGrade;
+    private AssessmentType assessmentType;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+}

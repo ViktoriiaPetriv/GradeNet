@@ -1,0 +1,18 @@
+<div class="modal-backdrop" (click)="onBackdropClick()">
+  <div class="modal" [class.modal-sm]="size === 'sm'" [class.modal-lg]="size === 'lg'" (click)="$event.stopPropagation()">
+    @if (title || showClose) {
+      <div class="modal-header">
+        @if (title) {
+          <div class="modal-title">{{ title }}</div>
+        }
+        @if (showClose) {
+          <button class="modal-close" (click)="close.emit()">
+            <i class="pi pi-times"></i>
+          </button>
+        }
+      </div>
+    }
+    <ng-content></ng-content>
+    <ng-content select="[footer]"></ng-content>
+  </div>
+</div>

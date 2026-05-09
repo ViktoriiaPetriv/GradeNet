@@ -2,6 +2,7 @@ package org.bachelor.gradeservice.utils;
 
 import org.bachelor.gradeservice.model.entity.AssessmentType;
 import org.bachelor.gradeservice.model.entity.EctsGrade;
+import org.bachelor.gradeservice.model.entity.EntryResult;
 import org.bachelor.gradeservice.model.entity.NationalGrade;
 import org.springframework.stereotype.Component;
 
@@ -36,6 +37,10 @@ public class GradeConverter {
     }
 
     private NationalGrade toNationalCredit(Integer universityGrade) {
-        return universityGrade >= 60 ? NationalGrade.PASSED : NationalGrade.NOT_PASSED;
+        return universityGrade >= 50 ? NationalGrade.PASSED : NationalGrade.NOT_PASSED;
+    }
+
+    public EntryResult toEntryResult(Integer universityGrade) {
+        return universityGrade != null && universityGrade >= 50 ? EntryResult.PASSED : EntryResult.FAILED;
     }
 }

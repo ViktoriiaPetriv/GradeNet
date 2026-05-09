@@ -1,17 +1,26 @@
 package org.bachelor.gradeservice.model.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
 
 @Getter
 @Setter
 @Entity
-@Table(name = "specialty_discipline")
+@Table(name = "specialty_discipline",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uq_specialty_discipline",
+                columnNames = {"specialty_id", "discipline_id"}
+        )
+)
 public class SpecialtyDiscipline {
 
     @Id
@@ -21,19 +30,14 @@ public class SpecialtyDiscipline {
     @Column(name = "specialty_id", nullable = false)
     private Long specialtyId;
 
-    @Column(name = "professor_id")
-    private Long professorId;
-
-    @Column(name = "report_date")
-    private Instant reportDate;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "discipline_id", nullable = false)
+    @JoinColumn(name = "discipline_id", nullable = false,
+            foreignKey = @ForeignKey(name = "fk_sd_discipline"))
     private Discipline discipline;
 
-    @OneToOne(mappedBy = "specialtyDiscipline", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Hours hours;
+    @OneToMany(mappedBy = "specialtyDiscipline", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Hours> hours = new HashSet<>();
 
     @OneToMany(mappedBy = "specialtyDiscipline", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Grade> grades = new ArrayList<>();
+    private List<GradeBookEntry> gradeBookEntries = new ArrayList<>();
 }

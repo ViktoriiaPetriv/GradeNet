@@ -1,5 +1,6 @@
 package org.bachelor.userservice.service;
 
+import org.bachelor.userservice.model.dto.AdminSetupRequestDTO;
 import org.bachelor.userservice.model.dto.ChangePasswordRequestDTO;
 import org.bachelor.userservice.model.dto.UserDTO;
 import org.bachelor.userservice.model.dto.UserProfileDTO;
@@ -16,4 +17,7 @@ public interface UserService {
     UserProfileDTO getProfile(Long id);
     void changePassword(Long id, ChangePasswordRequestDTO request);
     List<UserDTO> findStudentsBySpecialty(Long specialtyId, Integer enrollYear);
+    List<UserDTO> searchStudents(String query);
+    boolean isSetupRequired();
+    UserDTO createInitialAdmin(AdminSetupRequestDTO request);
 }
