@@ -1,0 +1,16 @@
+<div class="page-header">
+  <div>
+    @if (showBack) {
+      <a class="back-btn" [routerLink]="backLink" (click)="onBack($event)">
+        <i class="pi pi-arrow-left"></i> Назад
+      </a>
+    }
+    <h1 class="page-title">{{ title }}</h1>
+    @if (subtitle) {
+      <p class="page-subtitle">{{ subtitle }}</p>
+    }
+  </div>
+  <div class="header-actions">
+    <ng-content select="[actions]"></ng-content>
+  </div>
+</div>

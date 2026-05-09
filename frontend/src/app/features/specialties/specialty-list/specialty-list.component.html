@@ -1,148 +1,126 @@
 <div class="page">
-    <div class="page-header">
-        <div>
-            <div class="page-title">Спеціальності</div>
-            <div class="page-subtitle">Освітні програми університету</div>
-        </div>
-        @if (isAdmin()) {
-        <button class="btn-primary" (click)="openCreate()">
-            <i class="pi pi-plus"></i> Додати спеціальність
-        </button>
+  <app-page-header title="Спеціальності" subtitle="Освітні програми університету">
+    @if (isAdmin()) {
+      <button actions class="btn-primary" (click)="openCreate()">
+        <i class="pi pi-plus"></i> Додати спеціальність
+      </button>
+    }
+  </app-page-header>
+
+  <div class="filters">
+    @if (isAdmin()) {
+      <select class="filter-select" (change)="onFacultyFilter($event)">
+        <option value="">Усі факультети</option>
+        @for (f of faculties(); track f.id) {
+          <option [value]="f.id">{{ f.name }}</option>
         }
-    </div>
+      </select>
+    }
 
-    <div class="filters">
-        @if (isAdmin()) {
-        <select class="filter-select" (change)="onFacultyFilter($event)">
-            <option value="">Усі факультети</option>
-            @for (f of faculties(); track f.id) {
-            <option [value]="f.id">{{ f.name }}</option>
-            }
-        </select>
-        }
+    <select class="filter-select" (change)="onDeptFilter($event)">
+      <option value="">
+        @if (isManager()) { Всі кафедри факультету } @else { Усі кафедри }
+      </option>
+      @for (d of departments(); track d.id) {
+        <option [value]="d.id">{{ d.name }}</option>
+      }
+    </select>
 
-        <select class="filter-select" (change)="onDeptFilter($event)">
-            <option value="">
-                @if (isManager()) { Всі кафедри факультету } @else { Усі кафедри }
-            </option>
-            @for (d of departments(); track d.id) {
-            <option [value]="d.id">{{ d.name }}</option>
-            }
-        </select>
+    <select class="filter-select" (change)="onDegreeFilter($event)">
+      <option value="">Усі ступені</option>
+      @for (d of degrees; track d) {
+        <option [value]="d">{{ degreeLabel(d) }}</option>
+      }
+    </select>
 
-        <select class="filter-select" (change)="onDegreeFilter($event)">
-            <option value="">Усі ступені</option>
-            @for (d of degrees; track d) {
-            <option [value]="d">{{ degreeLabel(d) }}</option>
-            }
-        </select>
+    <select class="filter-select" (change)="onEduTypeFilter($event)">
+      <option value="">Усі форми</option>
+      @for (e of eduTypes; track e) {
+        <option [value]="e">{{ eduTypeLabel(e) }}</option>
+      }
+    </select>
+  </div>
 
-        <select class="filter-select" (change)="onEduTypeFilter($event)">
-            <option value="">Усі форми</option>
-            @for (e of eduTypes; track e) {
-            <option [value]="e">{{ eduTypeLabel(e) }}</option>
-            }
-        </select>
-    </div>
+  <div class="table-container">
+    @if (loading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <span>Завантаження...</span>
+      </div>
+    } @else {
+      <table>
+        <thead>
+        <tr>
+          <th>Код</th>
+          <th>Назва</th>
+          <th>Кафедра</th>
+          <th>Ступінь</th>
+          <th>Форма навчання</th>
+          @if (isAdmin()) {
+            <th>Дії</th>
+          }
+        </tr>
+        </thead>
+        <tbody>
+          @if (specialties().length === 0) {
+            <tr>
+              <td colspan="6">
+                <div class="empty-state">
+                  <div class="empty-icon"><i class="pi pi-book"></i></div>
+                  <div>Спеціальностей не знайдено</div>
+                </div>
+              </td>
+            </tr>
+          }
+          @for (s of specialties(); track s.id) {
+            <tr class="clickable-row" (click)="viewDetail(s.id)">
+              <td><span class="code-badge">{{ s.code }}</span></td>
+              <td>
+                <div class="table-cell">
+                  <app-avatar [letter]="s.nameUA[0]" [backgroundColor]="getAvatarColor(s.id)" size="sm" />
+                  <div>
+                    <div class="full-name">{{ s.nameUA }}</div>
+                    <div class="text-muted">{{ s.nameEN }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="text-muted">{{ getDeptName(s.orgId) }}</td>
+              <td><app-badge [type]="'degree-' + s.degree">{{ degreeLabel(s.degree) }}</app-badge></td>
+              <td><app-badge type="edutype-badge">{{ eduTypeLabel(s.eduType) }}</app-badge></td>
+              @if (isAdmin()) {
+                <td>
+                  <button class="action-btn edit" (click)="openEdit(s); $event.stopPropagation()">
+                    <i class="pi pi-file-edit"></i>
+                  </button>
+                  <button class="action-btn delete" (click)="openDelete(s); $event.stopPropagation()">
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
 
-    <div class="table-container">
-        @if (loading()) {
-        <div class="loading-state">
-            <div class="spinner"></div>
-            <span>Завантаження...</span>
-        </div>
-        } @else {
-        <table>
-            <thead>
-                <tr>
-                    <th>Код</th>
-                    <th>Назва</th>
-                    <th>Кафедра</th>
-                    <th>Ступінь</th>
-                    <th>Форма навчання</th>
-                    @if (isAdmin()) {
-                    <th>Дії</th>
-                    }
-                </tr>
-            </thead>
-            <tbody>
-                @if (specialties().length === 0) {
-                <tr>
-                    <td colspan="6">
-                        <div class="empty-state">
-                            <div class="empty-icon"><i class="pi pi-book"></i></div>
-                            <div>Спеціальностей не знайдено</div>
-                        </div>
-                    </td>
-                </tr>
-                }
-                @for (s of specialties(); track s.id) {
-                <tr class="clickable-row" (click)="viewDetail(s.id)">
-                    <td><span class="code-badge">{{ s.code }}</span></td>
-                    <td>
-                        <div class="table-cell">
-                            <div class="avatar-dot" [style.background]="getAvatarColor(s.id)">
-                                {{ s.nameUA[0] }}
-                            </div>
-                            <div>
-                                <div class="full-name">{{ s.nameUA }}</div>
-                                <div class="text-muted">{{ s.nameEN }}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="text-muted">{{ getDeptName(s.orgId) }}</td>
-                    <td><span class="degree-badge degree-{{ s.degree }}">{{ degreeLabel(s.degree) }}</span></td>
-                    <td><span class="edutype-badge">{{ eduTypeLabel(s.eduType) }}</span></td>
-                    @if (isAdmin()) {
-                    <td>
-                        <button class="action-btn edit" (click)="openEdit(s); $event.stopPropagation()">
-                            <i class="pi pi-file-edit"></i>
-                        </button>
-                        <button class="action-btn delete" (click)="openDelete(s); $event.stopPropagation()">
-                            <i class="pi pi-trash"></i>
-                        </button>
-                    </td>
-                    }
-                </tr>
-                }
-            </tbody>
-        </table>
-
-        <app-pagination [currentPage]="currentPageUi()" [totalPages]="totalPages()" [perPage]="perPage()"
-            [info]="paginationInfo()" (pageChange)="onPageChange($event)" (perPageChange)="onPerPageChange($event)" />
-        }
-    </div>
+      <app-pagination [currentPage]="currentPageUi()" [totalPages]="totalPages()" [perPage]="perPage()"
+                      [info]="paginationInfo()" (pageChange)="onPageChange($event)" (perPageChange)="onPerPageChange($event)" />
+    }
+  </div>
 </div>
 
 @if (modalOpen()) {
-<app-specialty-form [specialty]="editingSpecialty()" (saved)="onFormSaved()" (cancelled)="closeModal()" />
+  <app-specialty-form [specialty]="editingSpecialty()" (saved)="onFormSaved()" (cancelled)="closeModal()" />
 }
 
 @if (deleteModalOpen() && specialtyToDelete()) {
-<div class="modal-backdrop" (click)="closeDelete()">
-    <div class="modal confirm-modal" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-            <div class="modal-title">Підтвердження видалення</div>
-            <button class="modal-close" (click)="closeDelete()">
-                <i class="pi pi-times"></i>
-            </button>
-        </div>
-
-        <div class="confirm-body">
-            Ви дійсно хочете видалити спеціальність
-            <strong>{{ specialtyToDelete()!.code }} — {{ specialtyToDelete()!.nameUA }}?</strong>
-            <div class="warning-text">
-                Цю дію неможливо скасувати.
-            </div>
-        </div>
-
-        <div class="modal-footer">
-            <button type="button" class="btn-cancel" (click)="closeDelete()"><i
-                    class="pi pi-times"></i>Скасувати</button>
-            <button type="button" class="btn-danger" (click)="confirmDelete()">
-                <i class="pi pi-trash"></i> Видалити
-            </button>
-        </div>
-    </div>
-</div>
+  <app-confirm-dialog
+    title="Підтвердження видалення"
+    [message]="'Ви дійсно хочете видалити спеціальність <strong>' + specialtyToDelete()!.code + ' — ' + specialtyToDelete()!.nameUA + '</strong>?'"
+    subtext="Цю дію неможливо скасувати."
+    iconType="danger"
+    confirmButtonClass="btn-danger"
+    confirmLabel="Видалити"
+    (confirm)="confirmDelete()"
+    (cancel)="closeDelete()"
+  />
 }

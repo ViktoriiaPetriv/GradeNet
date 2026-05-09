@@ -4,11 +4,12 @@ import { SpecialtyService } from '../../../core/services/specialty.service';
 import { OrgService } from '../../../core/services/org.service';
 import { Specialty, Degree, EduType, OrganizationShort, OrgType } from '../../../models/org.model';
 import { ToastService } from '../../../core/services/toast.service';
+import { ModalComponent } from '../../../shared/modal/modal.component';
 
 @Component({
   selector: 'app-specialty-form',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, ModalComponent],
   templateUrl: './specialty-form.component.html',
   styleUrl: './specialty-form.component.css',
 })

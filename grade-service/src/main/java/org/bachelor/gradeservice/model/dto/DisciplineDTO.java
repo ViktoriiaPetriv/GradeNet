@@ -1,12 +1,10 @@
 package org.bachelor.gradeservice.model.dto;
 
+import lombok.Data;
 
-import java.time.Instant;
+@Data
+public class DisciplineDTO {
 
-public record DisciplineDTO(
-        Long id,
-        String name,
-        Long specialtyId,
-        Long professorId,
-        Instant reportDate
-) {}
+    private Long id;
+    private String name;
+}

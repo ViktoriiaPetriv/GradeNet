@@ -1,0 +1,147 @@
+<div class="page">
+  <div class="page-top">
+    <app-page-header title="Успішність групи" subtitle="Перегляд оцінок студентів за дисципліною" />
+    <button class="btn-secondary" (click)="goBack()">
+      <i class="pi pi-arrow-left"></i> Назад
+    </button>
+  </div>
+
+  <div class="filters-card">
+    <div class="filters-row">
+      <div class="filter-group">
+        <label class="filter-label">Група</label>
+        <select
+          class="filter-select"
+          [ngModel]="selectedGroupId()"
+          (ngModelChange)="selectedGroupId.set($event ? +$event : null)"
+          name="group"
+        >
+          <option [ngValue]="null">— Оберіть групу —</option>
+          @for (g of groups(); track g.id) {
+            <option [ngValue]="g.id">{{ g.name }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Дисципліна</label>
+        <select
+          class="filter-select"
+          [ngModel]="selectedDisciplineId()"
+          (ngModelChange)="selectedDisciplineId.set($event ? +$event : null)"
+          name="discipline"
+        >
+          <option [ngValue]="null">— Оберіть дисципліну —</option>
+          @for (sd of specialtyDisciplines(); track sd.id) {
+            <option [ngValue]="sd.id">{{ disciplineLabel(sd) }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Навчальний рік</label>
+        <input
+          class="filter-input"
+          type="text"
+          placeholder="2024/2025"
+          [ngModel]="academicYear()"
+          (ngModelChange)="academicYear.set($event)"
+          name="academicYear"
+        />
+      </div>
+
+      <button class="btn-primary" (click)="load()" [disabled]="loading()">
+        @if (loading()) {
+          <i class="pi pi-spin pi-spinner"></i>
+        } @else {
+          <i class="pi pi-search"></i>
+        }
+        Показати
+      </button>
+    </div>
+  </div>
+
+  @if (hasRows()) {
+    <div class="stats-row">
+      <div class="stat-chip stat-passed">
+        <i class="pi pi-check-circle"></i>
+        Зараховано: {{ passedCount() }}
+      </div>
+      <div class="stat-chip stat-failed">
+        <i class="pi pi-times-circle"></i>
+        Не зараховано: {{ failedCount() }}
+      </div>
+      <div class="stat-chip stat-progress">
+        <i class="pi pi-clock"></i>
+        Відкрито: {{ inProgressCount() }}
+      </div>
+      <div class="stat-chip stat-none">
+        <i class="pi pi-minus-circle"></i>
+        Не внесено: {{ noEntryCount() }}
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="num-col">#</th>
+            <th>Студент</th>
+            <th>Бали (0–100)</th>
+            <th>ECTS</th>
+            <th>Нац. оцінка</th>
+            <th>Статус запису</th>
+            <th>Результат</th>
+            <th>Дата звіту</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.member.bookNumberId; let i = $index) {
+            <tr [class]="rowClass(row)">
+              <td class="num-cell">{{ i + 1 }}</td>
+              <td class="student-name">
+                {{ row.member.studentName || ('Студент #' + row.member.bookNumberId) }}
+              </td>
+              <td class="grade-cell">
+                @if (gradeLabel(row) !== '—') {
+                  <span class="grade-badge">{{ gradeLabel(row) }}</span>
+                } @else {
+                  <span class="text-muted">—</span>
+                }
+              </td>
+              <td>
+                @if (ectsLabel(row) !== '—') {
+                  <span class="ects-badge ects-{{ row.entry?.latestGrade?.ectsGrade }}">
+                    {{ ectsLabel(row) }}
+                  </span>
+                } @else {
+                  <span class="text-muted">—</span>
+                }
+              </td>
+              <td class="text-sm">{{ nationalLabel(row) }}</td>
+              <td>
+                @if (row.entry) {
+                  <span class="status-badge status-{{ row.entry.status }}">
+                    {{ statusLabel(row) }}
+                  </span>
+                } @else {
+                  <span class="status-badge status-none">Не внесено</span>
+                }
+              </td>
+              <td>
+                @if (row.entry?.result) {
+                  <span class="result-badge result-{{ row.entry!.result }}">
+                    {{ resultLabel(row) }}
+                  </span>
+                } @else {
+                  <span class="text-muted">{{ resultLabel(row) }}</span>
+                }
+              </td>
+              <td class="text-sm text-muted">{{ formatDate(row.entry?.reportDate ?? null) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

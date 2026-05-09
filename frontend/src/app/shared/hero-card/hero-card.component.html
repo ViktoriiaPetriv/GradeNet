@@ -1,0 +1,17 @@
+<div class="hero-card">
+  <app-avatar [letter]="avatarLetter" [backgroundColor]="avatarColor" size="lg"></app-avatar>
+  <div class="hero-info">
+    @if (topLine) {
+      <div class="hero-type">
+        <ng-content select="[badge]"></ng-content>
+      </div>
+    }
+    <h1 class="hero-title">{{ title }}</h1>
+    @if (subtitle) {
+      <p class="hero-subtitle">{{ subtitle }}</p>
+    }
+    <div class="hero-badges">
+      <ng-content select="[badges]"></ng-content>
+    </div>
+  </div>
+</div>

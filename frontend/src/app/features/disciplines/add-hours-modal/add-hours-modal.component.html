@@ -1,0 +1,91 @@
+<app-modal title="Додати години" (close)="cancelled.emit()">
+
+  @if (specialtyName) {
+    <div class="sd-context">
+      <i class="pi pi-graduation-cap"></i>
+      <span>{{ specialtyName }}</span>
+    </div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="form-grid">
+
+      <div class="form-group">
+        <label class="form-label">Навчальний рік *</label>
+        <input class="form-input" formControlName="academicYear" placeholder="2024/2025"
+               [class.error]="isInvalid('academicYear')" />
+        @if (isInvalid('academicYear')) {
+          <span class="form-error">Формат: 2024/2025</span>
+        }
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">ЄКТС кредити *</label>
+        <input class="form-input" type="number" formControlName="ectsCredits" placeholder="3"
+               [class.error]="isInvalid('ectsCredits')" min="1" />
+        @if (isInvalid('ectsCredits')) {
+          <span class="form-error">Мін. 1 кредит</span>
+        }
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Всього годин *</label>
+        <input class="form-input" type="number" formControlName="totalHours" placeholder="90"
+               [class.error]="isInvalid('totalHours')" min="1" />
+        @if (isInvalid('totalHours')) {
+          <span class="form-error">Обов'язкове поле</span>
+        }
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Аудиторні години *</label>
+        <input class="form-input" type="number" formControlName="classroomHours" placeholder="60"
+               [class.error]="isInvalid('classroomHours')" min="0" />
+        @if (isInvalid('classroomHours')) {
+          <span class="form-error">Обов'язкове поле</span>
+        }
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Лекції</label>
+        <input class="form-input" type="number" formControlName="lectureHours" placeholder="0" min="0" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Семінари</label>
+        <input class="form-input" type="number" formControlName="seminarHours" placeholder="0" min="0" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Лабораторні</label>
+        <input class="form-input" type="number" formControlName="laboratoryHours" placeholder="0" min="0" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Індивідуальні</label>
+        <input class="form-input" type="number" formControlName="individualHours" placeholder="0" min="0" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Самостійна робота</label>
+        <input class="form-input" type="number" formControlName="selfWorkHours" placeholder="0" min="0" />
+      </div>
+
+    </div>
+
+    <div footer class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="cancelled.emit()">
+        <i class="pi pi-times"></i> Скасувати
+      </button>
+      <button type="submit" class="btn-primary" [disabled]="submitting">
+        @if (submitting) {
+          <i class="pi pi-spin pi-spinner"></i>
+        } @else {
+          <i class="pi pi-plus"></i>
+        }
+        Додати
+      </button>
+    </div>
+  </form>
+
+</app-modal>

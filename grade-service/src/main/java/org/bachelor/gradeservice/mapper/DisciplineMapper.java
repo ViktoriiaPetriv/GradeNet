@@ -1,23 +1,25 @@
 package org.bachelor.gradeservice.mapper;
 
+import org.bachelor.gradeservice.model.dto.DisciplineCreateDTO;
+import org.bachelor.gradeservice.model.dto.DisciplineCreateResponseDTO;
 import org.bachelor.gradeservice.model.dto.DisciplineDTO;
-import org.bachelor.gradeservice.model.dto.DisciplineRequestDTO;
+import org.bachelor.gradeservice.model.dto.HoursDTO;
 import org.bachelor.gradeservice.model.entity.Discipline;
 import org.bachelor.gradeservice.model.entity.SpecialtyDiscipline;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {HoursMapper.class})
 public interface DisciplineMapper {
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "specialtyDisciplines", ignore = true)
-    Discipline toEntity(DisciplineRequestDTO dto);
+    DisciplineDTO toDTO(Discipline discipline);
 
-    @Mapping(target = "id", source = "sd.id")
+    Discipline toEntity(DisciplineCreateDTO dto);
+
+    @Mapping(target = "disciplineId", source = "discipline.id")
     @Mapping(target = "name", source = "discipline.name")
-    @Mapping(target = "specialtyId", source = "sd.specialtyId")
-    @Mapping(target = "professorId", source = "sd.professorId")
-    @Mapping(target = "reportDate", source = "sd.reportDate")
-    DisciplineDTO toDto(Discipline discipline, SpecialtyDiscipline sd);
+    @Mapping(target = "specialtyDisciplineId", source = "specialtyDiscipline.id")
+    @Mapping(target = "specialtyId", source = "specialtyDiscipline.specialtyId")
+    @Mapping(target = "hours", source = "hours")
+    DisciplineCreateResponseDTO toCreateResponseDTO(Discipline discipline, SpecialtyDiscipline specialtyDiscipline, HoursDTO hours);
 }

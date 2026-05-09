@@ -11,6 +11,10 @@ import { UserService } from '../../../core/services/user.service';
 import { forkJoin, of, catchError } from 'rxjs';
 import { ChangePasswordModalComponent } from '../change-password/change-password.component';
 import { AuthStateService } from '../../../core/services/auth-state.service';
+import { AvatarComponent } from '../../../shared/avatar/avatar.component';
+import { BadgeComponent } from '../../../shared/badge/badge.component';
+import { ModalComponent } from '../../../shared/modal/modal.component';
+import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
 
 interface BookWithDetails {
   info: StudentInfo;
@@ -21,7 +25,15 @@ interface BookWithDetails {
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, UserModalComponent, ChangePasswordModalComponent],
+  imports: [
+    CommonModule,
+    UserModalComponent,
+    ChangePasswordModalComponent,
+    AvatarComponent,
+    BadgeComponent,
+    ModalComponent,
+    ConfirmDialogComponent,
+  ],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.css',
 })
@@ -65,13 +77,13 @@ export class ProfileComponent implements OnInit {
       p.books.map((book) =>
         book.specialtyId
           ? forkJoin({
-              specialty: this.specialtyService
-                .getById(book.specialtyId)
-                .pipe(catchError(() => of(null))),
-              orgInfo: this.specialtyService
-                .getOrgInfo(book.specialtyId)
-                .pipe(catchError(() => of(null))),
-            })
+            specialty: this.specialtyService
+              .getById(book.specialtyId)
+              .pipe(catchError(() => of(null))),
+            orgInfo: this.specialtyService
+              .getOrgInfo(book.specialtyId)
+              .pipe(catchError(() => of(null))),
+          })
           : of({ specialty: null, orgInfo: null }),
       ),
     ).subscribe({
@@ -156,6 +168,7 @@ export class ProfileComponent implements OnInit {
   get canChangePassword(): boolean {
     return this.isOwner && !this.isAdmin;
   }
+
   get canDelete(): boolean {
     return this.isAdmin || (this.isManager && this.profile()?.role === 'STUDENT');
   }

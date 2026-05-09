@@ -5,11 +5,23 @@ import { Specialty, OrgInfo } from '../../../models/org.model';
 import { ToastService } from '../../../core/services/toast.service';
 import { SpecialtyFormComponent } from '../specialty-form/specialty-form.component';
 import { AuthStateService } from '../../../core/services/auth-state.service';
+import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
+import { HeroCardComponent } from '../../../shared/hero-card/hero-card.component';
+import { InfoCardComponent } from '../../../shared/info-card/info-card.component';
+import { BadgeComponent } from '../../../shared/badge/badge.component';
+import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-specialty-detail',
   standalone: true,
-  imports: [SpecialtyFormComponent],
+  imports: [
+    SpecialtyFormComponent,
+    PageHeaderComponent,
+    HeroCardComponent,
+    InfoCardComponent,
+    BadgeComponent,
+    ConfirmDialogComponent,
+  ],
   templateUrl: './specialty-detail.component.html',
   styleUrl: './specialty-detail.component.css',
 })

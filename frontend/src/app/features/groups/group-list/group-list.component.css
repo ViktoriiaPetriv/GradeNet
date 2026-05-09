@@ -1,0 +1,113 @@
+
+
+.filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.search-input {
+  flex: 1;
+  max-width: 360px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.search-input:focus { border-color: var(--btn); }
+
+.table-container {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+
+
+tbody tr:last-child td { border-bottom: none; }
+
+.clickable-row { cursor: pointer; transition: background 0.15s; }
+.clickable-row:hover { background: var(--surface-2); }
+
+.table-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.group-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.group-name { font-weight: 500; }
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.empty-icon { font-size: 32px; }
+
+.action-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+  margin-right: 4px;
+}
+.action-btn.edit { color: var(--btn); }
+.action-btn.edit:hover { background: var(--btn); color: #fff; border-color: var(--btn); }
+.action-btn.delete { color: var(--red); }
+.action-btn.delete:hover { background: var(--red); color: #fff; border-color: var(--red); }
+
+.btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--btn);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-primary:hover { background: var(--btn-hover); }
+
+.btn-danger {
+  padding: 8px 18px;
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-danger:hover { opacity: 0.85; }

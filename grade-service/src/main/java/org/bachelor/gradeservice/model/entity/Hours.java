@@ -1,8 +1,11 @@
 package org.bachelor.gradeservice.model.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+
 
 @Getter
 @Setter
@@ -14,24 +17,15 @@ public class Hours {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "specialty_discipline_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "specialty_discipline_id", nullable = false,
+            foreignKey = @ForeignKey(name = "fk_hours_sd"))
     private SpecialtyDiscipline specialtyDiscipline;
 
-    @Column(name = "ects_hours")
-    private Integer ectsHours;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "template_id", nullable = false)
+    private HoursTemplate template;
 
-    @Column(name = "all_hours")
-    private Integer allHours;
-
-    @Column(name = "total_classroom_hours")
-    private Integer totalClassroomHours;
-
-    private Integer lecture;
-    private Integer seminar;
-    private Integer laboratory;
-    private Integer individual;
-
-    @Column(name = "self_work")
-    private Integer selfWork;
+    @Column(name = "academic_year", nullable = false, length = 9)
+    private String academicYear;
 }

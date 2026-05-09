@@ -1,0 +1,27 @@
+<app-modal [title]="title" size="sm" [showClose]="false" (close)="onCancel()">
+  <div class="confirm-body">
+    <div class="confirm-icon" [ngClass]="iconClass">
+      @if (iconType === 'warning') {
+        <i class="pi pi-exclamation-triangle"></i>
+      }
+      @if (iconType === 'purple') {
+        <i class="pi pi-question-circle"></i>
+      }
+      @if (iconType === 'danger') {
+        <i class="pi pi-trash"></i>
+      }
+    </div>
+    <p class="confirm-text" [innerHTML]="message"></p>
+    @if (subtext) {
+      <p class="confirm-subtext">{{ subtext }}</p>
+    }
+  </div>
+  <div footer class="modal-footer">
+    <button type="button" class="btn-cancel" (click)="onCancel()">
+      <i class="pi pi-times"></i> {{ cancelLabel }}
+    </button>
+    <button type="button" [class]="confirmButtonClass" (click)="onConfirm()">
+      <i class="pi pi-check"></i> {{ confirmLabel }}
+    </button>
+  </div>
+</app-modal>

@@ -1,12 +1,14 @@
 package org.bachelor.gradeservice.service;
 
+import org.bachelor.gradeservice.model.dto.HoursCreateDTO;
 import org.bachelor.gradeservice.model.dto.HoursDTO;
-import org.bachelor.gradeservice.model.dto.HoursRequestDTO;
+
+import java.util.List;
 
 public interface HoursService {
-    HoursDTO create(HoursRequestDTO dto);
-    HoursDTO update(Long id, HoursRequestDTO dto);
+    HoursDTO addHours(Long specialtyDisciplineId, HoursCreateDTO dto);
+    HoursDTO updateHours(Long hoursId, HoursCreateDTO dto);
+    void deleteHours(Long hoursId);
     HoursDTO getById(Long id);
-    HoursDTO getBySpecialtyDiscipline(Long specialtyDisciplineId);
-    void delete(Long id);
+    List<HoursDTO> getAll(Long specialtyDisciplineId);
 }

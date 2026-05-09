@@ -2,11 +2,13 @@ package org.bachelor.gradeservice.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.bachelor.gradeservice.model.dto.HoursCreateDTO;
 import org.bachelor.gradeservice.model.dto.HoursDTO;
-import org.bachelor.gradeservice.model.dto.HoursRequestDTO;
 import org.bachelor.gradeservice.service.HoursService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/hours")
@@ -17,14 +19,9 @@ public class HoursController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public HoursDTO create(@Valid @RequestBody HoursRequestDTO dto) {
-        return hoursService.create(dto);
-    }
-
-    @PutMapping("/{id}")
-    public HoursDTO update(@PathVariable Long id,
-                           @Valid @RequestBody HoursRequestDTO dto) {
-        return hoursService.update(id, dto);
+    public HoursDTO addHours(@RequestParam Long specialtyDisciplineId,
+                             @RequestBody @Valid HoursCreateDTO dto) {
+        return hoursService.addHours(specialtyDisciplineId, dto);
     }
 
     @GetMapping("/{id}")
@@ -32,14 +29,20 @@ public class HoursController {
         return hoursService.getById(id);
     }
 
-    @GetMapping("/by-discipline/{specialtyDisciplineId}")
-    public HoursDTO getBySpecialtyDiscipline(@PathVariable Long specialtyDisciplineId) {
-        return hoursService.getBySpecialtyDiscipline(specialtyDisciplineId);
+    @GetMapping
+    public List<HoursDTO> getAll(@RequestParam Long specialtyDisciplineId) {
+        return hoursService.getAll(specialtyDisciplineId);
+    }
+
+    @PutMapping("/{id}")
+    public HoursDTO updateHours(@PathVariable Long id,
+                                @RequestBody @Valid HoursCreateDTO dto) {
+        return hoursService.updateHours(id, dto);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
-        hoursService.delete(id);
+    public void deleteHours(@PathVariable Long id) {
+        hoursService.deleteHours(id);
     }
 }

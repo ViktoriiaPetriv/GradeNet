@@ -7,11 +7,22 @@ import { ToastService } from '../../../core/services/toast.service';
 import { SpecialtyFormComponent } from '../specialty-form/specialty-form.component';
 import { PaginationComponent } from '../../../shared/pagination/pagination.component';
 import { AuthStateService } from '../../../core/services/auth-state.service';
+import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
+import { AvatarComponent } from '../../../shared/avatar/avatar.component';
+import { BadgeComponent } from '../../../shared/badge/badge.component';
+import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-specialty-list',
   standalone: true,
-  imports: [SpecialtyFormComponent, PaginationComponent],
+  imports: [
+    SpecialtyFormComponent,
+    PaginationComponent,
+    PageHeaderComponent,
+    AvatarComponent,
+    BadgeComponent,
+    ConfirmDialogComponent,
+  ],
   templateUrl: './specialty-list.component.html',
   styleUrl: './specialty-list.component.css',
 })
@@ -21,7 +32,6 @@ export class SpecialtyListComponent implements OnInit {
   totalElements = signal(0);
   currentPage = signal(0);
   perPage = signal(10);
-  perPageOptions = [5, 10, 25, 50];
   degreeFilter = signal('');
   eduTypeFilter = signal('');
   degrees = Object.values(Degree);
@@ -68,9 +78,6 @@ export class SpecialtyListComponent implements OnInit {
   }
 
   ngOnInit() {
-
-    console.log('currentUser:', this.authState.currentUser());
-    console.log('managerFacultyId:', this.authState.managerFacultyId());
     if (this.isManager()) {
       const facultyId = this.authState.managerFacultyId();
       if (facultyId) {

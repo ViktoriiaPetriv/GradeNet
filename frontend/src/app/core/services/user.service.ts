@@ -40,4 +40,12 @@ export class UserService {
   changePassword(id: number, request: ChangePasswordRequest): Observable<void> {
     return this.http.patch<void>(`${this.apiUrl}/${id}/password`, request);
   }
+
+  searchStudents(query: string): Observable<User[]> {
+    return this.http.get<User[]>(`${this.apiUrl}/search`, { params: { query } });
+  }
+
+  getProfessors(): Observable<User[]> {
+    return this.http.get<User[]>(this.apiUrl, { params: { role: 'PROFESSOR' } });
+  }
 }

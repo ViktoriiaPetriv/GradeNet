@@ -2,8 +2,7 @@ package org.bachelor.gradeservice.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.bachelor.gradeservice.model.dto.DisciplineDTO;
-import org.bachelor.gradeservice.model.dto.DisciplineRequestDTO;
+import org.bachelor.gradeservice.model.dto.*;
 import org.bachelor.gradeservice.service.DisciplineService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -19,14 +18,13 @@ public class DisciplineController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public DisciplineDTO create(@Valid @RequestBody DisciplineRequestDTO dto) {
+    public DisciplineCreateResponseDTO create(@RequestBody @Valid DisciplineCreateDTO dto) {
         return disciplineService.create(dto);
     }
 
-    @PutMapping("/{id}")
-    public DisciplineDTO update(@PathVariable Long id,
-                                @Valid @RequestBody DisciplineRequestDTO dto) {
-        return disciplineService.update(id, dto);
+    @GetMapping
+    public List<DisciplineDTO> getAll() {
+        return disciplineService.getAll();
     }
 
     @GetMapping("/{id}")
@@ -34,17 +32,9 @@ public class DisciplineController {
         return disciplineService.getById(id);
     }
 
-    @GetMapping
-    public List<DisciplineDTO> getAll(@RequestParam(required = false) Long specialtyId) {
-        if (specialtyId != null) {
-            return disciplineService.getAllBySpecialty(specialtyId);
-        }
-        return disciplineService.getAll();
-    }
-
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
-        disciplineService.delete(id);
+    @PutMapping("/{id}")
+    public DisciplineDTO update(@PathVariable Long id,
+                                @RequestBody @Valid DisciplineUpdateDTO dto) {
+        return disciplineService.update(id, dto);
     }
 }

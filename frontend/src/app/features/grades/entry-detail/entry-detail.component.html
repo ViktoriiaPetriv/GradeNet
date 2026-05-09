@@ -1,0 +1,183 @@
+<div class="page">
+  @if (entry(); as e) {
+    <div class="detail-header">
+      <button class="back-btn" (click)="goBack()">
+        <i class="pi pi-arrow-left"></i> Назад
+      </button>
+      <div class="header-actions">
+        @if (canEditGrades()) {
+          <button class="btn-primary" (click)="openAddGrade()">
+            <i class="pi pi-plus"></i> Додати оцінку
+          </button>
+        }
+        @if (isAdmin() && e.status === 'IN_PROGRESS' && grades().length > 0) {
+          <button class="btn-warning" (click)="closeEntryModalOpen.set(true)">
+            <i class="pi pi-lock"></i> Закрити запис
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (isReportDatePast() && !isAdmin()) {
+      <div class="locked-banner">
+        <i class="pi pi-lock"></i>
+        Термін подання звіту минув ({{ formatDate(e.reportDate) }}). Зміни заблоковані.
+      </div>
+    }
+
+    @if (isReportDatePast() && isAdmin()) {
+      <div class="locked-banner admin">
+        <i class="pi pi-info-circle"></i>
+        Термін подання звіту минув ({{ formatDate(e.reportDate) }}). Ви маєте право вносити зміни як адміністратор.
+      </div>
+    }
+
+    <div class="info-card">
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-label">Запис ID</div>
+          <div class="info-value">#{{ e.id }}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Студент (book ID)</div>
+          <div class="info-value">{{ e.bookNumberId }}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Дисципліна (спец.)</div>
+          <div class="info-value">{{ e.specialtyDisciplineId }}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Навчальний рік</div>
+          <div class="info-value">{{ e.academicYear }}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Спроба</div>
+          <div class="info-value">{{ e.attempt }}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Статус</div>
+          <div class="info-value">
+            <span class="status-badge status-{{ e.status }}">{{ statusLabel(e.status) }}</span>
+          </div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Результат</div>
+          <div class="info-value">
+            @if (e.result) {
+              <span class="result-badge result-{{ e.result }}">{{ resultLabel(e.result) }}</span>
+            } @else {
+              <span class="text-muted">—</span>
+            }
+          </div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Дата звіту</div>
+          <div class="info-value" [class.text-danger]="isReportDatePast()">
+            {{ formatDate(e.reportDate) }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">
+      <i class="pi pi-star"></i> Оцінки
+      <span class="grade-count">{{ grades().length }}</span>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Дата</th>
+            <th>Оцінка (100)</th>
+            <th>Національна</th>
+            <th>ЄКТС</th>
+            <th>Тип</th>
+            @if (canEditGrades()) {
+              <th>Дії</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @if (grades().length === 0) {
+            <tr>
+              <td [attr.colspan]="canEditGrades() ? 6 : 5">
+                <div class="empty-state">
+                  <div class="empty-icon">📝</div>
+                  <div>Оцінок ще немає</div>
+                </div>
+              </td>
+            </tr>
+          }
+          @for (g of grades(); track g.id) {
+            <tr>
+              <td>{{ formatDateTime(g.assessmentDate) }}</td>
+              <td class="grade-value">{{ g.universityGrade }}</td>
+              <td>{{ g.nationalGrade }}</td>
+              <td><span class="ects-badge">{{ g.ectsGrade }}</span></td>
+              <td>{{ typeLabel(g.assessmentType) }}</td>
+              @if (canEditGrades()) {
+                <td>
+                  <button
+                    class="action-btn edit"
+                    (click)="openEditGrade(g)"
+                    title="Редагувати"
+                  >
+                    <i class="pi pi-file-edit"></i>
+                  </button>
+                  <button
+                    class="action-btn delete"
+                    (click)="openDeleteGrade(g)"
+                    title="Видалити"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+@if (gradeModalOpen()) {
+  <app-modal
+    [title]="editingGrade() ? 'Редагувати оцінку' : 'Додати оцінку'"
+    size="sm"
+    (close)="closeGradeModal()"
+  >
+    <app-grade-modal
+      [entryId]="entry()!.id"
+      [grade]="editingGrade()"
+      (saved)="onGradeSaved()"
+      (cancelled)="closeGradeModal()"
+    />
+  </app-modal>
+}
+
+@if (deleteGradeModalOpen()) {
+  <app-confirm-dialog
+    title="Видалення оцінки"
+    message="Ви впевнені, що хочете видалити цю оцінку?"
+    subtext="Цю дію неможливо скасувати."
+    iconType="danger"
+    confirmButtonClass="btn-danger"
+    confirmLabel="Видалити"
+    (confirm)="confirmDeleteGrade()"
+    (cancel)="deleteGradeModalOpen.set(false)"
+  />
+}
+
+@if (closeEntryModalOpen()) {
+  <app-confirm-dialog
+    title="Закриття запису"
+    message="Закрити залікові запис? Буде виставлено фінальний результат на основі останньої оцінки."
+    iconType="warning"
+    confirmButtonClass="btn-confirm-warning"
+    confirmLabel="Закрити"
+    (confirm)="confirmCloseEntry()"
+    (cancel)="closeEntryModalOpen.set(false)"
+  />
+}

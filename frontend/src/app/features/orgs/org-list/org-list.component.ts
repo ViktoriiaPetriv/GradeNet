@@ -6,11 +6,24 @@ import { ToastService } from '../../../core/services/toast.service';
 import { PaginationComponent } from '../../../shared/pagination/pagination.component';
 import { OrgModalComponent } from '../org-modal/org-modal.component';
 import { AuthStateService } from '../../../core/services/auth-state.service';
+import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
+import { AvatarComponent } from '../../../shared/avatar/avatar.component';
+import { BadgeComponent } from '../../../shared/badge/badge.component';
+import { ModalComponent } from '../../../shared/modal/modal.component';
+import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-org-list',
   standalone: true,
-  imports: [PaginationComponent, OrgModalComponent],
+  imports: [
+    PaginationComponent,
+    OrgModalComponent,
+    PageHeaderComponent,
+    AvatarComponent,
+    BadgeComponent,
+    ModalComponent,
+    ConfirmDialogComponent,
+  ],
   templateUrl: './org-list.component.html',
   styleUrl: './org-list.component.css',
 })

@@ -1,10 +1,18 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { redirectGuard } from './core/guards/redirect.guard';
+import { setupCompleteGuard, setupRequiredGuard } from './core/guards/setup.guard';
 
 export const routes: Routes = [
   {
+    path: 'setup',
+    canActivate: [setupRequiredGuard],
+    loadComponent: () =>
+      import('./features/auth/setup/setup.component').then((m) => m.SetupComponent),
+  },
+  {
     path: 'login',
+    canActivate: [setupCompleteGuard],
     loadComponent: () =>
       import('./features/auth/login/login.component').then((m) => m.LoginComponent),
   },
@@ -46,6 +54,34 @@ export const routes: Routes = [
       import('./features/users/profile/profile.component').then((m) => m.ProfileComponent),
   },
   {
+    path: 'disciplines',
+    canActivate: [authGuard(['ADMIN', 'MANAGER'])],
+    loadComponent: () =>
+      import('./features/disciplines/discipline-list/discipline-list.component').then(
+        (m) => m.DisciplineListComponent,
+      ),
+  },
+  {
+    path: 'disciplines/:id',
+    canActivate: [authGuard(['ADMIN', 'MANAGER'])],
+    loadComponent: () =>
+      import('./features/disciplines/discipline-detail/discipline-detail.component').then(
+        (m) => m.DisciplineDetailComponent,
+      ),
+  },
+  {
+    path: 'groups',
+    canActivate: [authGuard(['ADMIN', 'MANAGER'])],
+    loadComponent: () =>
+      import('./features/groups/group-list/group-list.component').then((m) => m.GroupListComponent),
+  },
+  {
+    path: 'groups/:id',
+    canActivate: [authGuard(['ADMIN', 'MANAGER'])],
+    loadComponent: () =>
+      import('./features/groups/group-detail/group-detail.component').then((m) => m.GroupDetailComponent),
+  },
+  {
     path: 'books',
     canActivate: [authGuard(['ADMIN', 'MANAGER'])],
     loadComponent: () =>
@@ -60,8 +96,36 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'grades',
+    canActivate: [authGuard(['ADMIN', 'PROFESSOR'])],
+    loadComponent: () =>
+      import('./features/grades/entry-list/entry-list.component').then((m) => m.EntryListComponent),
+  },
+  {
+    path: 'grades/bulk',
+    canActivate: [authGuard(['ADMIN', 'PROFESSOR'])],
+    loadComponent: () =>
+      import('./features/grades/bulk-grade/bulk-grade.component').then((m) => m.BulkGradeComponent),
+  },
+  {
+    path: 'grades/group-report',
+    canActivate: [authGuard(['ADMIN', 'PROFESSOR'])],
+    loadComponent: () =>
+      import('./features/grades/group-report/group-report.component').then(
+        (m) => m.GroupReportComponent,
+      ),
+  },
+  {
+    path: 'grades/:id',
+    canActivate: [authGuard(['ADMIN', 'PROFESSOR'])],
+    loadComponent: () =>
+      import('./features/grades/entry-detail/entry-detail.component').then(
+        (m) => m.EntryDetailComponent,
+      ),
+  },
+  {
     path: '',
-    canActivate: [redirectGuard],
+    canActivate: [setupCompleteGuard, redirectGuard],
     loadComponent: () =>
       import('./features/auth/login/login.component').then((m) => m.LoginComponent),
   },

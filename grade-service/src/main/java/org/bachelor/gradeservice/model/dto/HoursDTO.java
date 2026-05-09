@@ -1,14 +1,17 @@
 package org.bachelor.gradeservice.model.dto;
 
-public record HoursDTO(
-        Long id,
-        Long specialtyDisciplineId,
-        Integer ectsHours,
-        Integer allHours,
-        Integer totalClassroomHours,
-        Integer lecture,
-        Integer seminar,
-        Integer laboratory,
-        Integer individual,
-        Integer selfWork
-) {}
+import lombok.Data;
+
+@Data
+public class HoursDTO {
+    private Long id;
+    private String academicYear;
+    private Integer ectsCredits;
+    private Integer totalHours;
+    private Integer classroomHours;
+    private Integer lectureHours;
+    private Integer seminarHours;
+    private Integer laboratoryHours;
+    private Integer individualHours;
+    private Integer selfWorkHours;
+}

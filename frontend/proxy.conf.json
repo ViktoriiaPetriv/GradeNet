@@ -11,12 +11,36 @@
     "target": "http://localhost:8080",
     "changeOrigin": true
   },
+  "/api/groups": {
+    "target": "http://localhost:8080",
+    "changeOrigin": true
+  },
   "/api/orgs": {
     "target": "http://localhost:8081",
     "changeOrigin": true
   },
   "/api/specialties": {
     "target": "http://localhost:8081",
+    "changeOrigin": true
+  },
+  "/api/disciplines": {
+    "target": "http://localhost:8082",
+    "changeOrigin": true
+  },
+  "/api/specialty-disciplines": {
+    "target": "http://localhost:8082",
+    "changeOrigin": true
+  },
+  "/api/grades": {
+    "target": "http://localhost:8082",
+    "changeOrigin": true
+  },
+  "/api/records": {
+    "target": "http://localhost:8082",
+    "changeOrigin": true
+  },
+  "/api/hours": {
+    "target": "http://localhost:8082",
     "changeOrigin": true
   }
 }

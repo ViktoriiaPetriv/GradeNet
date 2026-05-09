@@ -1,0 +1,108 @@
+<div class="page">
+  <div class="page-top">
+    <app-page-header title="Залікові записи" subtitle="Управління оцінками студентів" />
+    @if (isAdmin() || isProfessor()) {
+      <div class="header-actions">
+        <button class="btn-secondary" (click)="openGroupReport()">
+          <i class="pi pi-chart-bar"></i> Успішність групи
+        </button>
+        <button class="btn-secondary" (click)="openBulkGrade()">
+          <i class="pi pi-list-check"></i> Масове оцінювання
+        </button>
+        <button class="btn-primary" (click)="createWizardOpen.set(true)">
+          <i class="pi pi-plus"></i> Створити записи
+        </button>
+      </div>
+    }
+  </div>
+
+  <div class="filters">
+    <select class="filter-select" (change)="onStatusChange($event)">
+      <option value="">Всі статуси</option>
+      <option value="IN_PROGRESS">Відкриті</option>
+      <option value="COMPLETED">Закриті</option>
+    </select>
+    <input
+      class="search-input"
+      type="text"
+      placeholder="Навчальний рік (2024/2025)..."
+      (input)="onYearChange($event)"
+    />
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Студент (bookId)</th>
+          <th>Дисципліна</th>
+          <th>Навч. рік</th>
+          <th>Спроба</th>
+          <th>Статус</th>
+          <th>Результат</th>
+          <th>Дата звіту</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (entries().length === 0) {
+          <tr>
+            <td colspan="9">
+              <div class="empty-state">
+                <div class="empty-icon">📋</div>
+                <div>Записів не знайдено</div>
+              </div>
+            </td>
+          </tr>
+        }
+        @for (entry of entries(); track entry.id) {
+          <tr class="clickable-row" (click)="viewEntry(entry.id)">
+            <td class="id-cell">{{ entry.id }}</td>
+            <td>{{ entry.bookNumberId }}</td>
+            <td>{{ entry.specialtyDisciplineId }}</td>
+            <td>{{ entry.academicYear }}</td>
+            <td>{{ entry.attempt }}</td>
+            <td>
+              <span class="status-badge" [class]="'status-' + entry.status">
+                {{ statusLabel(entry.status) }}
+              </span>
+            </td>
+            <td>
+              @if (entry.result) {
+                <span class="result-badge" [class]="'result-' + entry.result">
+                  {{ resultLabel(entry.result) }}
+                </span>
+              } @else {
+                <span class="text-muted">—</span>
+              }
+            </td>
+            <td>
+              <span [class.text-danger]="isReportDatePast(entry)">
+                {{ formatDate(entry.reportDate) }}
+              </span>
+            </td>
+            <td>
+              <button
+                class="action-btn view"
+                (click)="viewEntry(entry.id); $event.stopPropagation()"
+                title="Переглянути"
+              >
+                <i class="pi pi-eye"></i>
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (createWizardOpen()) {
+  <app-modal title="Створення залікових записів" size="lg" [showClose]="true" (close)="createWizardOpen.set(false)">
+    <app-entry-create-wizard
+      (saved)="onWizardSaved()"
+      (cancelled)="createWizardOpen.set(false)"
+    />
+  </app-modal>
+}

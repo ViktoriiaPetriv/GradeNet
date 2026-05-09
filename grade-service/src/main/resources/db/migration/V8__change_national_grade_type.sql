@@ -1,0 +1,1 @@
+ALTER TABLE grade ALTER COLUMN national_grade TYPE varchar(20);

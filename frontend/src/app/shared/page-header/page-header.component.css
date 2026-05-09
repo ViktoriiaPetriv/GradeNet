@@ -1,0 +1,5 @@
+/* .page-header, .page-title, .page-subtitle, .back-btn глобальні; додамо лише потрібне */
+.header-actions {
+  display: flex;
+  gap: 8px;
+}

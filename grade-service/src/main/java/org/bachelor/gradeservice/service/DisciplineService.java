@@ -1,15 +1,13 @@
 package org.bachelor.gradeservice.service;
 
-import org.bachelor.gradeservice.model.dto.DisciplineDTO;
-import org.bachelor.gradeservice.model.dto.DisciplineRequestDTO;
+import org.bachelor.gradeservice.model.dto.*;
+import org.bachelor.gradeservice.model.dto.DisciplineCreateResponseDTO;
 
 import java.util.List;
 
 public interface DisciplineService {
-    DisciplineDTO create(DisciplineRequestDTO dto);
-    DisciplineDTO update(Long id, DisciplineRequestDTO dto);
-    DisciplineDTO getById(Long id);
+    DisciplineCreateResponseDTO create(DisciplineCreateDTO dto);
     List<DisciplineDTO> getAll();
-    List<DisciplineDTO> getAllBySpecialty(Long specialtyId);
-    void delete(Long id);
+    DisciplineDTO getById(Long id);
+    DisciplineDTO update(Long id, DisciplineUpdateDTO dto);
 }

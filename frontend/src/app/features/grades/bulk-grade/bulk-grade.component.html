@@ -1,0 +1,135 @@
+<div class="page">
+  <div class="page-top">
+    <app-page-header title="Масове виставлення оцінок" subtitle="Оцінювання цілої групи за одну дисципліну" />
+    <button class="btn-secondary" (click)="goBack()">
+      <i class="pi pi-arrow-left"></i> Назад
+    </button>
+  </div>
+
+  <div class="filters-card">
+    <div class="filters-row">
+      <div class="filter-group">
+        <label class="filter-label">Дисципліна</label>
+        <select
+          class="filter-select"
+          [ngModel]="selectedDisciplineId()"
+          (ngModelChange)="selectedDisciplineId.set($event ? +$event : null)"
+          name="discipline"
+        >
+          <option [ngValue]="null">— Оберіть дисципліну —</option>
+          @for (sd of specialtyDisciplines(); track sd.id) {
+            <option [ngValue]="sd.id">{{ disciplineLabel(sd) }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Навчальний рік</label>
+        <input
+          class="filter-input"
+          type="text"
+          placeholder="2024/2025"
+          [ngModel]="academicYear()"
+          (ngModelChange)="academicYear.set($event)"
+          name="academicYear"
+        />
+      </div>
+
+      <button class="btn-primary" (click)="load()" [disabled]="loading()">
+        @if (loading()) {
+          <i class="pi pi-spin pi-spinner"></i>
+        } @else {
+          <i class="pi pi-search"></i>
+        }
+        Завантажити
+      </button>
+    </div>
+  </div>
+
+  @if (hasRows()) {
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Студент</th>
+            <th>Дата звіту</th>
+            <th>Поточна оцінка</th>
+            <th>Нова оцінка (0–100)</th>
+            <th>Тип</th>
+            <th>Дата оцінювання</th>
+            <th>Пропустити</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.entry.entryId) {
+            <tr [class.row-skipped]="row.skip">
+              <td class="student-name">{{ row.entry.studentName }}</td>
+              <td>
+                <span [class.text-danger]="isReportDatePast(row)">
+                  {{ formatDate(row.entry.reportDate) }}
+                </span>
+              </td>
+              <td class="current-grade">{{ formatGrade(row) }}</td>
+              <td>
+                @if (!row.skip) {
+                  <input
+                    class="grade-input"
+                    type="number"
+                    min="0"
+                    max="100"
+                    [(ngModel)]="row.universityGrade"
+                    [name]="'grade-' + row.entry.entryId"
+                    placeholder="0–100"
+                  />
+                }
+              </td>
+              <td>
+                @if (!row.skip) {
+                  <select
+                    class="type-select"
+                    [(ngModel)]="row.assessmentType"
+                    [name]="'type-' + row.entry.entryId"
+                  >
+                    <option value="EXAM">Іспит</option>
+                    <option value="CREDIT">Залік</option>
+                  </select>
+                }
+              </td>
+              <td>
+                @if (!row.skip) {
+                  <input
+                    class="date-input"
+                    type="datetime-local"
+                    [(ngModel)]="row.assessmentDate"
+                    [name]="'date-' + row.entry.entryId"
+                  />
+                }
+              </td>
+              <td class="skip-cell">
+                <input
+                  type="checkbox"
+                  [checked]="row.skip"
+                  (change)="row.skip = !row.skip; rows.set([...rows()])"
+                />
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="actions-bar">
+      <span class="count-info">
+        Активних: {{ activeRows().length }} / {{ rows().length }}
+      </span>
+      <button class="btn-primary" (click)="save()" [disabled]="saving() || activeRows().length === 0">
+        @if (saving()) {
+          <i class="pi pi-spin pi-spinner"></i>
+        } @else {
+          <i class="pi pi-check"></i>
+        }
+        Зберегти оцінки ({{ activeRows().length }})
+      </button>
+    </div>
+  }
+</div>

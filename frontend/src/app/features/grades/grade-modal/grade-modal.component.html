@@ -1,0 +1,50 @@
+<form class="grade-form" (ngSubmit)="submit()">
+  <div class="form-group">
+    <label class="form-label">Дата оцінювання *</label>
+    <input
+      class="form-input"
+      type="datetime-local"
+      [ngModel]="assessmentDate()"
+      (ngModelChange)="assessmentDate.set($event)"
+      name="assessmentDate"
+      required
+    />
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Оцінка (0–100) *</label>
+    <input
+      class="form-input"
+      type="number"
+      min="0"
+      max="100"
+      [ngModel]="universityGrade()"
+      (ngModelChange)="universityGrade.set($event)"
+      name="universityGrade"
+      placeholder="Введіть оцінку..."
+      required
+    />
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Тип оцінювання *</label>
+    <select
+      class="form-input"
+      [ngModel]="assessmentType()"
+      (ngModelChange)="assessmentType.set($event)"
+      name="assessmentType"
+    >
+      <option value="EXAM">Іспит</option>
+      <option value="CREDIT">Залік</option>
+    </select>
+  </div>
+
+  <div class="form-actions">
+    <button type="button" class="btn-cancel" (click)="cancelled.emit()">
+      <i class="pi pi-times"></i> Скасувати
+    </button>
+    <button type="submit" class="btn-primary">
+      <i class="pi pi-check"></i> {{ grade ? 'Зберегти' : 'Додати' }}
+    </button>
+  </div>
+</form>

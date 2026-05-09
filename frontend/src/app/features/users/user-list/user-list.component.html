@@ -1,108 +1,89 @@
 <div class="page">
-    <div class="page-header">
-        <div>
-            <div class="page-title">Користувачі</div>
-            <div class="page-subtitle">Управління обліковими записами системи</div>
-        </div>
+  <app-page-header title="Користувачі" subtitle="Управління обліковими записами системи">
+    @if (isAdminOrManager()) {
+      <button actions class="btn-primary" (click)="openCreate()">
+        <i class="pi pi-plus"></i> Додати користувача
+      </button>
+    }
+  </app-page-header>
 
+  <div class="filters">
+    <input class="search-input" type="text" placeholder="Пошук за ім'ям або email..." [value]="search()"
+           (input)="onSearch($event)" />
+    <select class="filter-select" (change)="onRoleFilter($event)">
+      <option value="">Усі ролі</option>
+      @for (role of roles; track role) {
+        <option [value]="role">{{ roleLabel(role) }}</option>
+      }
+    </select>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+      <tr>
+        <th>Користувач</th>
+        <th>Email</th>
+        <th>Дата народження</th>
+        <th>Роль</th>
         @if (isAdminOrManager()) {
-        <button class="btn-primary" (click)="openCreate()">
-            <i class="pi pi-plus"></i> Додати користувача
-        </button>
+          <th>Дії</th>
         }
-    </div>
-
-    <div class="filters">
-        <input class="search-input" type="text" placeholder="Пошук за ім'ям або email..." [value]="search()"
-            (input)="onSearch($event)" />
-        <select class="filter-select" (change)="onRoleFilter($event)">
-            <option value="">Усі ролі</option>
-            @for (role of roles; track role) {
-            <option [value]="role">{{ roleLabel(role) }}</option>
+      </tr>
+      </thead>
+      <tbody>
+        @for (user of paginated(); track user.id) {
+          <tr class="clickable-row" (click)="viewProfile(user.id)">
+            <td>
+              <div class="table-cell">
+                <app-avatar
+                  [letter]="getInitials(user) || user.email[0]"
+                  [backgroundColor]="getAvatarColor(user.id)"
+                  size="sm" />
+                <div>
+                  <div class="full-name">{{ user.lastName || '—' }} {{ user.firstName || '' }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="text-muted">{{ user.email }}</td>
+            <td class="text-muted">{{ formatDate(user.birthDate) }}</td>
+            <td><app-badge [type]="'role-' + user.role">{{ roleLabel(user.role) }}</app-badge></td>
+            @if (isAdminOrManager()) {
+              <td>
+                <button class="action-btn edit" (click)="openEdit(user); $event.stopPropagation()">
+                  <i class="pi pi-file-edit"></i>
+                </button>
+                <button class="action-btn delete" (click)="openDeleteModal(user); $event.stopPropagation()">
+                  <i class="pi pi-trash"></i>
+                </button>
+              </td>
             }
-        </select>
-    </div>
+          </tr>
+        }
+      </tbody>
+    </table>
 
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Користувач</th>
-                    <th>Email</th>
-                    <th>Дата народження</th>
-                    <th>Роль</th>
-                    @if (isAdminOrManager()) {
-                    <th>Дії</th>
-                    }
-                </tr>
-            </thead>
-            <tbody>
-                @for (user of paginated(); track user.id) {
-                <tr class="clickable-row" (click)="viewProfile(user.id)">
-                    <td>
-                        <div class="table-cell">
-                            <div class="table-avatar" [style.background]="getAvatarColor(user.id)">
-                                <i class="pi pi-user"></i>
-                            </div>
-                            <div>
-                                <div class="full-name">{{ user.lastName || '—' }} {{ user.firstName || '' }}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="text-muted">{{ user.email }}</td>
-                    <td class="text-muted">{{ formatDate(user.birthDate) }}</td>
-                    <td><span class="role-badge role-{{ user.role }}">{{ roleLabel(user.role) }}</span></td>
-                    @if (isAdminOrManager()) {
-                    <td>
-                        <button class="action-btn edit" (click)="openEdit(user); $event.stopPropagation()">
-                            <i class="pi pi-file-edit"></i>
-                        </button>
-                        <button class="action-btn delete" (click)="openDeleteModal(user); $event.stopPropagation()">
-                            <i class="pi pi-trash"></i>
-                        </button>
-                    </td>
-                    }
-                </tr>
-                }
-            </tbody>
-        </table>
-
-        <app-pagination [currentPage]="currentPage()" [totalPages]="totalPages()" [perPage]="perPage()"
-            [info]="paginationInfo()" (pageChange)="onPageChange($event)" (perPageChange)="onPerPageChange($event)" />
-    </div>
+    <app-pagination [currentPage]="currentPage()" [totalPages]="totalPages()" [perPage]="perPage()"
+                    [info]="paginationInfo()" (pageChange)="onPageChange($event)" (perPageChange)="onPerPageChange($event)" />
+  </div>
 </div>
 
 @if (modalOpen()) {
-<div class="modal-backdrop">
-    <div class="modal" (click)="$event.stopPropagation()">
-        <app-user-modal [user]="editingUser()" [mode]="isEdit() ? 'edit' : 'create'" (saved)="onSaved()"
-            (cancelled)="closeModal()" />
-    </div>
-</div>
+  <app-modal [title]="isEdit() ? 'Редагувати користувача' : 'Новий користувач'" (close)="closeModal()">
+    <app-user-modal [user]="editingUser()" [mode]="isEdit() ? 'edit' : 'create'" (saved)="onSaved()"
+                    (cancelled)="closeModal()" />
+  </app-modal>
 }
 
 @if (deleteModalOpen()) {
-<div class="modal-backdrop" (click)="closeDeleteModal()">
-    <div class="modal modal-sm" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-            <div class="modal-title">Видалення користувача</div>
-            <button class="modal-close" (click)="closeDeleteModal()">
-                <i class="pi pi-times"></i>
-            </button>
-        </div>
-
-        <div class="delete-body">
-            <p class="delete-text">
-                Ви впевнені, що хочете видалити користувача
-                <strong>{{ userToDelete()?.email }}</strong>?
-            </p>
-            <p class="delete-subtext">Цю дію неможливо скасувати.</p>
-        </div>
-
-        <div class="modal-footer">
-            <button type="button" class="btn-cancel" (click)="closeDeleteModal()"><i class="pi pi-times"></i>Скасувати</button>
-            <button type="button" class="btn-danger" (click)="confirmDelete()">Видалити</button>
-        </div>
-    </div>
-</div>
+  <app-confirm-dialog
+    title="Видалення користувача"
+    [message]="'Ви впевнені, що хочете видалити користувача <strong>' + (userToDelete()?.email ?? '') + '</strong>?'"
+    subtext="Цю дію неможливо скасувати."
+    iconType="danger"
+    confirmButtonClass="btn-danger"
+    confirmLabel="Видалити"
+    (confirm)="confirmDelete()"
+    (cancel)="closeDeleteModal()"
+  />
 }
