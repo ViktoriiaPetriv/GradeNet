@@ -1,0 +1,255 @@
+<div class="page">
+  <app-page-header
+    title="Імпорт з файлу"
+    subtitle="Завантажте зведену відомість успішності у форматі .xlsx"
+  />
+
+  <!-- Step indicators -->
+  <div class="steps">
+    <div class="step" [class.active]="step() === 'upload'" [class.done]="step() === 'assign' || step() === 'result'">
+      <div class="step-circle">@if (step() === 'assign' || step() === 'result') { <i class="pi pi-check"></i> } @else { 1 }</div>
+      <span>Файл</span>
+    </div>
+    <div class="step-line" [class.done]="step() === 'assign' || step() === 'result'"></div>
+    <div class="step" [class.active]="step() === 'assign'" [class.done]="step() === 'result'">
+      <div class="step-circle">@if (step() === 'result') { <i class="pi pi-check"></i> } @else { 2 }</div>
+      <span>Викладачі</span>
+    </div>
+    <div class="step-line" [class.done]="step() === 'result'"></div>
+    <div class="step" [class.active]="step() === 'result'">
+      <div class="step-circle">3</div>
+      <span>Результат</span>
+    </div>
+  </div>
+
+  <!-- ── STEP 1: Upload ── -->
+  @if (step() === 'upload') {
+    <div class="card">
+      <div
+        class="drop-zone"
+        [class.dragging]="isDragging()"
+        [class.has-file]="selectedFile()"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave()"
+        (drop)="onDrop($event)"
+        (click)="fileInput.click()"
+      >
+        <input #fileInput type="file" accept=".xlsx" class="hidden-input" (change)="onFileSelected($event)" />
+
+        @if (selectedFile()) {
+          <div class="file-info">
+            <i class="pi pi-file-excel file-icon"></i>
+            <div class="file-details">
+              <span class="file-name">{{ selectedFile()!.name }}</span>
+              <span class="file-size">{{ formatFileSize(selectedFile()!.size) }}</span>
+            </div>
+            <button class="clear-btn" (click)="clearFile(); $event.stopPropagation()">
+              <i class="pi pi-times"></i>
+            </button>
+          </div>
+        } @else {
+          <div class="drop-hint">
+            <i class="pi pi-upload drop-icon"></i>
+            <p class="drop-text">Перетягніть файл сюди або <span class="link">натисніть для вибору</span></p>
+            <p class="drop-sub">Підтримується формат .xlsx до 10 МБ</p>
+          </div>
+        }
+      </div>
+
+      <div class="card-footer">
+        <button class="btn-primary" (click)="parse()" [disabled]="!canParse()">
+          @if (parsing()) {
+            <i class="pi pi-spin pi-spinner"></i> Зчитування...
+          } @else {
+            <i class="pi pi-arrow-right"></i> Далі
+          }
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- ── STEP 2: Assign professors ── -->
+  @if (step() === 'assign') {
+    <div class="card">
+      @if (meta()) {
+        <div class="meta-row">
+          <span class="meta-badge"><i class="pi pi-users"></i> {{ meta()!.groupName }}</span>
+          <span class="meta-badge"><i class="pi pi-calendar"></i> {{ meta()!.academicYear }}</span>
+          @if (meta()!.specialtyName) {
+            <span class="meta-badge"><i class="pi pi-graduation-cap"></i> {{ meta()!.specialtyName }}</span>
+          }
+          <span class="meta-badge"><i class="pi pi-list"></i> {{ meta()!.disciplineNames.length }} дисциплін</span>
+        </div>
+      }
+
+      @if (!isProfessor()) {
+        <div class="assign-all-row">
+          <label class="field-label">Призначити всім:</label>
+          <div class="autocomplete-wrapper">
+            <input
+              type="text"
+              class="field-input autocomplete-input"
+              placeholder="Пошук викладача..."
+              [value]="assignAllSearch()"
+              (input)="onAssignAllSearchChange($any($event.target).value)"
+              (blur)="closeAssignAllDropdown()"
+            />
+            @if (showAssignAllDropdown()) {
+              <ul class="autocomplete-list">
+                <li class="autocomplete-item clear-item" (mousedown)="assignAll(null)">
+                  <span>— Оберіть викладача —</span>
+                </li>
+                @for (p of filteredAssignAllProfessors(); track p.id) {
+                  <li class="autocomplete-item" (mousedown)="assignAll(p.id)">
+                    <span>{{ getProfessorName(p) }}</span>
+                  </li>
+                }
+                @if (filteredAssignAllProfessors().length === 0 && assignAllSearch()) {
+                  <li class="autocomplete-item no-results">Викладачів не знайдено</li>
+                }
+              </ul>
+            }
+          </div>
+        </div>
+      }
+
+      <div class="discipline-table">
+        <div class="discipline-header">
+          <span>Дисципліна</span>
+          <span>{{ isProfessor() ? 'Викладач' : 'Призначений викладач' }}</span>
+        </div>
+        @for (row of disciplines(); track row.index) {
+          <div class="discipline-row" [attr.data-discipline-index]="row.index">
+            <span class="disc-name">{{ row.name }}</span>
+            @if (isProfessor()) {
+              <span class="professor-static"><i class="pi pi-user"></i> {{ professorName() }}</span>
+            } @else {
+              <div class="autocomplete-wrapper discipline-autocomplete" [class.dropdown-above]="dropdownPositions()[row.index] === 'above'">
+                <input
+                  type="text"
+                  class="field-input autocomplete-input"
+                  placeholder="Пошук викладача..."
+                  [value]="disciplineSearches()[row.index] || ''"
+                  (input)="onDisciplineSearchChange(row.index, $any($event.target).value)"
+                  (blur)="closeDisciplineDropdown(row.index)"
+                />
+                @if (showDisciplineDropdown()[row.index]) {
+                  <ul class="autocomplete-list">
+                    <li class="autocomplete-item clear-item" (mousedown)="assignProfessor(row.index, null)">
+                      <span>— Пропустити —</span>
+                    </li>
+                    @for (p of getFilteredDisciplineProfessors(disciplineSearches()[row.index] || ''); track p.id) {
+                      <li class="autocomplete-item" (mousedown)="assignProfessor(row.index, p.id)">
+                        <span>{{ getProfessorName(p) }}</span>
+                      </li>
+                    }
+                    @if (getFilteredDisciplineProfessors(disciplineSearches()[row.index] || '').length === 0 && disciplineSearches()[row.index]) {
+                      <li class="autocomplete-item no-results">Викладачів не знайдено</li>
+                    }
+                  </ul>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      @if (!isProfessor()) {
+        <p class="assign-hint">
+          Призначено: <strong>{{ assignedCount() }}</strong> / {{ disciplines().length }}.
+          Дисципліни без викладача будуть пропущені.
+        </p>
+      }
+
+      <div class="card-footer">
+        <button class="btn-secondary" (click)="goBack()">
+          <i class="pi pi-arrow-left"></i> Назад
+        </button>
+        <button class="btn-primary" (click)="import()" [disabled]="!canImport()">
+          @if (importing()) {
+            <i class="pi pi-spin pi-spinner"></i> Імпортується...
+          } @else {
+            <i class="pi pi-upload"></i> Імпортувати
+          }
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- ── STEP 3: Result ── -->
+  @if (step() === 'result' && result()) {
+    <div class="result-card">
+      <div class="result-header" [class.has-warnings]="result()!.errors.length > 0 || result()!.studentsUnmatched > 0">
+        <i class="pi" [class.pi-check-circle]="result()!.errors.length === 0 && result()!.studentsUnmatched === 0"
+                      [class.pi-exclamation-triangle]="result()!.errors.length > 0 || result()!.studentsUnmatched > 0"></i>
+        <span>{{ result()!.errors.length === 0 && result()!.studentsUnmatched === 0
+          ? 'Імпорт завершено успішно'
+          : 'Імпорт завершено з попередженнями' }}</span>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-label">Група</span>
+          <span class="stat-value">{{ result()!.groupName || '—' }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Навчальний рік</span>
+          <span class="stat-value">{{ result()!.academicYear || '—' }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Дисциплін</span>
+          <span class="stat-value">{{ result()!.disciplinesProcessed }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Студентів знайдено</span>
+          <span class="stat-value" [class.warn]="result()!.studentsUnmatched > 0">
+            {{ result()!.studentsMatched }} / {{ result()!.studentsMatched + result()!.studentsUnmatched }}
+          </span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Оцінок створено</span>
+          <span class="stat-value accent">{{ result()!.gradesCreated }}</span>
+        </div>
+      </div>
+
+      @if (result()!.unmatchedStudents.length > 0) {
+        <div class="warn-section">
+          <div class="section-title warn-title">
+            <i class="pi pi-exclamation-triangle"></i> Студентів не знайдено в системі
+          </div>
+          <ul class="name-list">
+            @for (name of result()!.unmatchedStudents; track name) {
+              <li>{{ name }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      @if (result()!.errors.length > 0) {
+        <div class="error-section">
+          <div class="section-title error-title">
+            <i class="pi pi-times-circle"></i> Помилки ({{ result()!.errors.length }})
+          </div>
+          <div class="error-table">
+            <div class="error-row header-row">
+              <span>Студент</span><span>Дисципліна</span><span>Причина</span>
+            </div>
+            @for (err of result()!.errors; track $index) {
+              <div class="error-row">
+                <span>{{ err.studentName || '—' }}</span>
+                <span>{{ err.disciplineName || '—' }}</span>
+                <span class="error-reason">{{ err.reason }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <div class="card-footer">
+        <button class="btn-secondary" (click)="goBack()">
+          <i class="pi pi-plus"></i> Новий імпорт
+        </button>
+      </div>
+    </div>
+  }
+</div>

@@ -109,6 +109,29 @@ services:
     networks:
       - grade-net-network
 
+  integration-service-app:
+    image: gradenet-integration-service:${IMAGE_TAG:-latest}
+    build:
+      context: ./integration-service
+      dockerfile: Dockerfile
+    container_name: integration-service-app
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:${INTEGRATION_APP_PORT:-8083}:8083"
+    depends_on:
+      - user-service-app
+      - grade-service-app
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: ${INTEGRATION_APP_PORT:-8083}
+      USER_SERVICE_URL: http://user-service-app:${USER_APP_PORT:-8080}
+      ORG_SERVICE_URL: http://org-service-app:${ORG_APP_PORT:-8081}
+      GRADE_SERVICE_URL: http://grade-service-app:${GRADE_APP_PORT:-8082}
+    networks:
+      - grade-net-network
+
 networks:
   grade-net-network:
     driver: bridge

@@ -13,6 +13,8 @@ import java.util.Set;
 public interface GradeBookEntryMapper {
 
     @Mapping(target = "specialtyDisciplineId", source = "specialtyDiscipline.id")
+    @Mapping(target = "disciplineName", source = "specialtyDiscipline.discipline.name")
+    @Mapping(target = "studentName", ignore = true)
     GradeBookEntryDTO toDTO(GradeBookEntry entry);
 
     // mapper/GradeBookEntryMapper.java

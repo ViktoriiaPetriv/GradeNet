@@ -10,7 +10,9 @@ import java.time.LocalDate;
 public class GradeBookEntryDTO {
     private Long id;
     private Long bookNumberId;
+    private String studentName;
     private Long specialtyDisciplineId;
+    private String disciplineName;
     private Long professorId;
     private String academicYear;
     private Integer attempt;

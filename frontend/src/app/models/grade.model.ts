@@ -30,7 +30,9 @@ export interface GradeUpdateRequest {
 export interface GradeBookEntryDTO {
   id: number;
   bookNumberId: number;
+  studentName?: string;
   specialtyDisciplineId: number;
+  disciplineName?: string;
   professorId: number;
   academicYear: string;
   attempt: number;
@@ -75,4 +77,29 @@ export interface BulkGradeItem {
   universityGrade: number;
   assessmentType: AssessmentType;
   assessmentDate: string;
+}
+
+export interface HoursDTO {
+  id: number;
+  academicYear: string;
+  ectsCredits: number;
+  totalHours: number;
+  classroomHours: number;
+  lectureHours: number;
+  seminarHours: number;
+  laboratoryHours: number;
+  individualHours: number;
+  selfWorkHours: number;
+}
+
+export interface StudentDisciplineDTO {
+  entryId: number;
+  disciplineName: string;
+  specialtyDisciplineId: number;
+  academicYear: string;
+  attempt: number;
+  status: EntryStatus;
+  result: EntryResult | null;
+  hours: HoursDTO[];
+  grades: GradeDTO[];
 }

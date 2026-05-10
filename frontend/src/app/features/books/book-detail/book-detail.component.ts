@@ -111,6 +111,12 @@ export class BookDetailComponent implements OnInit {
     return [u.lastName, u.firstName, u.patronymic].filter(Boolean).join(' ');
   }
 
+  viewGrades() {
+    const b = this.book();
+    if (!b) return;
+    this.router.navigate(['/grades/student', b.id]);
+  }
+
   goBack() {
     this.router.navigate(['/books']);
   }

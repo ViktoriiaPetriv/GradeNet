@@ -6,6 +6,9 @@
             <i class="pi pi-arrow-left"></i> Назад
         </button>
         <div class="header-actions">
+            <button class="btn-secondary" (click)="viewGrades()">
+                <i class="pi pi-chart-line"></i> Оцінки студента
+            </button>
             @if (isAdminOrManager() && b.status === 'REGISTERED') {
             <button class="btn-warning" (click)="fillModalOpen.set(true)">
                 <i class="pi pi-check"></i> Позначити заповненою

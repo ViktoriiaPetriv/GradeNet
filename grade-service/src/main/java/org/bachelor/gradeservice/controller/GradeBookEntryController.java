@@ -3,8 +3,10 @@ package org.bachelor.gradeservice.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.bachelor.gradeservice.model.dto.*;
-import org.bachelor.gradeservice.model.entity.EntryResult;
 import org.bachelor.gradeservice.service.GradeBookEntryService;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -42,8 +44,20 @@ public class GradeBookEntryController {
     }
 
     @GetMapping
-    public List<GradeBookEntryDTO> getAll(@ModelAttribute GradeBookEntryFilter filter) {
-        return entryService.getAll(filter);
+    public PageResponse<GradeBookEntryDTO> getAll(
+            @ModelAttribute GradeBookEntryFilter filter,
+            @RequestParam(defaultValue = "0") int pageNumber,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir) {
+
+        Pageable pageable = PageRequest.of(
+                pageNumber, size,
+                sortDir.equalsIgnoreCase("desc")
+                        ? Sort.by(sortBy).descending()
+                        : Sort.by(sortBy).ascending()
+        );
+        return entryService.getAll(filter, pageable);
     }
 
     @DeleteMapping("/{id}")

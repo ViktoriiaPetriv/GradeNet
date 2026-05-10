@@ -11,6 +11,8 @@ import org.mapstruct.MappingTarget;
 public interface BookNumberMapper {
 
     @Mapping(target = "studentId", source = "student.id")
+    @Mapping(target = "studentFirstName", source = "student.firstName")
+    @Mapping(target = "studentLastName", source = "student.lastName")
     BookNumberDTO toDto(BookNumber bookNumber);
 
     @Mapping(target = "id", ignore = true)

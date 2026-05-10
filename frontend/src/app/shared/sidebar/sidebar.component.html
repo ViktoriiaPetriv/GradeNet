@@ -41,6 +41,11 @@
             <i class="pi pi-star"></i> Оцінки
         </li>
         }
+        @if (isAdminOrManager() || isProfessor()) {
+        <li routerLink="/import" routerLinkActive="active" (click)="close()">
+            <i class="pi pi-file-import"></i> Імпорт
+        </li>
+        }
     </ul>
 
     <div class="nav-divider"></div>

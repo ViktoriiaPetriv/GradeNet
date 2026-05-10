@@ -10,7 +10,9 @@ import {
   GradeBookEntryCreateRequest,
   BulkGradeEntryDTO,
   BulkGradeCreateRequest,
+  StudentDisciplineDTO,
 } from '../../models/grade.model';
+import { PageResponse } from '../../models/page.model';
 
 @Injectable({ providedIn: 'root' })
 export class GradeService {
@@ -19,15 +21,15 @@ export class GradeService {
 
   constructor(private http: HttpClient) {}
 
-  getEntries(filter: GradeBookEntryFilter = {}): Observable<GradeBookEntryDTO[]> {
-    let params = new HttpParams();
+  getEntries(filter: GradeBookEntryFilter = {}, page = 0, size = 20): Observable<PageResponse<GradeBookEntryDTO>> {
+    let params = new HttpParams().set('pageNumber', page).set('size', size);
     if (filter.bookNumberId != null) params = params.set('bookNumberId', filter.bookNumberId);
     if (filter.specialtyDisciplineId != null) params = params.set('specialtyDisciplineId', filter.specialtyDisciplineId);
     if (filter.professorId != null) params = params.set('professorId', filter.professorId);
     if (filter.academicYear) params = params.set('academicYear', filter.academicYear);
     if (filter.status) params = params.set('status', filter.status);
     if (filter.result) params = params.set('result', filter.result);
-    return this.http.get<GradeBookEntryDTO[]>(this.recordsUrl, { params });
+    return this.http.get<PageResponse<GradeBookEntryDTO>>(this.recordsUrl, { params });
   }
 
   getEntryById(id: number): Observable<GradeBookEntryDTO> {
@@ -74,5 +76,13 @@ export class GradeService {
       .set('specialtyDisciplineId', specialtyDisciplineId)
       .set('academicYear', academicYear);
     return this.http.get<BulkGradeEntryDTO[]>(`${this.recordsUrl}/group-report`, { params });
+  }
+
+  getStudentDisciplines(bookNumberId: number, academicYears?: string[]): Observable<StudentDisciplineDTO[]> {
+    let params = new HttpParams();
+    if (academicYears?.length) {
+      academicYears.forEach((y) => (params = params.append('academicYears', y)));
+    }
+    return this.http.get<StudentDisciplineDTO[]>(`${this.recordsUrl}/students/${bookNumberId}/disciplines`, { params });
   }
 }
