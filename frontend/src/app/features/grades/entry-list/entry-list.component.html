@@ -35,7 +35,7 @@
       <thead>
         <tr>
           <th>ID</th>
-          <th>Студент (bookId)</th>
+          <th>Студент</th>
           <th>Дисципліна</th>
           <th>Навч. рік</th>
           <th>Спроба</th>
@@ -59,8 +59,20 @@
         @for (entry of entries(); track entry.id) {
           <tr class="clickable-row" (click)="viewEntry(entry.id)">
             <td class="id-cell">{{ entry.id }}</td>
-            <td>{{ entry.bookNumberId }}</td>
-            <td>{{ entry.specialtyDisciplineId }}</td>
+            <td>
+              @if (entry.studentName) {
+                {{ entry.studentName }}
+              } @else {
+                <span class="text-muted">{{ entry.bookNumberId }}</span>
+              }
+            </td>
+            <td>
+              @if (entry.disciplineName) {
+                {{ entry.disciplineName }}
+              } @else {
+                <span class="text-muted">{{ entry.specialtyDisciplineId }}</span>
+              }
+            </td>
             <td>{{ entry.academicYear }}</td>
             <td>{{ entry.attempt }}</td>
             <td>
@@ -95,6 +107,16 @@
         }
       </tbody>
     </table>
+
+    <app-pagination
+      [currentPage]="currentPage()"
+      [totalPages]="totalPages()"
+      [perPage]="perPage()"
+      [perPageOptions]="perPageOptions"
+      [info]="paginationInfo()"
+      (pageChange)="onPageChange($event)"
+      (perPageChange)="onPerPageChange($event)"
+    />
   </div>
 </div>
 

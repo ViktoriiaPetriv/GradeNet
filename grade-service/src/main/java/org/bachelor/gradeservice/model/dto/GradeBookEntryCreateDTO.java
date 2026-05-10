@@ -25,4 +25,7 @@ public class GradeBookEntryCreateDTO {
     private List<Long> bookNumberIds;
 
     private LocalDate reportDate;
+
+    /** If set, the created entry will have attempt = max(auto, minAttempt). */
+    private Integer minAttempt;
 }

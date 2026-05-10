@@ -102,6 +102,14 @@ export const routes: Routes = [
       import('./features/grades/entry-list/entry-list.component').then((m) => m.EntryListComponent),
   },
   {
+    path: 'grades/student/:bookNumberId',
+    canActivate: [authGuard(['ADMIN', 'MANAGER', 'PROFESSOR'])],
+    loadComponent: () =>
+      import('./features/grades/student-grades/student-grades.component').then(
+        (m) => m.StudentGradesComponent,
+      ),
+  },
+  {
     path: 'grades/bulk',
     canActivate: [authGuard(['ADMIN', 'PROFESSOR'])],
     loadComponent: () =>
@@ -122,6 +130,12 @@ export const routes: Routes = [
       import('./features/grades/entry-detail/entry-detail.component').then(
         (m) => m.EntryDetailComponent,
       ),
+  },
+  {
+    path: 'import',
+    canActivate: [authGuard(['ADMIN', 'MANAGER', 'PROFESSOR'])],
+    loadComponent: () =>
+      import('./features/import/import.component').then((m) => m.ImportComponent),
   },
   {
     path: '',

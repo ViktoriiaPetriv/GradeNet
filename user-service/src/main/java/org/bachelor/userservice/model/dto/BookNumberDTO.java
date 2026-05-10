@@ -10,6 +10,8 @@ public class BookNumberDTO {
     private Long id;
     private String number;
     private Long studentId;
+    private String studentFirstName;
+    private String studentLastName;
     private Instant regStartDate;
     private Instant regEndDate;
     private Instant handedDate;

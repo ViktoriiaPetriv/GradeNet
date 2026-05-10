@@ -13,6 +13,7 @@ import org.bachelor.gradeservice.repository.GradeBookEntryRepository;
 import org.bachelor.gradeservice.repository.SpecialtyDisciplineRepository;
 import org.bachelor.gradeservice.service.GradeBookEntryService;
 import org.bachelor.gradeservice.utils.GradeConverter;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -72,6 +73,9 @@ public class GradeBookEntryServiceImpl implements GradeBookEntryService {
                             });
 
                     int nextAttempt = nextAttempt(bookNumberId, dto.getSpecialtyDisciplineId());
+                    if (dto.getMinAttempt() != null && dto.getMinAttempt() > nextAttempt) {
+                        nextAttempt = dto.getMinAttempt();
+                    }
 
                     GradeBookEntry entry = new GradeBookEntry();
                     entry.setBookNumberId(bookNumberId);
@@ -152,7 +156,7 @@ public class GradeBookEntryServiceImpl implements GradeBookEntryService {
     }
 
     @Override
-    public List<GradeBookEntryDTO> getAll(GradeBookEntryFilter filter) {
+    public PageResponse<GradeBookEntryDTO> getAll(GradeBookEntryFilter filter, Pageable pageable) {
         Specification<GradeBookEntry> spec = Specification.allOf(
                 byBookNumberId(filter.getBookNumberId()),
                 bySpecialtyDisciplineId(filter.getSpecialtyDisciplineId()),
@@ -161,10 +165,13 @@ public class GradeBookEntryServiceImpl implements GradeBookEntryService {
                 byStatus(filter.getStatus()),
                 byResult(filter.getResult())
         );
-        return entryRepository.findAll(spec)
-                .stream()
-                .map(entryMapper::toDTO)
-                .toList();
+        return PageResponse.of(
+                entryRepository.findAll(spec, pageable).map(entry -> {
+                    GradeBookEntryDTO dto = entryMapper.toDTO(entry);
+                    dto.setStudentName(userServiceClient.getStudentName(entry.getBookNumberId()));
+                    return dto;
+                })
+        );
     }
 
     @Transactional

@@ -1,0 +1,210 @@
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.back-btn:hover { background: var(--surface-2); }
+
+.student-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.student-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--btn);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.student-name-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.book-number-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.year-filter-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+  flex-wrap: wrap;
+}
+
+.filter-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.year-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.year-chip {
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.year-chip:hover { border-color: var(--btn); color: var(--btn); }
+.year-chip.active { background: var(--btn); color: #fff; border-color: var(--btn); }
+
+.stats-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.stat-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.stat-total    { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+.stat-passed   { background: #dcfce7; color: #166534; }
+.stat-failed   { background: #fee2e2; color: #991b1b; }
+.stat-progress { background: #dbeafe; color: #1d4ed8; }
+
+.table-container {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.discipline-name { font-weight: 500; }
+.text-sm { font-size: 13px; }
+.text-muted { color: var(--text-muted); }
+.text-center { text-align: center; }
+
+.ects-credits-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--surface-2);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.grade-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  background: #ede9fe;
+  color: #5b21b6;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ects-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.ects-A  { background: #dcfce7; color: #166534; }
+.ects-B  { background: #d1fae5; color: #065f46; }
+.ects-C  { background: #fef9c3; color: #854d0e; }
+.ects-D  { background: #ffedd5; color: #9a3412; }
+.ects-E  { background: #ffe4e6; color: #9f1239; }
+.ects-FX { background: #fee2e2; color: #991b1b; }
+.ects-F  { background: #fecaca; color: #7f1d1d; }
+
+.status-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.status-IN_PROGRESS { background: #dbeafe; color: #1d4ed8; }
+.status-COMPLETED   { background: #f3f4f6; color: #374151; }
+
+.result-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.result-PASSED { background: #dcfce7; color: #166534; }
+.result-FAILED { background: #fee2e2; color: #991b1b; }
+
+.row-passed td:first-child { border-left: 3px solid #22c55e; }
+.row-failed td:first-child { border-left: 3px solid #ef4444; }
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.empty-icon { font-size: 28px; }
+
+.action-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+.action-btn.view { color: var(--btn); }
+.action-btn.view:hover { background: var(--btn); color: #fff; border-color: var(--btn); }

@@ -1,0 +1,146 @@
+<div class="page">
+  <div class="detail-header">
+    <button class="back-btn" (click)="goBack()">
+      <i class="pi pi-arrow-left"></i> Назад
+    </button>
+    @if (book(); as b) {
+      <div class="student-info">
+        <div class="student-avatar">
+          <i class="pi pi-user"></i>
+        </div>
+        <div>
+          <div class="student-name-title">{{ studentName() || 'Студент' }}</div>
+          <div class="book-number-label">Залікова книжка: {{ b.number }}</div>
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (allYears().length > 0) {
+    <div class="year-filter-card">
+      <span class="filter-label">Навчальний рік:</span>
+      <div class="year-chips">
+        <button
+          class="year-chip"
+          [class.active]="selectedYears().size === 0"
+          (click)="clearYears()"
+        >
+          Всі роки
+        </button>
+        @for (year of allYears(); track year) {
+          <button
+            class="year-chip"
+            [class.active]="isYearSelected(year) && selectedYears().size > 0"
+            (click)="toggleYear(year)"
+          >
+            {{ year }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  @if (filteredDisciplines().length > 0) {
+    <div class="stats-row">
+      <div class="stat-chip stat-total">
+        <i class="pi pi-list"></i>
+        Всього: {{ filteredDisciplines().length }}
+      </div>
+      <div class="stat-chip stat-passed">
+        <i class="pi pi-check-circle"></i>
+        Зараховано: {{ passedCount() }}
+      </div>
+      <div class="stat-chip stat-failed">
+        <i class="pi pi-times-circle"></i>
+        Не зараховано: {{ failedCount() }}
+      </div>
+      <div class="stat-chip stat-progress">
+        <i class="pi pi-clock"></i>
+        Відкрито: {{ inProgressCount() }}
+      </div>
+    </div>
+  }
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Дисципліна</th>
+          <th>Навч. рік</th>
+          <th>Спроба</th>
+          <th>ЄКТС</th>
+          <th>Бали</th>
+          <th>ECTS</th>
+          <th>Нац. оцінка</th>
+          <th>Статус</th>
+          <th>Результат</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (filteredDisciplines().length === 0) {
+          <tr>
+            <td colspan="10">
+              <div class="empty-state">
+                <div class="empty-icon">📋</div>
+                <div>Залікових записів не знайдено</div>
+              </div>
+            </td>
+          </tr>
+        }
+        @for (d of filteredDisciplines(); track d.entryId) {
+          <tr class="clickable-row" [class]="rowClass(d)" (click)="viewEntry(d.entryId, $event)">
+            <td class="discipline-name">{{ d.disciplineName }}</td>
+            <td class="text-muted text-sm">{{ d.academicYear }}</td>
+            <td class="text-center">{{ d.attempt }}</td>
+            <td class="text-center">
+              @if (ectsCredits(d) !== null) {
+                <span class="ects-credits-badge">{{ ectsCredits(d) }}</span>
+              } @else {
+                <span class="text-muted">—</span>
+              }
+            </td>
+            <td class="text-center">
+              @if (latestGrade(d); as g) {
+                <span class="grade-badge">{{ g.universityGrade }}</span>
+              } @else {
+                <span class="text-muted">—</span>
+              }
+            </td>
+            <td class="text-center">
+              @if (latestGrade(d); as g) {
+                <span class="ects-badge ects-{{ g.ectsGrade }}">{{ g.ectsGrade }}</span>
+              } @else {
+                <span class="text-muted">—</span>
+              }
+            </td>
+            <td class="text-sm">{{ nationalLabel(latestGrade(d)?.nationalGrade) }}</td>
+            <td>
+              <span class="status-badge status-{{ d.status }}">
+                {{ statusLabel(d.status) }}
+              </span>
+            </td>
+            <td>
+              @if (d.result) {
+                <span class="result-badge result-{{ d.result }}">
+                  {{ resultLabel(d.result) }}
+                </span>
+              } @else {
+                <span class="text-muted">—</span>
+              }
+            </td>
+            <td>
+              <button
+                class="action-btn view"
+                (click)="viewEntry(d.entryId, $event)"
+                title="Переглянути запис"
+              >
+                <i class="pi pi-eye"></i>
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

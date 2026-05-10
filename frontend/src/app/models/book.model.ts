@@ -4,6 +4,8 @@ export interface BookNumber {
   id: number;
   number: string;
   studentId: number;
+  studentFirstName?: string;
+  studentLastName?: string;
   regStartDate: string;
   regEndDate?: string;
   handedDate?: string;
