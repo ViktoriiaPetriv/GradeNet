@@ -5,6 +5,7 @@ WORKDIR /app
 # Копіюємо gradle wrapper та конфігурацію
 COPY gradle gradle
 COPY gradlew .
+RUN chmod +x gradlew
 COPY build.gradle .
 COPY settings.gradle .
 
