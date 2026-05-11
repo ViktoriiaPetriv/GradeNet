@@ -26,17 +26,13 @@ services:
       - grade-net-network
 
   org-service-app:
-    image: gradenet-org-service:${IMAGE_TAG:-latest}
-    build:
-      context: ./org-service
-      dockerfile: Dockerfile
+    image: ghcr.io/${GITHUB_OWNER}/gradenet-org-service:${IMAGE_TAG:-latest}
     container_name: org-service-app
     restart: always
     env_file:
       - .env
     ports:
       - "127.0.0.1:${ORG_APP_PORT:-8081}:8081"
-      - "127.0.0.1:${ORG_DEBUG_PORT:-5006}:5006"
     volumes:
       - ./logs/org_app:/logs
     depends_on:
@@ -53,17 +49,13 @@ services:
       - grade-net-network
 
   user-service-app:
-    image: gradenet-user-service:${IMAGE_TAG:-latest}
-    build:
-      context: ./user-service
-      dockerfile: Dockerfile
+    image: ghcr.io/${GITHUB_OWNER}/gradenet-user-service:${IMAGE_TAG:-latest}
     container_name: user-service-app
     restart: always
     env_file:
       - .env
     ports:
       - "127.0.0.1:${USER_APP_PORT:-8080}:8080"
-      - "127.0.0.1:${USER_DEBUG_PORT:-5005}:5005"
     volumes:
       - ./logs/user_app:/logs
     depends_on:
@@ -81,17 +73,13 @@ services:
       - grade-net-network
 
   grade-service-app:
-    image: gradenet-grade-service:${IMAGE_TAG:-latest}
-    build:
-      context: ./grade-service
-      dockerfile: Dockerfile
+    image: ghcr.io/${GITHUB_OWNER}/gradenet-grade-service:${IMAGE_TAG:-latest}
     container_name: grade-service-app
     restart: always
     env_file:
       - .env
     ports:
       - "127.0.0.1:${GRADE_APP_PORT:-8082}:8082"
-      - "127.0.0.1:${GRADE_DEBUG_PORT:-5007}:5007"
     volumes:
       - ./logs/grade_app:/logs
     depends_on:
@@ -110,10 +98,7 @@ services:
       - grade-net-network
 
   integration-service-app:
-    image: gradenet-integration-service:${IMAGE_TAG:-latest}
-    build:
-      context: ./integration-service
-      dockerfile: Dockerfile
+    image: ghcr.io/${GITHUB_OWNER}/gradenet-integration-service:${IMAGE_TAG:-latest}
     container_name: integration-service-app
     restart: always
     env_file:
@@ -129,6 +114,20 @@ services:
       USER_SERVICE_URL: http://user-service-app:${USER_APP_PORT:-8080}
       ORG_SERVICE_URL: http://org-service-app:${ORG_APP_PORT:-8081}
       GRADE_SERVICE_URL: http://grade-service-app:${GRADE_APP_PORT:-8082}
+    networks:
+      - grade-net-network
+
+  frontend:
+    image: ghcr.io/${GITHUB_OWNER}/gradenet-frontend:${IMAGE_TAG:-latest}
+    container_name: frontend
+    restart: always
+    ports:
+      - "0.0.0.0:80:80"
+    depends_on:
+      - user-service-app
+      - org-service-app
+      - grade-service-app
+      - integration-service-app
     networks:
       - grade-net-network
 
