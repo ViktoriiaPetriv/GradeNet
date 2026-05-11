@@ -17,6 +17,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
@@ -29,24 +32,24 @@ jobs:
           TAG=${{ github.sha }}
           OWNER=$(echo "${{ env.OWNER }}" | tr '[:upper:]' '[:lower:]')
           for SERVICE in org-service user-service grade-service integration-service; do
-            docker build \
+            docker buildx build \
+              --platform linux/amd64,linux/arm64 \
               -t ghcr.io/${OWNER}/gradenet-${SERVICE}:${TAG} \
               -t ghcr.io/${OWNER}/gradenet-${SERVICE}:latest \
+              --push \
               ./${SERVICE}
-            docker push ghcr.io/${OWNER}/gradenet-${SERVICE}:${TAG}
-            docker push ghcr.io/${OWNER}/gradenet-${SERVICE}:latest
           done
 
       - name: Build & Push frontend
         run: |
           TAG=${{ github.sha }}
           OWNER=$(echo "${{ env.OWNER }}" | tr '[:upper:]' '[:lower:]')
-          docker build \
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
             -t ghcr.io/${OWNER}/gradenet-frontend:${TAG} \
             -t ghcr.io/${OWNER}/gradenet-frontend:latest \
+            --push \
             ./frontend
-          docker push ghcr.io/${OWNER}/gradenet-frontend:${TAG}
-          docker push ghcr.io/${OWNER}/gradenet-frontend:latest
 
   deploy:
     needs: build-and-push
