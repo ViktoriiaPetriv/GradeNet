@@ -27,24 +27,26 @@ jobs:
       - name: Build & Push backend services
         run: |
           TAG=${{ github.sha }}
+          OWNER=$(echo "${{ env.OWNER }}" | tr '[:upper:]' '[:lower:]')
           for SERVICE in org-service user-service grade-service integration-service; do
             docker build \
-              -t ghcr.io/${{ env.OWNER }}/gradenet-${SERVICE}:${TAG} \
-              -t ghcr.io/${{ env.OWNER }}/gradenet-${SERVICE}:latest \
+              -t ghcr.io/${OWNER}/gradenet-${SERVICE}:${TAG} \
+              -t ghcr.io/${OWNER}/gradenet-${SERVICE}:latest \
               ./${SERVICE}
-            docker push ghcr.io/${{ env.OWNER }}/gradenet-${SERVICE}:${TAG}
-            docker push ghcr.io/${{ env.OWNER }}/gradenet-${SERVICE}:latest
+            docker push ghcr.io/${OWNER}/gradenet-${SERVICE}:${TAG}
+            docker push ghcr.io/${OWNER}/gradenet-${SERVICE}:latest
           done
 
       - name: Build & Push frontend
         run: |
           TAG=${{ github.sha }}
+          OWNER=$(echo "${{ env.OWNER }}" | tr '[:upper:]' '[:lower:]')
           docker build \
-            -t ghcr.io/${{ env.OWNER }}/gradenet-frontend:${TAG} \
-            -t ghcr.io/${{ env.OWNER }}/gradenet-frontend:latest \
+            -t ghcr.io/${OWNER}/gradenet-frontend:${TAG} \
+            -t ghcr.io/${OWNER}/gradenet-frontend:latest \
             ./frontend
-          docker push ghcr.io/${{ env.OWNER }}/gradenet-frontend:${TAG}
-          docker push ghcr.io/${{ env.OWNER }}/gradenet-frontend:latest
+          docker push ghcr.io/${OWNER}/gradenet-frontend:${TAG}
+          docker push ghcr.io/${OWNER}/gradenet-frontend:latest
 
   deploy:
     needs: build-and-push
@@ -71,8 +73,10 @@ jobs:
           script: |
             cd /opt/app
 
-            cat > .env << 'EOF'
-            GITHUB_OWNER=${{ github.repository_owner }}
+            OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+
+            cat > .env << EOF
+            GITHUB_OWNER=${OWNER}
             IMAGE_TAG=${{ github.sha }}
             POSTGRES_USER=${{ secrets.POSTGRES_USER }}
             POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
