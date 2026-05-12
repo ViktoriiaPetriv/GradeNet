@@ -1019,3 +1019,11 @@ tbody tr:hover {
     align-items: center;
     gap: 12px;
 }
+
+@media print {
+  app-sidebar,
+  app-loader,
+  p-toast {
+    display: none !important;
+  }
+}

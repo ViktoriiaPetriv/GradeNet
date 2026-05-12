@@ -45,6 +45,7 @@ export class EntryCreateWizardComponent implements OnInit {
   selectedDisciplineId = signal<number | null>(null);
   selectedProfessorId = signal<number | null>(null);
   academicYear = signal('');
+  semester = signal<number>(1);
   reportDate = signal('');
   selectedGroupIds = signal<Set<number>>(new Set());
 
@@ -192,6 +193,7 @@ export class EntryCreateWizardComponent implements OnInit {
       academicYear: this.academicYear().trim(),
       bookNumberIds: active.map((s) => s.bookNumberId),
       reportDate: this.reportDate() || undefined,
+      semester: this.semester(),
     };
 
     this.loading.set(true);

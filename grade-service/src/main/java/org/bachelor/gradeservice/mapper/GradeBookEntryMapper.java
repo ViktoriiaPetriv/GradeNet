@@ -22,5 +22,6 @@ public interface GradeBookEntryMapper {
     @Mapping(target = "specialtyDisciplineId", source = "entry.specialtyDiscipline.id")
     @Mapping(target = "hours", source = "filteredHours")
     @Mapping(target = "grades", source = "entry.grades")
+    @Mapping(target = "professorName", ignore = true)
     StudentDisciplineDTO toStudentDisciplineDTO(GradeBookEntry entry, Set<HoursDTO> filteredHours);
 }

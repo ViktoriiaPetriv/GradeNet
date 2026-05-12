@@ -102,6 +102,14 @@ export const routes: Routes = [
       import('./features/grades/entry-list/entry-list.component').then((m) => m.EntryListComponent),
   },
   {
+    path: 'grades/student/:bookNumberId/report',
+    canActivate: [authGuard(['ADMIN', 'MANAGER', 'PROFESSOR'])],
+    loadComponent: () =>
+      import('./features/grades/student-grade-report/student-grade-report.component').then(
+        (m) => m.StudentGradeReportComponent,
+      ),
+  },
+  {
     path: 'grades/student/:bookNumberId',
     canActivate: [authGuard(['ADMIN', 'MANAGER', 'PROFESSOR'])],
     loadComponent: () =>

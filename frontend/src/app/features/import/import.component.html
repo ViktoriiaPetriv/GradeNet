@@ -6,18 +6,56 @@
 
   <!-- Step indicators -->
   <div class="steps">
-    <div class="step" [class.active]="step() === 'upload'" [class.done]="step() === 'assign' || step() === 'result'">
-      <div class="step-circle">@if (step() === 'assign' || step() === 'result') { <i class="pi pi-check"></i> } @else { 1 }</div>
+    <div
+      class="step"
+      [class.active]="step() === 'upload'"
+      [class.done]="step() !== 'upload' && step() !== 'result'"
+    >
+      <div class="step-circle">
+        @if (step() !== 'upload' && step() !== 'result') {
+          <i class="pi pi-check"></i>
+        } @else {
+          1
+        }
+      </div>
       <span>Файл</span>
     </div>
-    <div class="step-line" [class.done]="step() === 'assign' || step() === 'result'"></div>
-    <div class="step" [class.active]="step() === 'assign'" [class.done]="step() === 'result'">
-      <div class="step-circle">@if (step() === 'result') { <i class="pi pi-check"></i> } @else { 2 }</div>
-      <span>Викладачі</span>
+    <div class="step-line" [class.done]="step() !== 'upload' && step() !== 'result'"></div>
+
+    <div
+      class="step"
+      [class.active]="step() === 'disciplines'"
+      [class.done]="step() === 'students' || step() === 'preview' || step() === 'result'"
+    >
+      <div class="step-circle">
+        @if (step() === 'students' || step() === 'preview' || step() === 'result') {
+          <i class="pi pi-check"></i>
+        } @else {
+          2
+        }
+      </div>
+      <span>Дисципліни</span>
+    </div>
+    <div class="step-line" [class.done]="step() === 'preview' || step() === 'result'"></div>
+
+    <div
+      class="step"
+      [class.active]="step() === 'students'"
+      [class.done]="step() === 'preview' || step() === 'result'"
+    >
+      <div class="step-circle">
+        @if (step() === 'preview' || step() === 'result') {
+          <i class="pi pi-check"></i>
+        } @else {
+          3
+        }
+      </div>
+      <span>Студенти</span>
     </div>
     <div class="step-line" [class.done]="step() === 'result'"></div>
-    <div class="step" [class.active]="step() === 'result'">
-      <div class="step-circle">3</div>
+
+    <div class="step" [class.active]="step() === 'preview' || step() === 'result'">
+      <div class="step-circle">@if (step() === 'result') { <i class="pi pi-check"></i> } @else { 4 }</div>
       <span>Результат</span>
     </div>
   </div>
@@ -48,207 +86,457 @@
             </button>
           </div>
         } @else {
-          <div class="drop-hint">
-            <i class="pi pi-upload drop-icon"></i>
-            <p class="drop-text">Перетягніть файл сюди або <span class="link">натисніть для вибору</span></p>
-            <p class="drop-sub">Підтримується формат .xlsx до 10 МБ</p>
-          </div>
+          <i class="pi pi-cloud-upload drop-icon"></i>
+          <p class="drop-text">Перетягніть файл сюди або натисніть для вибору</p>
+          <p class="drop-sub">Підтримується тільки формат .xlsx</p>
         }
       </div>
 
       <div class="card-footer">
-        <button class="btn-primary" (click)="parse()" [disabled]="!canParse()">
-          @if (parsing()) {
-            <i class="pi pi-spin pi-spinner"></i> Зчитування...
+        <button
+          class="btn-primary"
+          (click)="checkDisciplines()"
+          [disabled]="!canProceedToDisciplines() || checkingDisciplines()"
+        >
+          @if (checkingDisciplines()) {
+            <i class="pi pi-spinner pi-spin"></i>
+            Перевірка дисциплін...
           } @else {
-            <i class="pi pi-arrow-right"></i> Далі
+            Далі
           }
         </button>
       </div>
     </div>
   }
 
-  <!-- ── STEP 2: Assign professors ── -->
-  @if (step() === 'assign') {
+  <!-- ── STEP 2: Disciplines ── -->
+  @if (step() === 'disciplines') {
     <div class="card">
-      @if (meta()) {
+      @if (disciplineCheck()) {
         <div class="meta-row">
-          <span class="meta-badge"><i class="pi pi-users"></i> {{ meta()!.groupName }}</span>
-          <span class="meta-badge"><i class="pi pi-calendar"></i> {{ meta()!.academicYear }}</span>
-          @if (meta()!.specialtyName) {
-            <span class="meta-badge"><i class="pi pi-graduation-cap"></i> {{ meta()!.specialtyName }}</span>
-          }
-          <span class="meta-badge"><i class="pi pi-list"></i> {{ meta()!.disciplineNames.length }} дисциплін</span>
-        </div>
-      }
-
-      @if (!isProfessor()) {
-        <div class="assign-all-row">
-          <label class="field-label">Призначити всім:</label>
-          <div class="autocomplete-wrapper">
-            <input
-              type="text"
-              class="field-input autocomplete-input"
-              placeholder="Пошук викладача..."
-              [value]="assignAllSearch()"
-              (input)="onAssignAllSearchChange($any($event.target).value)"
-              (blur)="closeAssignAllDropdown()"
-            />
-            @if (showAssignAllDropdown()) {
-              <ul class="autocomplete-list">
-                <li class="autocomplete-item clear-item" (mousedown)="assignAll(null)">
-                  <span>— Оберіть викладача —</span>
-                </li>
-                @for (p of filteredAssignAllProfessors(); track p.id) {
-                  <li class="autocomplete-item" (mousedown)="assignAll(p.id)">
-                    <span>{{ getProfessorName(p) }}</span>
-                  </li>
-                }
-                @if (filteredAssignAllProfessors().length === 0 && assignAllSearch()) {
-                  <li class="autocomplete-item no-results">Викладачів не знайдено</li>
-                }
-              </ul>
-            }
+          <div class="meta-badge">
+            <strong>Група:</strong> {{ disciplineCheck()!.groupName }}
           </div>
+          <div class="meta-badge">
+            <strong>Рік:</strong> {{ disciplineCheck()!.academicYear }}
+          </div>
+          @if (disciplineCheck()!.specialtyName) {
+            <div class="meta-badge">
+              <strong>Спеціальність:</strong> {{ disciplineCheck()!.specialtyName }}
+            </div>
+          }
         </div>
-      }
 
-      <div class="discipline-table">
-        <div class="discipline-header">
-          <span>Дисципліна</span>
-          <span>{{ isProfessor() ? 'Викладач' : 'Призначений викладач' }}</span>
+        <div class="disciplines-actions">
+          <button class="btn-secondary" (click)="selectAllDisciplines()" style="font-size: 12px; padding: 0.5rem 0.75rem;">
+            Обрати всі
+          </button>
+          <button class="btn-secondary" (click)="deselectAllDisciplines()" style="font-size: 12px; padding: 0.5rem 0.75rem;">
+            Скасувати вибір
+          </button>
+          <button class="btn-secondary" (click)="createAllNewDisciplines()" style="font-size: 12px; padding: 0.5rem 0.75rem;">
+            Створити всі нові
+          </button>
+          <button class="btn-secondary" (click)="clearAllNewDisciplines()" style="font-size: 12px; padding: 0.5rem 0.75rem;">
+            Очистити нові
+          </button>
         </div>
-        @for (row of disciplines(); track row.index) {
-          <div class="discipline-row" [attr.data-discipline-index]="row.index">
-            <span class="disc-name">{{ row.name }}</span>
-            @if (isProfessor()) {
-              <span class="professor-static"><i class="pi pi-user"></i> {{ professorName() }}</span>
-            } @else {
-              <div class="autocomplete-wrapper discipline-autocomplete" [class.dropdown-above]="dropdownPositions()[row.index] === 'above'">
-                <input
-                  type="text"
-                  class="field-input autocomplete-input"
-                  placeholder="Пошук викладача..."
-                  [value]="disciplineSearches()[row.index] || ''"
-                  (input)="onDisciplineSearchChange(row.index, $any($event.target).value)"
-                  (blur)="closeDisciplineDropdown(row.index)"
-                />
-                @if (showDisciplineDropdown()[row.index]) {
-                  <ul class="autocomplete-list">
-                    <li class="autocomplete-item clear-item" (mousedown)="assignProfessor(row.index, null)">
-                      <span>— Пропустити —</span>
-                    </li>
-                    @for (p of getFilteredDisciplineProfessors(disciplineSearches()[row.index] || ''); track p.id) {
-                      <li class="autocomplete-item" (mousedown)="assignProfessor(row.index, p.id)">
-                        <span>{{ getProfessorName(p) }}</span>
-                      </li>
+
+        <h4 class="table-section-title">Існуючі дисципліни</h4>
+        @if (existingDisciplines().length > 0) {
+          <div class="disciplines-table existing-disciplines">
+            <div class="table-header">
+              <div class="col-name">Дисципліна</div>
+              <div class="col-checkbox">Вибір</div>
+              <div class="col-professor">Викладач</div>
+            </div>
+            @for (disc of existingDisciplines(); track disc.index) {
+              <div class="table-row">
+                <div class="col-name">
+                  <div class="discipline-title">{{ disc.name }}</div>
+                  <div class="discipline-meta">{{ disc.totalHours }} год. / {{ disc.ectsCredits }} ECTS@if (disc.semester) { / {{ disc.semester }} сем.}</div>
+                </div>
+                <div class="col-checkbox">
+                  <input
+                    type="checkbox"
+                    [checked]="disc.selected"
+                    (change)="toggleDisciplineSelected(disc.index)"
+                  />
+                </div>
+                <div class="col-professor">
+                  @if (disc.selected) {
+                    @if (isProfessor()) {
+                      <div class="professor-text">{{ professorName() }}</div>
+                    } @else {
+                      <div class="autocomplete-wrapper" [attr.data-discipline-index]="disc.index">
+                        <input
+                          type="text"
+                          class="field-input field-input-sm"
+                          placeholder="Викладач..."
+                          [value]="disciplineSearches()[disc.index] || ''"
+                          (input)="onDisciplineSearchChange(disc.index, $event.target.value)"
+                          (focus)="toggleDisciplineDropdown(disc.index)"
+                          (blur)="closeDisciplineDropdown(disc.index)"
+                        />
+                        @if (showDisciplineDropdown()[disc.index] && disciplineSearches()[disc.index]) {
+                          <ul class="autocomplete-list" [class.dropdown-above]="dropdownPositions()[disc.index] === 'above'">
+                            @for (prof of getFilteredDisciplineProfessors(disciplineSearches()[disc.index]); track prof.id) {
+                              <li
+                                class="autocomplete-item"
+                                (mousedown)="assignDisciplineProfessor(disc.index, prof.id)"
+                              >
+                                {{ getProfessorName(prof) }}
+                              </li>
+                            }
+                            @if (getFilteredDisciplineProfessors(disciplineSearches()[disc.index]).length === 0) {
+                              <li class="autocomplete-item no-results">Немає варіантів</li>
+                            }
+                          </ul>
+                        }
+                        @if (disc.professorId === null) {
+                          <i class="pi pi-exclamation-circle field-status-error"></i>
+                        } @else {
+                          <i class="pi pi-check field-status-ok"></i>
+                        }
+                      </div>
                     }
-                    @if (getFilteredDisciplineProfessors(disciplineSearches()[row.index] || '').length === 0 && disciplineSearches()[row.index]) {
-                      <li class="autocomplete-item no-results">Викладачів не знайдено</li>
-                    }
-                  </ul>
-                }
+                  } @else {
+                    <span class="text-muted">—</span>
+                  }
+                </div>
               </div>
             }
           </div>
+        } @else {
+          <div class="empty-message">Немає існуючих дисциплін</div>
         }
-      </div>
 
-      @if (!isProfessor()) {
-        <p class="assign-hint">
-          Призначено: <strong>{{ assignedCount() }}</strong> / {{ disciplines().length }}.
-          Дисципліни без викладача будуть пропущені.
-        </p>
+        <h4 class="table-section-title">Нові дисципліни</h4>
+        @if (newDisciplines().length > 0) {
+          <div class="disciplines-table new-disciplines">
+            <div class="table-header">
+              <div class="col-name">Дисципліна</div>
+              <div class="col-create">Створити</div>
+              <div class="col-checkbox">Вибір</div>
+              <div class="col-professor">Викладач</div>
+            </div>
+            @for (disc of newDisciplines(); track disc.index) {
+              <div class="table-row">
+                <div class="col-name">
+                  <div class="discipline-title">{{ disc.name }}</div>
+                  <div class="discipline-meta">{{ disc.totalHours }} год. / {{ disc.ectsCredits }} ECTS@if (disc.semester) { / {{ disc.semester }} сем.}</div>
+                </div>
+                <div class="col-create">
+                  <input
+                    type="checkbox"
+                    [checked]="disc.createIfNew"
+                    (change)="toggleDisciplineCreateIfNew(disc.index)"
+                  />
+                </div>
+                <div class="col-checkbox">
+                  @if (disc.createIfNew) {
+                    <input
+                      type="checkbox"
+                      [checked]="disc.selected"
+                      (change)="toggleDisciplineSelected(disc.index)"
+                    />
+                  } @else {
+                    <span class="text-muted">—</span>
+                  }
+                </div>
+                <div class="col-professor">
+                  @if (disc.createIfNew && disc.selected) {
+                    @if (isProfessor()) {
+                      <div class="professor-text">{{ professorName() }}</div>
+                    } @else {
+                      <div class="autocomplete-wrapper" [attr.data-discipline-index]="disc.index">
+                        <input
+                          type="text"
+                          class="field-input field-input-sm"
+                          placeholder="Викладач..."
+                          [value]="disciplineSearches()[disc.index] || ''"
+                          (input)="onDisciplineSearchChange(disc.index, $event.target.value)"
+                          (focus)="toggleDisciplineDropdown(disc.index)"
+                          (blur)="closeDisciplineDropdown(disc.index)"
+                        />
+                        @if (showDisciplineDropdown()[disc.index] && disciplineSearches()[disc.index]) {
+                          <ul class="autocomplete-list" [class.dropdown-above]="dropdownPositions()[disc.index] === 'above'">
+                            @for (prof of getFilteredDisciplineProfessors(disciplineSearches()[disc.index]); track prof.id) {
+                              <li
+                                class="autocomplete-item"
+                                (mousedown)="assignDisciplineProfessor(disc.index, prof.id)"
+                              >
+                                {{ getProfessorName(prof) }}
+                              </li>
+                            }
+                            @if (getFilteredDisciplineProfessors(disciplineSearches()[disc.index]).length === 0) {
+                              <li class="autocomplete-item no-results">Немає варіантів</li>
+                            }
+                          </ul>
+                        }
+                        @if (disc.professorId === null) {
+                          <i class="pi pi-exclamation-circle field-status-error"></i>
+                        } @else {
+                          <i class="pi pi-check field-status-ok"></i>
+                        }
+                      </div>
+                    }
+                  } @else {
+                    <span class="text-muted">—</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="empty-message">Немає нових дисциплін</div>
+        }
+
+        <div class="assign-hint">{{ selectedDisciplineCount() }} дисциплін обрано для імпорту</div>
+
+        @if (!isProfessor() && disciplinesWithMissingProfessor().length > 0) {
+          <div style="padding: 1rem 1.5rem 0; color: #dc2626; font-size: 13px;">
+            <i class="pi pi-exclamation-circle"></i>
+            Для вибраних дисциплін потрібно призначити викладача:
+            <ul style="margin: 0.5rem 0 0 1.5rem; padding: 0;">
+              @for (disc of disciplinesWithMissingProfessor(); track disc.index) {
+                <li>{{ disc.name }}</li>
+              }
+            </ul>
+          </div>
+        }
       }
 
       <div class="card-footer">
-        <button class="btn-secondary" (click)="goBack()">
-          <i class="pi pi-arrow-left"></i> Назад
-        </button>
-        <button class="btn-primary" (click)="import()" [disabled]="!canImport()">
-          @if (importing()) {
-            <i class="pi pi-spin pi-spinner"></i> Імпортується...
+        <button class="btn-secondary" (click)="goBack()">Назад</button>
+        <div style="display: flex; gap: 0.75rem; margin-left: auto;">
+          @if (newDisciplinesWithCreateFlag().length > 0) {
+            <button
+              class="btn-secondary"
+              (click)="createDisciplinesOnly()"
+              [disabled]="creatingDisciplines()"
+            >
+              @if (creatingDisciplines()) {
+                <i class="pi pi-spinner pi-spin"></i>
+                Створення...
+              } @else {
+                Створити {{ newDisciplinesWithCreateFlag().length }} дисципліни
+              }
+            </button>
+          }
+          <button
+            class="btn-primary"
+            (click)="proceedToStudents()"
+            [disabled]="!canProceedToStudents() || creatingDisciplines()"
+            [title]="!isProfessor() && disciplinesWithMissingProfessor().length > 0 ? 'Призначте викладача для всіх вибраних дисциплін' : ''"
+          >
+            @if (creatingDisciplines()) {
+              <i class="pi pi-spinner pi-spin"></i>
+              Створення...
+            } @else {
+              Далі
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── STEP 3: Students ── -->
+  @if (step() === 'students') {
+    <div class="card">
+      @if (studentCheck()) {
+        <div class="meta-row">
+          <div class="meta-badge">
+            <strong>Група:</strong> {{ studentCheck()!.groupName }}
+          </div>
+        </div>
+
+        <div class="warn-section">
+          <div class="section-title" style="color: #b45309;">
+            <i class="pi pi-exclamation-triangle"></i>
+            Оцінки будуть вигружені тільки для вибраних студентів
+          </div>
+        </div>
+
+        <div style="padding: 1rem 1.5rem 0;">
+          <h4 style="margin: 0 0 0.75rem 0;">Студенти у системі</h4>
+          @if (existingStudents().length > 0) {
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <button class="btn-secondary" (click)="selectAllStudents()" style="font-size: 12px; padding: 0.5rem 0.75rem;">
+                Обрати всіх
+              </button>
+              <button class="btn-secondary" (click)="deselectAllStudents()" style="font-size: 12px; padding: 0.5rem 0.75rem;">
+                Скасувати
+              </button>
+            </div>
+            <div class="name-list">
+              @for (student of existingStudents(); track student.bookNumberId) {
+                <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0;">
+                  <input
+                    type="checkbox"
+                    [checked]="selectedBookNumberIds().has(student.bookNumberId!)"
+                    (change)="toggleStudentSelection(student.bookNumberId!)"
+                  />
+                  <span>{{ student.fullName }}</span>
+                </label>
+              }
+            </div>
           } @else {
-            <i class="pi pi-upload"></i> Імпортувати
+            <div style="color: var(--text-muted); font-size: 13px;">Не знайдено студентів у системі</div>
+          }
+        </div>
+
+        <div class="warn-section">
+          <h4 style="margin: 0 0 0.75rem 0;">Студентів не знайдено</h4>
+          @if (notFoundStudents().length > 0) {
+            <div class="name-list" style="color: var(--text-muted);">
+              @for (student of notFoundStudents(); track student.fullName) {
+                <li>{{ student.fullName }}</li>
+              }
+            </div>
+          } @else {
+            <div style="font-size: 13px;">Все добре, всі студенти знайдені</div>
+          }
+        </div>
+
+        <div class="assign-hint">{{ selectedStudentCount() }} студентів обрано</div>
+      }
+
+      <div class="card-footer">
+        <button class="btn-secondary" (click)="goBack()">Назад</button>
+        <button
+          class="btn-primary"
+          (click)="proceedToPreview()"
+          [disabled]="!canProceedToPreview()"
+        >
+          Далі
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- ── STEP 4: Preview ── -->
+  @if (step() === 'preview') {
+    <div class="card">
+      <div style="padding: 1.5rem;">
+        <h3 style="margin: 0 0 1rem 0;">Перегляд оцінок</h3>
+
+        @if (previewTable().rows.length > 0) {
+          <div class="preview-table-wrapper">
+            <table class="preview-table">
+              <thead>
+                <tr class="header-row">
+                  <th>Студент</th>
+                  @for (col of previewTable().columns; track col.index) {
+                    <th>{{ col.name }}</th>
+                  }
+                </tr>
+                <tr class="subheader-row">
+                  <th>Викладачі</th>
+                  @for (prof of previewTable().professors; track $index) {
+                    <th>{{ prof || '—' }}</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of previewTable().rows; track row.bookNumberId) {
+                  <tr>
+                    <td>{{ row.fullName }}</td>
+                    @for (grade of row.grades; track $index) {
+                      <td class="grade-cell">
+                        @if (grade !== null) {
+                          <strong>{{ grade }}</strong>
+                        } @else {
+                          <span class="text-muted">—</span>
+                        }
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="empty-message">Немає даних для перегляду</div>
+        }
+      </div>
+
+      <div class="card-footer">
+        <button class="btn-secondary" (click)="goBack()">Назад</button>
+        <button
+          class="btn-primary"
+          (click)="import()"
+          [disabled]="importing()"
+        >
+          @if (importing()) {
+            <i class="pi pi-spinner pi-spin"></i>
+            Вигрузка...
+          } @else {
+            Вигрузити
           }
         </button>
       </div>
     </div>
   }
 
-  <!-- ── STEP 3: Result ── -->
-  @if (step() === 'result' && result()) {
+  <!-- ── STEP 5: Result ── -->
+  @if (step() === 'result') {
     <div class="result-card">
-      <div class="result-header" [class.has-warnings]="result()!.errors.length > 0 || result()!.studentsUnmatched > 0">
-        <i class="pi" [class.pi-check-circle]="result()!.errors.length === 0 && result()!.studentsUnmatched === 0"
-                      [class.pi-exclamation-triangle]="result()!.errors.length > 0 || result()!.studentsUnmatched > 0"></i>
-        <span>{{ result()!.errors.length === 0 && result()!.studentsUnmatched === 0
-          ? 'Імпорт завершено успішно'
-          : 'Імпорт завершено з попередженнями' }}</span>
-      </div>
+      @if (result()) {
+        <div
+          class="result-header"
+          [class.has-warnings]="result()!.errors.length > 0 || result()!.studentsUnmatched > 0"
+        >
+          @if (result()!.errors.length === 0 && result()!.studentsUnmatched === 0) {
+            <i class="pi pi-check-circle"></i>
+            <strong>Імпорт завершено успішно!</strong>
+          } @else {
+            <i class="pi pi-exclamation-triangle"></i>
+            <strong>Імпорт завершено з попередженнями</strong>
+          }
+        </div>
 
-      <div class="stats-grid">
-        <div class="stat-item">
-          <span class="stat-label">Група</span>
-          <span class="stat-value">{{ result()!.groupName || '—' }}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Навчальний рік</span>
-          <span class="stat-value">{{ result()!.academicYear || '—' }}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Дисциплін</span>
-          <span class="stat-value">{{ result()!.disciplinesProcessed }}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Студентів знайдено</span>
-          <span class="stat-value" [class.warn]="result()!.studentsUnmatched > 0">
-            {{ result()!.studentsMatched }} / {{ result()!.studentsMatched + result()!.studentsUnmatched }}
-          </span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Оцінок створено</span>
-          <span class="stat-value accent">{{ result()!.gradesCreated }}</span>
-        </div>
-      </div>
-
-      @if (result()!.unmatchedStudents.length > 0) {
-        <div class="warn-section">
-          <div class="section-title warn-title">
-            <i class="pi pi-exclamation-triangle"></i> Студентів не знайдено в системі
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">Група</span>
+            <span class="stat-value">{{ result()!.groupName }}</span>
           </div>
-          <ul class="name-list">
-            @for (name of result()!.unmatchedStudents; track name) {
-              <li>{{ name }}</li>
-            }
-          </ul>
-        </div>
-      }
-
-      @if (result()!.errors.length > 0) {
-        <div class="error-section">
-          <div class="section-title error-title">
-            <i class="pi pi-times-circle"></i> Помилки ({{ result()!.errors.length }})
+          <div class="stat-item">
+            <span class="stat-label">Рік</span>
+            <span class="stat-value">{{ result()!.academicYear }}</span>
           </div>
-          <div class="error-table">
-            <div class="error-row header-row">
-              <span>Студент</span><span>Дисципліна</span><span>Причина</span>
+          <div class="stat-item">
+            <span class="stat-label">Дисциплін обробено</span>
+            <span class="stat-value accent">{{ result()!.disciplinesProcessed }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Студентів обробено</span>
+            <span class="stat-value accent">{{ result()!.studentsMatched }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Оцінок створено</span>
+            <span class="stat-value accent">{{ result()!.gradesCreated }}</span>
+          </div>
+        </div>
+
+        @if (result()!.unmatchedStudents.length > 0) {
+          <div class="error-section">
+            <div class="section-title warn-title">
+              <i class="pi pi-exclamation-circle"></i>
+              Студентів не знайдено ({{ result()!.unmatchedStudents.length }})
             </div>
-            @for (err of result()!.errors; track $index) {
-              <div class="error-row">
-                <span>{{ err.studentName || '—' }}</span>
-                <span>{{ err.disciplineName || '—' }}</span>
-                <span class="error-reason">{{ err.reason }}</span>
-              </div>
-            }
+            <ul class="name-list">
+              @for (student of result()!.unmatchedStudents; track student) {
+                <li>{{ student }}</li>
+              }
+            </ul>
           </div>
-        </div>
+        }
       }
 
       <div class="card-footer">
-        <button class="btn-secondary" (click)="goBack()">
-          <i class="pi pi-plus"></i> Новий імпорт
-        </button>
+        <button class="btn-primary" (click)="clearFile()">Новий імпорт</button>
       </div>
     </div>
   }

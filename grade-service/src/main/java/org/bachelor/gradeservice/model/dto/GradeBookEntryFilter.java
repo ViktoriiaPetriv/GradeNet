@@ -12,4 +12,5 @@ public class GradeBookEntryFilter {
     private String academicYear;
     private EntryStatus status;
     private EntryResult result;
+    private Integer semester;
 }

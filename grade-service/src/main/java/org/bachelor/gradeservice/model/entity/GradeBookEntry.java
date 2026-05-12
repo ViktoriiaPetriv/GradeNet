@@ -55,6 +55,9 @@ public class GradeBookEntry {
     @Column(name = "report_date")
     private LocalDate reportDate;
 
+    @Column
+    private Integer semester;
+
     @OneToMany(mappedBy = "entry", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Grade> grades = new ArrayList<>();
 }

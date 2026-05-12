@@ -1,9 +1,6 @@
 package org.bachelor.gradeservice.model.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -28,4 +25,7 @@ public class GradeBookEntryCreateDTO {
 
     /** If set, the created entry will have attempt = max(auto, minAttempt). */
     private Integer minAttempt;
+
+    @Min(1) @Max(8)
+    private Integer semester;
 }

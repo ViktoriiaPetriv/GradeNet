@@ -34,6 +34,10 @@ public class GradeBookEntrySpecification {
         return (root, q, cb) -> result == null ? null : cb.equal(root.get("result"), result);
     }
 
+    public static Specification<GradeBookEntry> bySemester(Integer semester) {
+        return (root, q, cb) -> semester == null ? null : cb.equal(root.get("semester"), semester);
+    }
+
     public static Specification<GradeBookEntry> byAcademicYears(List<String> academicYears) {
         return (root, query, cb) ->
                 academicYears == null || academicYears.isEmpty() ? null :

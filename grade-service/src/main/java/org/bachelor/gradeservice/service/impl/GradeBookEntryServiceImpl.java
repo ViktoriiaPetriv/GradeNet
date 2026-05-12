@@ -85,6 +85,7 @@ public class GradeBookEntryServiceImpl implements GradeBookEntryService {
                     entry.setAttempt(nextAttempt);
                     entry.setStatus(EntryStatus.IN_PROGRESS);
                     entry.setReportDate(dto.getReportDate());
+                    entry.setSemester(dto.getSemester());
                     return entryMapper.toDTO(entryRepository.save(entry));
                 })
                 .toList();
@@ -163,7 +164,8 @@ public class GradeBookEntryServiceImpl implements GradeBookEntryService {
                 byProfessorId(filter.getProfessorId()),
                 byAcademicYear(filter.getAcademicYear()),
                 byStatus(filter.getStatus()),
-                byResult(filter.getResult())
+                byResult(filter.getResult()),
+                bySemester(filter.getSemester())
         );
         return PageResponse.of(
                 entryRepository.findAll(spec, pageable).map(entry -> {
@@ -199,7 +201,10 @@ public class GradeBookEntryServiceImpl implements GradeBookEntryService {
                             .filter(h -> h.getAcademicYear().equals(entry.getAcademicYear()))
                             .map(hoursMapper::toDTO)
                             .collect(Collectors.toSet());
-                    return entryMapper.toStudentDisciplineDTO(entry, filteredHours);
+                    StudentDisciplineDTO dto = entryMapper.toStudentDisciplineDTO(entry, filteredHours);
+                    dto.setProfessorName(userServiceClient.getProfessorName(entry.getProfessorId()));
+                    dto.setReportDate(entry.getReportDate());
+                    return dto;
                 })
                 .toList();
     }

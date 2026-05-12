@@ -196,6 +196,24 @@
 }
 .empty-icon { font-size: 28px; }
 
+.report-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  margin-left: auto;
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.report-btn:hover { background: #b91c1c; }
+
 .action-btn {
   width: 30px;
   height: 30px;

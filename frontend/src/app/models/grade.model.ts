@@ -39,6 +39,7 @@ export interface GradeBookEntryDTO {
   status: EntryStatus;
   result: EntryResult | null;
   reportDate: string | null;
+  semester: number | null;
 }
 
 export interface GradeBookEntryFilter {
@@ -48,6 +49,7 @@ export interface GradeBookEntryFilter {
   academicYear?: string;
   status?: EntryStatus;
   result?: EntryResult;
+  semester?: number;
 }
 
 export interface GradeBookEntryCreateRequest {
@@ -56,6 +58,7 @@ export interface GradeBookEntryCreateRequest {
   academicYear: string;
   bookNumberIds: number[];
   reportDate?: string;
+  semester?: number;
 }
 
 export interface BulkGradeEntryDTO {
@@ -97,9 +100,12 @@ export interface StudentDisciplineDTO {
   disciplineName: string;
   specialtyDisciplineId: number;
   academicYear: string;
+  semester: number | null;
   attempt: number;
   status: EntryStatus;
   result: EntryResult | null;
+  professorName: string | null;
+  reportDate: string | null;
   hours: HoursDTO[];
   grades: GradeDTO[];
 }

@@ -55,6 +55,23 @@ public class UserServiceClient {
         }
     }
 
+    public String getProfessorName(Long professorId) {
+        if (professorId == null) return null;
+        try {
+            UserResponse user = userServiceRestClient.get()
+                    .uri("/api/users/{id}", professorId)
+                    .retrieve()
+                    .body(UserResponse.class);
+            if (user == null) return null;
+            String name = Stream.of(user.lastName(), user.firstName(), user.patronymic())
+                    .filter(s -> s != null && !s.isBlank())
+                    .collect(Collectors.joining(" "));
+            return name.isBlank() ? null : name;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private String fallbackName(Long bookNumberId) {
         return "Студент #" + bookNumberId;
     }

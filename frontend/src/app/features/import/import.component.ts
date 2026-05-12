@@ -7,15 +7,33 @@ import { ToastService } from '../../core/services/toast.service';
 import { AuthStateService } from '../../core/services/auth-state.service';
 import { TokenService } from '../../core/services/token.service';
 import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
-import { ImportResult, ParsedReportMeta } from '../../models/import.model';
+import {
+  ImportResult,
+  DisciplineCheckResult,
+  DisciplineCheckItem,
+  StudentCheckResult,
+  StudentCheckItem,
+} from '../../models/import.model';
 import { User } from '../../models/user.model';
 
-type Step = 'upload' | 'assign' | 'result';
+type Step = 'upload' | 'disciplines' | 'students' | 'preview' | 'result';
 
-interface DisciplineRow {
+interface DisciplineSelection {
   index: number;
-  name: string;
+  selected: boolean;
+  createIfNew: boolean;
   professorId: number | null;
+  name: string;
+  existsInSystem: boolean;
+  totalHours: number;
+  ectsCredits: number;
+  semester: number | null;
+}
+
+interface PreviewRow {
+  fullName: string;
+  bookNumberId: number;
+  grades: (number | null)[];
 }
 
 @Component({
@@ -40,15 +58,18 @@ export class ImportComponent implements OnInit {
   selectedFile = signal<File | null>(null);
   isDragging = signal(false);
   parsing = signal(false);
+  checkingDisciplines = signal(false);
+  creatingDisciplines = signal(false);
+  checkingStudents = signal(false);
   importing = signal(false);
 
-  meta = signal<ParsedReportMeta | null>(null);
-  disciplines = signal<DisciplineRow[]>([]);
+  disciplineCheck = signal<DisciplineCheckResult | null>(null);
+  disciplineSelections = signal<DisciplineSelection[]>([]);
+  studentCheck = signal<StudentCheckResult | null>(null);
+  selectedBookNumberIds = signal<Set<number>>(new Set());
   result = signal<ImportResult | null>(null);
 
-  assignAllSearch = signal('');
   disciplineSearches = signal<Record<number, string>>({});
-  showAssignAllDropdown = signal(false);
   showDisciplineDropdown = signal<Record<number, boolean>>({});
   dropdownPositions = signal<Record<number, 'above' | 'below'>>({});
 
@@ -58,36 +79,115 @@ export class ImportComponent implements OnInit {
     return [user.lastName, user.firstName].filter(Boolean).join(' ');
   });
 
-  filteredAssignAllProfessors = computed(() => {
-    const search = this.assignAllSearch().toLowerCase().trim();
-    if (!search) return this.professors();
-    return this.professors().filter((p) =>
-      `${p.lastName} ${p.firstName}`.toLowerCase().includes(search)
-    );
+  canProceedToUpload = computed(() => !this.parsing());
+
+  canProceedToDisciplines = computed(
+    () => this.selectedFile() !== null && !this.parsing()
+  );
+
+  selectedDisciplineCount = computed(() =>
+    this.disciplineSelections()
+      .filter((d) => {
+        if (d.existsInSystem) return d.selected;
+        return d.createIfNew && d.selected;
+      })
+      .length
+  );
+
+  disciplinesWithMissingProfessor = computed(() =>
+    this.disciplineSelections().filter((d) => {
+      if (d.existsInSystem) {
+        return d.selected && d.professorId === null;
+      }
+      return d.createIfNew && d.selected && d.professorId === null;
+    })
+  );
+
+  canProceedToStudents = computed(
+    () =>
+      this.selectedDisciplineCount() > 0 &&
+      this.disciplinesWithMissingProfessor().length === 0
+  );
+
+  selectedStudentCount = computed(() => this.selectedBookNumberIds().size);
+
+  canProceedToPreview = computed(() => this.selectedStudentCount() > 0);
+
+  existingDisciplines = computed(() =>
+    this.disciplineSelections().filter((d) => d.existsInSystem)
+  );
+
+  newDisciplines = computed(() =>
+    this.disciplineSelections().filter((d) => !d.existsInSystem)
+  );
+
+  selectedNewDisciplines = computed(() =>
+    this.disciplineSelections().filter(
+      (d) => !d.existsInSystem && d.createIfNew && d.selected
+    )
+  );
+
+  newDisciplinesWithCreateFlag = computed(() =>
+    this.disciplineSelections().filter(
+      (d) => !d.existsInSystem && d.createIfNew
+    )
+  );
+
+  newDisciplinesReadyToCreate = computed(() =>
+    this.selectedNewDisciplines().length > 0 &&
+    this.selectedNewDisciplines().every((d) => d.professorId !== null)
+  );
+
+
+  existingStudents = computed(() =>
+    this.studentCheck()?.students.filter((s) => s.existsInSystem) ?? []
+  );
+
+  notFoundStudents = computed(() =>
+    this.studentCheck()?.students.filter((s) => !s.existsInSystem) ?? []
+  );
+
+  previewTable = computed(() => {
+    const studentCheck = this.studentCheck();
+    const selections = this.disciplineSelections();
+    const selectedBooks = this.selectedBookNumberIds();
+
+    if (!studentCheck) return { columns: [], rows: [], professors: [] };
+
+    const selectedDisciplineIndices = selections
+      .filter((d) => d.selected)
+      .map((d) => d.index);
+
+    const columns = selections
+      .filter((d) => d.selected)
+      .map((d) => ({ index: d.index, name: d.name }));
+
+    const professors = selections
+      .filter((d) => d.selected)
+      .map((d) => this.getProfessorNameById(d.professorId ?? 0));
+
+    const rows: PreviewRow[] = studentCheck.students
+      .filter((s) => s.existsInSystem && selectedBooks.has(s.bookNumberId!))
+      .map((s) => {
+        const grades = selectedDisciplineIndices.map((disciplineIdx) => {
+          const gradeData = s.grades.find((g) => g.disciplineIndex === disciplineIdx);
+          return gradeData?.universityGrade ?? null;
+        });
+        return {
+          fullName: s.fullName,
+          bookNumberId: s.bookNumberId!,
+          grades,
+        };
+      });
+
+    return { columns, rows, professors };
   });
-
-  getFilteredDisciplineProfessors = (search: string) => {
-    const searchLower = search.toLowerCase().trim();
-    if (!searchLower) return this.professors();
-    return this.professors().filter((p) =>
-      `${p.lastName} ${p.firstName}`.toLowerCase().includes(searchLower)
-    );
-  };
-
-  canParse = computed(() => this.selectedFile() !== null && !this.parsing());
-
-  canImport = computed(() => {
-    if (this.importing()) return false;
-    if (this.isProfessor()) return true;
-    return this.disciplines().some((d) => d.professorId !== null);
-  });
-
-  assignedCount = computed(() => this.disciplines().filter((d) => d.professorId !== null).length);
 
   ngOnInit() {
     if (!this.isProfessor()) {
       this.userService.findAll().subscribe({
-        next: (users) => this.professors.set(users.filter((u) => u.role === 'PROFESSOR')),
+        next: (users) =>
+          this.professors.set(users.filter((u) => u.role === 'PROFESSOR')),
         error: () => this.toastService.error('Помилка завантаження викладачів'),
       });
     }
@@ -120,83 +220,213 @@ export class ImportComponent implements OnInit {
       return;
     }
     this.selectedFile.set(file);
-    this.meta.set(null);
+    this.disciplineCheck.set(null);
+    this.studentCheck.set(null);
     this.result.set(null);
     this.step.set('upload');
   }
 
   clearFile() {
     this.selectedFile.set(null);
-    this.meta.set(null);
+    this.disciplineCheck.set(null);
+    this.disciplineSelections.set([]);
+    this.studentCheck.set(null);
+    this.selectedBookNumberIds.set(new Set());
     this.result.set(null);
     this.step.set('upload');
   }
 
-  parse() {
+  checkDisciplines() {
     const file = this.selectedFile();
     if (!file) return;
-    this.parsing.set(true);
+    this.checkingDisciplines.set(true);
 
-    this.importService.parse(file).subscribe({
-      next: (meta) => {
-        this.meta.set(meta);
+    this.importService.checkDisciplines(file).subscribe({
+      next: (check) => {
+        this.disciplineCheck.set(check);
         const defaultProfId = this.isProfessor() ? (this.currentUserId() ?? null) : null;
-        this.disciplines.set(
-          meta.disciplineNames.map((name, index) => ({ index, name, professorId: defaultProfId }))
+        this.disciplineSelections.set(
+          check.disciplines.map((d) => ({
+            index: d.index,
+            name: d.name,
+            existsInSystem: d.existsInSystem,
+            selected: true,
+            createIfNew: d.existsInSystem ? false : true,
+            professorId: defaultProfId,
+            totalHours: d.totalHours,
+            ectsCredits: d.ectsCredits,
+            semester: d.semester,
+          }))
         );
-        this.parsing.set(false);
-        this.step.set('assign');
+        this.checkingDisciplines.set(false);
+        this.step.set('disciplines');
       },
       error: () => {
-        this.parsing.set(false);
-        this.toastService.error('Не вдалося зчитати файл');
+        this.checkingDisciplines.set(false);
+        this.toastService.error('Помилка при перевірці дисциплін');
       },
     });
   }
 
-  assignAll(professorId: number | null) {
-    this.disciplines.update((rows) => rows.map((r) => ({ ...r, professorId })));
-    const professorName = professorId ? this.getProfessorNameById(professorId) : '';
-    this.assignAllSearch.set(professorName);
-    this.showAssignAllDropdown.set(false);
+  proceedToStudents() {
+    const file = this.selectedFile();
+    const check = this.disciplineCheck();
+    if (!file || !check) return;
+
+    const selectionsToCreate = this.disciplineSelections()
+      .filter((d) => d.createIfNew && !d.existsInSystem)
+      .map((d) => d.index);
+
+    if (selectionsToCreate.length > 0) {
+      this.creatingDisciplines.set(true);
+      this.importService
+        .createDisciplines(
+          file,
+          selectionsToCreate,
+          check.specialtyId!,
+          check.academicYear
+        )
+        .subscribe({
+          next: () => {
+            this.creatingDisciplines.set(false);
+            this.checkStudents();
+          },
+          error: (err) => {
+            this.creatingDisciplines.set(false);
+            console.error('Failed to create disciplines:', err);
+            this.toastService.error('Помилка при створенні дисциплін');
+          },
+        });
+    } else {
+      this.checkStudents();
+    }
   }
 
-  assignProfessor(disciplineIndex: number, professorId: number | null) {
-    this.disciplines.update((rows) =>
-      rows.map((r) => (r.index === disciplineIndex ? { ...r, professorId } : r))
+  createDisciplinesOnly() {
+    const file = this.selectedFile();
+    const check = this.disciplineCheck();
+    if (!file || !check) return;
+
+    const selectionsToCreate = this.newDisciplinesWithCreateFlag().map((d) => d.index);
+
+    if (selectionsToCreate.length === 0) {
+      this.toastService.error('Немає дисциплін для створення');
+      return;
+    }
+
+    this.creatingDisciplines.set(true);
+    this.importService
+      .createDisciplines(
+        file,
+        selectionsToCreate,
+        check.specialtyId!,
+        check.academicYear
+      )
+      .subscribe({
+        next: () => {
+          this.creatingDisciplines.set(false);
+          this.toastService.success(
+            `Успішно створено ${selectionsToCreate.length} дисциплін`
+          );
+          this.clearFile();
+        },
+        error: (err) => {
+          this.creatingDisciplines.set(false);
+          console.error('Failed to create disciplines:', err);
+          this.toastService.error('Помилка при створенні дисциплін');
+        },
+      });
+  }
+
+  private checkStudents() {
+    const file = this.selectedFile();
+    if (!file) return;
+    this.checkingStudents.set(true);
+
+    this.importService.checkStudents(file).subscribe({
+      next: (check) => {
+        this.studentCheck.set(check);
+        this.selectedBookNumberIds.set(
+          new Set(
+            check.students
+              .filter((s) => s.existsInSystem)
+              .map((s) => s.bookNumberId!)
+          )
+        );
+        this.checkingStudents.set(false);
+        this.step.set('students');
+      },
+      error: () => {
+        this.checkingStudents.set(false);
+        this.toastService.error('Помилка при перевірці студентів');
+      },
+    });
+  }
+
+  toggleStudentSelection(bookNumberId: number) {
+    this.selectedBookNumberIds.update((selected) => {
+      const newSet = new Set(selected);
+      if (newSet.has(bookNumberId)) {
+        newSet.delete(bookNumberId);
+      } else {
+        newSet.add(bookNumberId);
+      }
+      return newSet;
+    });
+  }
+
+  selectAllStudents() {
+    const check = this.studentCheck();
+    if (!check) return;
+    const bookNumbers = check.students
+      .filter((s) => s.existsInSystem)
+      .map((s) => s.bookNumberId!);
+    this.selectedBookNumberIds.set(new Set(bookNumbers));
+  }
+
+  deselectAllStudents() {
+    this.selectedBookNumberIds.set(new Set());
+  }
+
+  proceedToPreview() {
+    this.step.set('preview');
+  }
+
+  assignDisciplineProfessor(index: number, professorId: number | null) {
+    this.disciplineSelections.update((selections) =>
+      selections.map((s) => (s.index === index ? { ...s, professorId } : s))
     );
-    const professorName = professorId ? this.getProfessorNameById(professorId) : '';
-    this.disciplineSearches.update((searches) => ({ ...searches, [disciplineIndex]: professorName }));
-    this.showDisciplineDropdown.update((shows) => ({ ...shows, [disciplineIndex]: false }));
+    const professorName = professorId
+      ? this.getProfessorNameById(professorId)
+      : '';
+    this.disciplineSearches.update((searches) => ({
+      ...searches,
+      [index]: professorName,
+    }));
+    this.showDisciplineDropdown.update((shows) => ({ ...shows, [index]: false }));
   }
 
-  onAssignAllSearchChange(search: string) {
-    this.assignAllSearch.set(search);
-    this.showAssignAllDropdown.set(true);
+  onDisciplineSearchChange(index: number, search: string) {
+    this.disciplineSearches.update((searches) => ({
+      ...searches,
+      [index]: search,
+    }));
+    this.showDisciplineDropdown.update((shows) => ({ ...shows, [index]: true }));
   }
 
-  onDisciplineSearchChange(disciplineIndex: number, search: string) {
-    this.disciplineSearches.update((searches) => ({ ...searches, [disciplineIndex]: search }));
-    this.showDisciplineDropdown.update((shows) => ({ ...shows, [disciplineIndex]: true }));
-  }
-
-  toggleAssignAllDropdown() {
-    this.showAssignAllDropdown.update((val) => !val);
-  }
-
-  toggleDisciplineDropdown(disciplineIndex: number) {
-    const isOpening = !this.showDisciplineDropdown()[disciplineIndex];
+  toggleDisciplineDropdown(index: number) {
+    const isOpening = !this.showDisciplineDropdown()[index];
     if (isOpening) {
-      setTimeout(() => this.calculateDropdownPosition(disciplineIndex), 0);
+      setTimeout(() => this.calculateDropdownPosition(index), 0);
     }
     this.showDisciplineDropdown.update((shows) => ({
       ...shows,
-      [disciplineIndex]: !shows[disciplineIndex],
+      [index]: !shows[index],
     }));
   }
 
-  private calculateDropdownPosition(disciplineIndex: number) {
-    const element = document.querySelector(`[data-discipline-index="${disciplineIndex}"]`);
+  private calculateDropdownPosition(index: number) {
+    const element = document.querySelector(`[data-discipline-index="${index}"]`);
     if (!element) return;
 
     const rect = element.getBoundingClientRect();
@@ -204,7 +434,7 @@ export class ImportComponent implements OnInit {
     const maxDropdownHeight = 200;
 
     const position = spaceBelow < maxDropdownHeight + 50 ? 'above' : 'below';
-    this.dropdownPositions.update((pos) => ({ ...pos, [disciplineIndex]: position }));
+    this.dropdownPositions.update((pos) => ({ ...pos, [index]: position }));
   }
 
   getProfessorName(professor: User): string {
@@ -216,12 +446,23 @@ export class ImportComponent implements OnInit {
     return professor ? this.getProfessorName(professor) : '';
   }
 
-  closeAssignAllDropdown() {
-    setTimeout(() => this.showAssignAllDropdown.set(false), 150);
+  getFilteredDisciplineProfessors(search: string) {
+    const searchLower = search.toLowerCase().trim();
+    if (!searchLower) return this.professors();
+    return this.professors().filter((p) =>
+      `${p.lastName} ${p.firstName}`.toLowerCase().includes(searchLower)
+    );
   }
 
-  closeDisciplineDropdown(disciplineIndex: number) {
-    setTimeout(() => this.showDisciplineDropdown.update((s) => ({ ...s, [disciplineIndex]: false })), 150);
+  closeDisciplineDropdown(index: number) {
+    setTimeout(
+      () =>
+        this.showDisciplineDropdown.update((s) => ({
+          ...s,
+          [index]: false,
+        })),
+      150
+    );
   }
 
   import() {
@@ -229,8 +470,12 @@ export class ImportComponent implements OnInit {
     if (!file) return;
 
     const professorMap: Record<number, number> = {};
-    for (const d of this.disciplines()) {
-      const pid = this.isProfessor() ? (this.currentUserId() ?? null) : d.professorId;
+    for (const d of this.disciplineSelections()) {
+      const shouldInclude = d.existsInSystem ? d.selected : d.createIfNew && d.selected;
+      if (!shouldInclude) continue;
+      const pid = this.isProfessor()
+        ? (this.currentUserId() ?? null)
+        : d.professorId;
       if (pid !== null) professorMap[d.index] = pid;
     }
 
@@ -239,35 +484,108 @@ export class ImportComponent implements OnInit {
       return;
     }
 
+    const selectedStudentIds = Array.from(this.selectedBookNumberIds());
+
     this.importing.set(true);
     this.result.set(null);
 
-    this.importService.importGradeReport(file, professorMap).subscribe({
-      next: (res) => {
-        this.result.set(res);
-        this.importing.set(false);
-        this.step.set('result');
-        if (res.errors.length === 0 && res.studentsUnmatched === 0) {
-          this.toastService.success(`Імпортовано ${res.gradesCreated} оцінок`);
-        } else {
-          this.toastService.warning('Імпорт завершено з попередженнями');
-        }
-      },
-      error: () => {
-        this.importing.set(false);
-        this.toastService.error('Помилка під час імпорту');
-      },
-    });
+    this.importService
+      .importGradeReport(file, professorMap, selectedStudentIds)
+      .subscribe({
+        next: (res) => {
+          this.result.set(res);
+          this.importing.set(false);
+          this.step.set('result');
+          if (res.errors.length === 0 && res.studentsUnmatched === 0) {
+            this.toastService.success(`Імпортовано ${res.gradesCreated} оцінок`);
+          } else {
+            this.toastService.warning('Імпорт завершено з попередженнями');
+          }
+        },
+        error: () => {
+          this.importing.set(false);
+          this.toastService.error('Помилка під час імпорту');
+        },
+      });
   }
 
   goBack() {
-    this.step.set('upload');
-    this.result.set(null);
+    const currentStep = this.step();
+    if (currentStep === 'preview') {
+      this.step.set('students');
+    } else if (currentStep === 'students') {
+      this.step.set('disciplines');
+    } else if (currentStep === 'disciplines') {
+      this.clearFile();
+    } else if (currentStep === 'result') {
+      this.clearFile();
+    }
+  }
+
+  toggleDisciplineSelected(index: number) {
+    this.disciplineSelections.update((selections) =>
+      selections.map((s) =>
+        s.index === index ? { ...s, selected: !s.selected } : s
+      )
+    );
+  }
+
+  toggleDisciplineCreateIfNew(index: number) {
+    this.disciplineSelections.update((selections) =>
+      selections.map((s) => {
+        if (s.index === index && !s.existsInSystem) {
+          const newCreateIfNew = !s.createIfNew;
+          return {
+            ...s,
+            createIfNew: newCreateIfNew,
+            selected: newCreateIfNew ? s.selected : false,
+            professorId: newCreateIfNew ? s.professorId : null,
+          };
+        }
+        return s;
+      })
+    );
   }
 
   formatFileSize(bytes: number): string {
     if (bytes < 1024) return bytes + ' Б';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' КБ';
     return (bytes / (1024 * 1024)).toFixed(1) + ' МБ';
+  }
+
+  selectAllDisciplines() {
+    this.disciplineSelections.update((selections) =>
+      selections.map((s) =>
+        s.existsInSystem
+          ? { ...s, selected: true }
+          : s.createIfNew
+          ? { ...s, selected: true }
+          : s
+      )
+    );
+  }
+
+  deselectAllDisciplines() {
+    this.disciplineSelections.update((selections) =>
+      selections.map((s) => ({ ...s, selected: false }))
+    );
+  }
+
+  createAllNewDisciplines() {
+    this.disciplineSelections.update((selections) =>
+      selections.map((s) =>
+        !s.existsInSystem ? { ...s, createIfNew: true } : s
+      )
+    );
+  }
+
+  clearAllNewDisciplines() {
+    this.disciplineSelections.update((selections) =>
+      selections.map((s) =>
+        !s.existsInSystem
+          ? { ...s, createIfNew: false, selected: false }
+          : s
+      )
+    );
   }
 }

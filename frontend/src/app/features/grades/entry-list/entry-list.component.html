@@ -38,6 +38,7 @@
           <th>Студент</th>
           <th>Дисципліна</th>
           <th>Навч. рік</th>
+          <th>Сем.</th>
           <th>Спроба</th>
           <th>Статус</th>
           <th>Результат</th>
@@ -48,7 +49,7 @@
       <tbody>
         @if (entries().length === 0) {
           <tr>
-            <td colspan="9">
+            <td colspan="10">
               <div class="empty-state">
                 <div class="empty-icon">📋</div>
                 <div>Записів не знайдено</div>
@@ -74,6 +75,7 @@
               }
             </td>
             <td>{{ entry.academicYear }}</td>
+            <td class="text-muted text-sm">{{ entry.semester ?? '—' }}</td>
             <td>{{ entry.attempt }}</td>
             <td>
               <span class="status-badge" [class]="'status-' + entry.status">
