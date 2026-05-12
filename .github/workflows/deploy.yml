@@ -6,9 +6,47 @@ on:
 
 env:
   OWNER: ${{ github.repository_owner }}
+  REGISTRY: ghcr.io
 
 jobs:
-  build-and-push:
+  build-backend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        service: [org-service, user-service, grade-service, integration-service]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push ${{ matrix.service }}
+        run: |
+          OWNER=$(echo "${{ env.OWNER }}" | tr '[:upper:]' '[:lower:]')
+          TAG=${{ github.sha }}
+          IMAGE=ghcr.io/${OWNER}/gradenet-${{ matrix.service }}
+          docker buildx build \
+            --platform linux/arm64 \
+            --cache-from type=registry,ref=${IMAGE}:cache \
+            --cache-to   type=registry,ref=${IMAGE}:cache,mode=max \
+            -t ${IMAGE}:${TAG} \
+            -t ${IMAGE}:latest \
+            --push \
+            ./${{ matrix.service }}
+
+  build-frontend:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -27,32 +65,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & Push backend services
-        run: |
-          TAG=${{ github.sha }}
-          OWNER=$(echo "${{ env.OWNER }}" | tr '[:upper:]' '[:lower:]')
-          for SERVICE in org-service user-service grade-service integration-service; do
-            docker buildx build \
-              --platform linux/amd64,linux/arm64 \
-              -t ghcr.io/${OWNER}/gradenet-${SERVICE}:${TAG} \
-              -t ghcr.io/${OWNER}/gradenet-${SERVICE}:latest \
-              --push \
-              ./${SERVICE}
-          done
-
       - name: Build & Push frontend
         run: |
-          TAG=${{ github.sha }}
           OWNER=$(echo "${{ env.OWNER }}" | tr '[:upper:]' '[:lower:]')
+          TAG=${{ github.sha }}
+          IMAGE=ghcr.io/${OWNER}/gradenet-frontend
           docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            -t ghcr.io/${OWNER}/gradenet-frontend:${TAG} \
-            -t ghcr.io/${OWNER}/gradenet-frontend:latest \
+            --platform linux/arm64 \
+            --cache-from type=registry,ref=${IMAGE}:cache \
+            --cache-to   type=registry,ref=${IMAGE}:cache,mode=max \
+            -t ${IMAGE}:${TAG} \
+            -t ${IMAGE}:latest \
             --push \
             ./frontend
 
   deploy:
-    needs: build-and-push
+    needs: [build-backend, build-frontend]
     runs-on: ubuntu-latest
 
     steps:
