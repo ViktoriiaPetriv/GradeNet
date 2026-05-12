@@ -87,6 +87,8 @@ public class ExcelParserService {
 
     private static final java.util.regex.Pattern HOURS_PATTERN =
             java.util.regex.Pattern.compile("(\\d+)\\s*год\\.");
+    private static final java.util.regex.Pattern SEMESTER_PATTERN =
+            java.util.regex.Pattern.compile("(\\d+)\\s*сем\\.");
 
     private List<ParsedDiscipline> parseDisciplines(Row row) {
         List<ParsedDiscipline> result = new ArrayList<>();
@@ -94,11 +96,13 @@ public class ExcelParserService {
         for (int col = DISCIPLINE_START_COL; col < SUMMARY_COL_START; col += DISCIPLINE_COL_STEP) {
             String raw = getCellString(row.getCell(col));
             if (raw == null || raw.isBlank()) break;
-            // "Bussines English. (дисц.), 90 год., 6сем." → name="Bussines English.", totalHours=90
+            // "Bussines English. (дисц.), 90 год., 6сем." → name="Bussines English.", totalHours=90, semester=6
             String name = raw.replaceAll("\\s*\\(дисц\\.\\).*$", "").trim();
-            java.util.regex.Matcher m = HOURS_PATTERN.matcher(raw);
-            int totalHours = m.find() ? Integer.parseInt(m.group(1)) : 90;
-            result.add(ParsedDiscipline.of(name, totalHours));
+            java.util.regex.Matcher hoursMatcher = HOURS_PATTERN.matcher(raw);
+            int totalHours = hoursMatcher.find() ? Integer.parseInt(hoursMatcher.group(1)) : 90;
+            java.util.regex.Matcher semMatcher = SEMESTER_PATTERN.matcher(raw);
+            Integer semester = semMatcher.find() ? Integer.parseInt(semMatcher.group(1)) : null;
+            result.add(ParsedDiscipline.of(name, totalHours, semester));
         }
         return result;
     }

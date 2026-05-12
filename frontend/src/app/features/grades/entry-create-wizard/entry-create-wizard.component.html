@@ -70,6 +70,18 @@
         />
       </div>
       <div class="form-group">
+        <label class="form-label">Семестр *</label>
+        <select
+          class="form-input"
+          [ngModel]="semester()"
+          (ngModelChange)="semester.set(+$event)"
+          name="semester"
+        >
+          <option [value]="1">1-й семестр</option>
+          <option [value]="2">2-й семестр</option>
+        </select>
+      </div>
+      <div class="form-group">
         <label class="form-label">Дата звіту</label>
         <input
           class="form-input"

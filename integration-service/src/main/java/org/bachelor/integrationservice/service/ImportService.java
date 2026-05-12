@@ -7,8 +7,7 @@ import org.bachelor.integrationservice.model.ParsedGrade;
 import org.bachelor.integrationservice.model.ParsedReport;
 import org.bachelor.integrationservice.model.ParsedStudentRow;
 import org.bachelor.integrationservice.model.client.*;
-import org.bachelor.integrationservice.model.dto.ImportErrorDTO;
-import org.bachelor.integrationservice.model.dto.ImportResultDTO;
+import org.bachelor.integrationservice.model.dto.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
@@ -16,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -36,12 +36,143 @@ public class ImportService {
     @Value("${grade-service.url}")
     private String gradeServiceUrl;
 
+    public DisciplineCheckResultDTO checkDisciplines(InputStream fileInputStream, String authHeader) throws IOException {
+        ParsedReport report = excelParserService.parse(fileInputStream);
+        String academicYear = (report.getAcademicYear() != null && !report.getAcademicYear().isBlank())
+                ? report.getAcademicYear() : defaultAcademicYear();
+
+        Long specialtyId = resolveSpecialtyIdByName(report.getSpecialtyName(), authHeader);
+        if (specialtyId == null) {
+            log.warn("Could not resolve specialty by name '{}', will try later from book number", report.getSpecialtyName());
+        }
+
+        List<DisciplineDTO> allDisciplines = getAllDisciplines(authHeader);
+        Map<String, DisciplineDTO> disciplineByName = new HashMap<>();
+        for (DisciplineDTO d : allDisciplines) {
+            disciplineByName.put(d.getName().trim(), d);
+        }
+
+        List<DisciplineCheckItemDTO> disciplineItems = new ArrayList<>();
+        for (ParsedDiscipline parsed : report.getDisciplines()) {
+            String name = parsed.getName();
+            String effectiveName = stripRetakeSuffix(name);
+
+            DisciplineDTO existingDiscipline = disciplineByName.get(effectiveName);
+            Long disciplineId = existingDiscipline != null ? existingDiscipline.getId() : null;
+            Long specialtyDisciplineId = null;
+
+            if (existingDiscipline != null && specialtyId != null) {
+                SpecialtyDisciplineDTO sd = findSpecialtyDiscipline(specialtyId, disciplineId, authHeader);
+                specialtyDisciplineId = sd != null ? sd.getId() : null;
+            }
+
+            disciplineItems.add(DisciplineCheckItemDTO.builder()
+                    .index(report.getDisciplines().indexOf(parsed))
+                    .name(parsed.getName())
+                    .totalHours(parsed.getTotalHours())
+                    .ectsCredits(parsed.getEctsCredits())
+                    .existsInSystem(existingDiscipline != null)
+                    .disciplineId(disciplineId)
+                    .specialtyDisciplineId(specialtyDisciplineId)
+                    .semester(parsed.getSemester())
+                    .build());
+        }
+
+        return DisciplineCheckResultDTO.builder()
+                .groupName(report.getGroupName())
+                .academicYear(academicYear)
+                .specialtyName(report.getSpecialtyName())
+                .specialtyId(specialtyId)
+                .disciplines(disciplineItems)
+                .build();
+    }
+
+    public List<CreatedDisciplineInfoDTO> createDisciplines(
+            InputStream fileInputStream, List<Integer> indices, Long specialtyId,
+            String academicYear, String authHeader) throws IOException {
+        ParsedReport report = excelParserService.parse(fileInputStream);
+        String year = (academicYear != null && !academicYear.isBlank()) ? academicYear : defaultAcademicYear();
+
+        List<CreatedDisciplineInfoDTO> result = new ArrayList<>();
+        for (int idx : indices) {
+            if (idx < 0 || idx >= report.getDisciplines().size()) continue;
+
+            ParsedDiscipline parsed = report.getDisciplines().get(idx);
+            String effectiveName = stripRetakeSuffix(parsed.getName());
+
+            try {
+                DisciplineCreateResponseDTO created = createDisciplineWithSD(
+                        effectiveName, specialtyId, year, parsed, authHeader);
+                result.add(CreatedDisciplineInfoDTO.builder()
+                        .index(idx)
+                        .disciplineId(created.getDisciplineId())
+                        .specialtyDisciplineId(created.getSpecialtyDisciplineId())
+                        .build());
+                log.info("Created discipline at index {}: {} (id={})", idx, effectiveName, created.getDisciplineId());
+            } catch (Exception e) {
+                log.error("Failed to create discipline at index {}: {}", idx, e.getMessage());
+                throw new RuntimeException("Failed to create discipline: " + effectiveName, e);
+            }
+        }
+        return result;
+    }
+
+    public StudentCheckResultDTO checkStudents(InputStream fileInputStream, String authHeader) throws IOException {
+        ParsedReport report = excelParserService.parse(fileInputStream);
+
+        GroupDTO group = findGroup(report.getGroupName(), authHeader);
+        if (group == null) {
+            log.warn("Group not found: {}", report.getGroupName());
+            return StudentCheckResultDTO.builder()
+                    .groupName(report.getGroupName())
+                    .students(new ArrayList<>())
+                    .build();
+        }
+
+        List<GroupMemberDTO> members = new ArrayList<>(getGroupMembers(group.getId(), authHeader));
+        if (members.isEmpty()) {
+            log.info("Group {} has no members, searching system students by name", group.getName());
+            List<ImportErrorDTO> errors = new ArrayList<>();
+            members = findAndAddGroupMembers(group.getId(), report.getStudents(), authHeader, errors);
+        }
+
+        List<StudentCheckItemDTO> studentItems = new ArrayList<>();
+        for (ParsedStudentRow studentRow : report.getStudents()) {
+            GroupMemberDTO member = matchStudent(studentRow.getFullName(), members);
+
+            List<GradeDataDTO> gradeData = studentRow.getGrades().stream()
+                    .map(g -> GradeDataDTO.builder()
+                            .disciplineIndex(g.getDisciplineIndex())
+                            .universityGrade(g.getUniversityGrade())
+                            .ectsGrade(g.getEctsGrade())
+                            .nationalGrade(g.getNationalGrade() != null ? g.getNationalGrade().toString() : null)
+                            .build())
+                    .toList();
+
+            studentItems.add(StudentCheckItemDTO.builder()
+                    .fullName(studentRow.getFullName())
+                    .bookNumberId(member != null ? member.getBookNumberId() : null)
+                    .studentId(member != null ? member.getStudentId() : null)
+                    .existsInSystem(member != null)
+                    .grades(gradeData)
+                    .build());
+        }
+
+        return StudentCheckResultDTO.builder()
+                .groupName(report.getGroupName())
+                .students(studentItems)
+                .build();
+    }
+
     /**
      * @param professorByDiscipline map of discipline index → professorId;
      *                              disciplines absent from the map are skipped
+     * @param selectedStudentBookNumberIds if provided, only these students will have grades imported;
+     *                                     if null, all matched students are imported (backward-compat)
      */
     public ImportResultDTO importGradeReport(MultipartFile file,
                                              Map<Integer, Long> professorByDiscipline,
+                                             List<Long> selectedStudentBookNumberIds,
                                              String authHeader) throws IOException {
 
         ParsedReport report = excelParserService.parse(file.getInputStream());
@@ -93,6 +224,12 @@ public class ImportService {
                 log.warn("Could not match student: {}", studentRow.getFullName());
                 continue;
             }
+
+            if (selectedStudentBookNumberIds != null && !selectedStudentBookNumberIds.contains(member.getBookNumberId())) {
+                log.debug("Student {} skipped (not in selectedStudentBookNumberIds)", studentRow.getFullName());
+                continue;
+            }
+
             studentsMatched++;
 
             List<Long> entryIdsToClose = new ArrayList<>();
@@ -108,9 +245,11 @@ public class ImportService {
                 String disciplineName = report.getDisciplineNames().get(idx);
                 boolean isRetake = !stripRetakeSuffix(disciplineName).equals(disciplineName);
                 try {
+                    Integer disciplineSemester = idx < report.getDisciplines().size()
+                            ? report.getDisciplines().get(idx).getSemester() : null;
                     GradeBookEntryDTO entry = isRetake
-                            ? findOrCreateRetakeEntry(member.getBookNumberId(), sd.getId(), professorId, academicYear, authHeader)
-                            : findOrCreateEntry(member.getBookNumberId(), sd.getId(), professorId, academicYear, authHeader);
+                            ? findOrCreateRetakeEntry(member.getBookNumberId(), sd.getId(), professorId, academicYear, disciplineSemester, authHeader)
+                            : findOrCreateEntry(member.getBookNumberId(), sd.getId(), professorId, academicYear, disciplineSemester, authHeader);
                     createGrade(entry.getId(), grade, authHeader);
                     entryIdsToClose.add(entry.getId());
                     gradesCreated++;
@@ -351,7 +490,7 @@ public class ImportService {
     }
 
     private GradeBookEntryDTO findOrCreateEntry(Long bookNumberId, Long sdId, Long professorId,
-                                                String academicYear, String authHeader) {
+                                                String academicYear, Integer semester, String authHeader) {
         PageResponse<GradeBookEntryDTO> page = restClient.get()
                 .uri(gradeServiceUrl + "/api/records?bookNumberId={b}&specialtyDisciplineId={sd}&academicYear={y}&size=200",
                         bookNumberId, sdId, academicYear)
@@ -367,6 +506,7 @@ public class ImportService {
         body.put("professorId", professorId);
         body.put("academicYear", academicYear);
         body.put("bookNumberIds", List.of(bookNumberId));
+        if (semester != null) body.put("semester", semester);
 
         List<GradeBookEntryDTO> created = restClient.post()
                 .uri(gradeServiceUrl + "/api/records")
@@ -384,7 +524,7 @@ public class ImportService {
 
     private GradeBookEntryDTO findOrCreateRetakeEntry(Long bookNumberId, Long sdId,
                                                        Long professorId, String academicYear,
-                                                       String authHeader) {
+                                                       Integer semester, String authHeader) {
         PageResponse<GradeBookEntryDTO> page = restClient.get()
                 .uri(gradeServiceUrl + "/api/records?bookNumberId={b}&specialtyDisciplineId={sd}&size=200",
                         bookNumberId, sdId)
@@ -410,7 +550,7 @@ public class ImportService {
                         .toBodilessEntity();
                 log.info("Deleted empty IN_PROGRESS entry {} for retake; will create attempt {}",
                         prev.getId(), targetAttempt);
-                return createEntryWithMinAttempt(bookNumberId, sdId, professorId, year, targetAttempt, authHeader);
+                return createEntryWithMinAttempt(bookNumberId, sdId, professorId, year, targetAttempt, semester, authHeader);
             }
 
             // Previous entry is COMPLETED (FAILED) — create retake via dedicated endpoint
@@ -425,18 +565,19 @@ public class ImportService {
         // No previous entry at all — create directly as attempt 2
         log.warn("Retake discipline has no prior entry for bookNumberId={}, sdId={} — creating as attempt 2",
                 bookNumberId, sdId);
-        return createEntryWithMinAttempt(bookNumberId, sdId, professorId, academicYear, 2, authHeader);
+        return createEntryWithMinAttempt(bookNumberId, sdId, professorId, academicYear, 2, semester, authHeader);
     }
 
     private GradeBookEntryDTO createEntryWithMinAttempt(Long bookNumberId, Long sdId, Long professorId,
                                                          String academicYear, int minAttempt,
-                                                         String authHeader) {
+                                                         Integer semester, String authHeader) {
         Map<String, Object> body = new HashMap<>();
         body.put("specialtyDisciplineId", sdId);
         body.put("professorId", professorId);
         body.put("academicYear", academicYear != null ? academicYear : defaultAcademicYear());
         body.put("bookNumberIds", List.of(bookNumberId));
         body.put("minAttempt", minAttempt);
+        if (semester != null) body.put("semester", semester);
         List<GradeBookEntryDTO> created = restClient.post()
                 .uri(gradeServiceUrl + "/api/records")
                 .header("Authorization", authHeader)

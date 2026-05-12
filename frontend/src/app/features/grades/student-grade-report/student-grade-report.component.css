@@ -1,0 +1,240 @@
+/* ===== Кнопки дії (не друкуються) ===== */
+.action-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 24px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.print-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  background: #1a56db;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.print-btn:hover {
+  background: #1341a3;
+}
+
+/* ===== Сторінка звіту ===== */
+.report-page {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 24px auto;
+  padding: 20mm 15mm 20mm 15mm;
+  background: #fff;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.12);
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 11pt;
+  color: #111;
+  box-sizing: border-box;
+}
+
+/* ===== Шапка ===== */
+.report-header {
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.report-title {
+  font-size: 16pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.report-subtitle {
+  font-size: 11pt;
+  color: #444;
+  margin-top: 4px;
+}
+
+/* ===== Блок студента ===== */
+.student-block {
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.student-row {
+  display: flex;
+  gap: 8px;
+  font-size: 11pt;
+}
+
+.label {
+  font-weight: bold;
+  min-width: 180px;
+  flex-shrink: 0;
+}
+
+.value {
+  flex: 1;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid #111;
+  margin: 14px 0;
+}
+
+/* ===== Заголовок таблиці ===== */
+.grade-table tr {
+  background: transparent;
+}
+
+.grade-table th {
+  color: #000;
+}
+
+/* ===== Семестровий блок ===== */
+.semester-block {
+  margin-bottom: 20px;
+  page-break-inside: avoid;
+}
+
+.semester-title {
+  font-size: 12pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  padding-bottom: 5px;
+  margin-bottom: 0;
+}
+
+/* ===== Таблиця оцінок ===== */
+.grade-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 9.5pt;
+  margin-bottom: 4px;
+}
+
+.grade-table th,
+.grade-table td {
+  border: 1px solid #000;
+  padding: 4px 5px;
+  vertical-align: middle;
+}
+
+.grade-table thead tr {
+  font-weight: bold;
+  text-align: center;
+}
+
+
+th.col-ects,
+th.col-hours,
+th.col-grade,th.col-ects-grade,
+th.col-national,
+th.col-assessment {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  white-space: nowrap;
+  vertical-align: bottom;
+  padding: 8px 4px;
+}
+
+.col-num { width: 4%; text-align: center; }
+.col-discipline { width: 12%; }
+.col-assessment { width: 6%; text-align: center; }
+.col-discipline-cell { text-align: left; word-break: break-word; }
+.col-year { width: 10%; text-align: center; }
+.col-ects { width: 3.5%; text-align: center; }
+.col-hours { width: 3.5%; text-align: center; }
+.col-grade { width: 3.5%; text-align: center; }
+.col-ects-grade { width: 3.5%; text-align: center; }
+.col-national { width: 8%; text-align: center; }
+.col-result { width: 12%; text-align: center; }
+.col-professor { width: 10%; }
+.col-date { width: 8%; text-align: center; }
+
+.text-center { text-align: center; }
+
+/* Рядки результатів */
+/* ===== Підпис (футер) ===== */
+.report-footer {
+  margin-top: 32px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11pt;
+}
+
+.footer-stamp {
+  flex: 1;
+}
+
+.footer-date {
+  text-align: right;
+}
+
+
+/* ===== Порожньо ===== */
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-style: italic;
+}
+
+/* ===== Друк ===== */
+@page {
+  margin: 0;
+  size: A4;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .report-page {
+    width: 100%;
+    margin: 0;
+    padding: 15mm 15mm 15mm 20mm;
+    box-shadow: none;
+    font-size: 10pt;
+  }
+
+  .grade-table {
+    font-size: 8.5pt;
+  }
+
+  .semester-block {
+    page-break-inside: avoid;
+  }
+
+  .row-passed td {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .row-failed td {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .semester-title {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .grade-table thead tr {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

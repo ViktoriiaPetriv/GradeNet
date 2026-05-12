@@ -78,6 +78,10 @@ export class StudentGradesComponent implements OnInit {
     this.router.navigate(['/books', this.bookNumberId()]);
   }
 
+  openReport() {
+    this.router.navigate(['/grades/student', this.bookNumberId(), 'report']);
+  }
+
   statusLabel(s: string): string {
     return s === 'IN_PROGRESS' ? 'Відкрито' : 'Закрито';
   }
@@ -95,12 +99,12 @@ export class StudentGradesComponent implements OnInit {
   nationalLabel(grade: string | undefined): string {
     if (!grade) return '—';
     const map: Record<string, string> = {
-      EXCELLENT: 'Відмінно',
-      GOOD: 'Добре',
-      SATISFACTORY: 'Задовільно',
-      UNSATISFACTORY: 'Незадовільно',
-      CREDIT: 'Зараховано',
-      NO_CREDIT: 'Не зараховано',
+      FIVE: 'Відмінно',
+      FOUR: 'Добре',
+      THREE: 'Задовільно',
+      TWO: 'Незадовільно',
+      PASSED: 'Зараховано',
+      NOT_PASSED: 'Не зараховано',
     };
     return map[grade] ?? grade;
   }

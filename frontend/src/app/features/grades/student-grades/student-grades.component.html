@@ -14,6 +14,9 @@
         </div>
       </div>
     }
+    <button class="report-btn" (click)="openReport()" title="Академічна довідка PDF">
+      <i class="pi pi-file-pdf"></i> Звіт PDF
+    </button>
   </div>
 
   @if (allYears().length > 0) {
@@ -67,20 +70,21 @@
         <tr>
           <th>Дисципліна</th>
           <th>Навч. рік</th>
-          <th>Спроба</th>
-          <th>ЄКТС</th>
-          <th>Бали</th>
-          <th>ECTS</th>
-          <th>Нац. оцінка</th>
-          <th>Статус</th>
-          <th>Результат</th>
+          <th class="text-center">Сем.</th>
+          <th class="text-center">Спроба</th>
+          <th class="text-center">ЄКТС</th>
+          <th class="text-center">Бали</th>
+          <th class="text-center">ECTS</th>
+          <th class="text-center">Нац. оцінка</th>
+          <th class="text-center">Статус</th>
+          <th class="text-center">Результат</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
         @if (filteredDisciplines().length === 0) {
           <tr>
-            <td colspan="10">
+            <td colspan="11">
               <div class="empty-state">
                 <div class="empty-icon">📋</div>
                 <div>Залікових записів не знайдено</div>
@@ -92,6 +96,7 @@
           <tr class="clickable-row" [class]="rowClass(d)" (click)="viewEntry(d.entryId, $event)">
             <td class="discipline-name">{{ d.disciplineName }}</td>
             <td class="text-muted text-sm">{{ d.academicYear }}</td>
+            <td class="text-center text-muted text-sm">{{ d.semester ?? '—' }}</td>
             <td class="text-center">{{ d.attempt }}</td>
             <td class="text-center">
               @if (ectsCredits(d) !== null) {
@@ -114,13 +119,13 @@
                 <span class="text-muted">—</span>
               }
             </td>
-            <td class="text-sm">{{ nationalLabel(latestGrade(d)?.nationalGrade) }}</td>
-            <td>
+            <td class="text-sm text-center">{{ nationalLabel(latestGrade(d)?.nationalGrade) }}</td>
+            <td class="text-center">
               <span class="status-badge status-{{ d.status }}">
                 {{ statusLabel(d.status) }}
               </span>
             </td>
-            <td>
+            <td class="text-center">
               @if (d.result) {
                 <span class="result-badge result-{{ d.result }}">
                   {{ resultLabel(d.result) }}

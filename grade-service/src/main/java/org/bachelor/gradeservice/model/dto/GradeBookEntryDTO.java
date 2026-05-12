@@ -19,4 +19,5 @@ public class GradeBookEntryDTO {
     private EntryStatus status;
     private EntryResult result;
     private LocalDate reportDate;
+    private Integer semester;
 }

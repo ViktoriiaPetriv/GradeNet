@@ -1,0 +1,101 @@
+<!-- Кнопки (не друкуються) -->
+<div class="no-print action-bar">
+  <button class="print-btn" (click)="print()">
+    Зберегти як PDF / Друк
+  </button>
+</div>
+
+<div class="report-page">
+  <!-- Шапка -->
+  <div class="report-header">
+    <div class="report-title">Академічна довідка</div>
+    <div class="report-subtitle">Результати навчання студента</div>
+  </div>
+
+  @if (book(); as b) {
+    <div class="student-block">
+      <div class="student-row">
+        <span class="label">ПІБ студента:</span>
+        <span class="value">{{ studentName() || '—' }}</span>
+      </div>
+      <div class="student-row">
+        <span class="label">Залікова книжка:</span>
+        <span class="value">{{ b.number }}</span>
+      </div>
+      <div class="student-row">
+        <span class="label">Дата формування:</span>
+        <span class="value">{{ today | date:'dd.MM.yyyy' }}</span>
+      </div>
+    </div>
+  }
+
+  <div class="divider"></div>
+
+  <!-- Блоки по семестрах -->
+  @for (group of semesterGroups(); track group.semester) {
+    <div class="semester-block">
+      <div class="semester-title">
+        @if (group.semester !== null) {
+          Семестр {{ group.semester }}
+          @if (group.disciplines[0]) {
+            ({{ group.disciplines[0].academicYear }})
+          }
+        } @else {
+          Без семестру
+        }
+      </div>
+
+      <table class="grade-table">
+        <thead>
+          <tr>
+            <th class="col-num">№</th>
+            <th class="col-discipline">Назва навчальної дисципліни</th>
+            <th class="col-assessment">Форма контролю</th>
+            <th class="col-ects">кредити ECTS</th>
+            <th class="col-hours">Заг. години</th>
+            <th class="col-ects-grade">Оцінка ECTS</th>            
+            <th class="col-grade">Оцінка</th>
+            <th class="col-national">Нац. оцінка</th>
+            <th class="col-professor">Викладач</th>
+            <th class="col-date">Дата звіту</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (d of group.disciplines; track d.entryId; let i = $index) {
+            <tr [class.row-passed]="d.result === 'PASSED'" [class.row-failed]="d.result === 'FAILED'">
+              <td class="text-center">{{ i + 1 }}</td>
+              <td class="col-discipline-cell">{{ d.disciplineName }}</td>
+              <td class="text-center">{{ assessmentLabel(latestGrade(d)?.assessmentType) }}</td>
+              <td class="text-center">
+                @if (ectsCredits(d) !== null) { {{ ectsCredits(d) }} } @else { — }
+              </td>
+              <td class="text-center">
+                @if (totalHours(d) !== null) { {{ totalHours(d) }} } @else { — }
+              </td>
+              <td class="text-center">
+                @if (latestGrade(d); as g) { {{ g.ectsGrade }} } @else { — }
+              </td>
+              <td class="text-center">
+                @if (latestGrade(d); as g) {
+                 {{ g.universityGrade }}
+                } @else { — }
+              </td>
+              <td class="text-center">{{ nationalLabel(latestGrade(d)?.nationalGrade) }}</td>
+              <td>{{ formatProfessor(d.professorName) }}</td>
+              <td class="text-center">{{ formatDate(d.reportDate) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (semesterGroups().length === 0) {
+    <div class="empty-state">Залікових записів не знайдено</div>
+  }
+
+  <div class="report-footer">
+    <div class="footer-stamp">Підпис деканату: ___________________</div>
+    <div class="footer-date">Дата: {{ today | date:'dd.MM.yyyy' }}</div>
+  </div>
+</div>
