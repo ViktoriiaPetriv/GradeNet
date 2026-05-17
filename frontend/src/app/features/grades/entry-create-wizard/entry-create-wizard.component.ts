@@ -10,7 +10,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { SpecialtyDisciplineDTO } from '../../../models/discipline.model';
 import { StudentGroup, StudentGroupMember } from '../../../models/group.model';
 import { User } from '../../../models/user.model';
-import { Specialty } from '../../../models/org.model';
+import { Specialty, SpecialtyOffering } from '../../../models/org.model';
 
 interface StudentRow {
   bookNumberId: number;
@@ -37,11 +37,13 @@ export class EntryCreateWizardComponent implements OnInit {
   groupsLoading = signal(false);
 
   specialties = signal<Specialty[]>([]);
+  offerings = signal<SpecialtyOffering[]>([]);
   allSpecialtyDisciplines = signal<SpecialtyDisciplineDTO[]>([]);
   professors = signal<User[]>([]);
   groups = signal<StudentGroup[]>([]);
 
   selectedSpecialtyId = signal<number | null>(null);
+  selectedOfferingId = signal<number | null>(null);
   selectedDisciplineId = signal<number | null>(null);
   selectedProfessorId = signal<number | null>(null);
   academicYear = signal('');
@@ -52,10 +54,10 @@ export class EntryCreateWizardComponent implements OnInit {
   students = signal<StudentRow[]>([]);
 
   filteredDisciplines = computed(() => {
-    const specId = this.selectedSpecialtyId();
+    const offeringId = this.selectedOfferingId();
     const all = this.allSpecialtyDisciplines();
-    if (!specId) return all;
-    return all.filter((sd) => sd.specialtyId === specId);
+    if (!offeringId) return all;
+    return all.filter((sd) => sd.specialtyOfferingId === offeringId);
   });
 
   private gradeService = inject(GradeService);
@@ -89,14 +91,26 @@ export class EntryCreateWizardComponent implements OnInit {
 
   onSpecialtyChange(id: number | null) {
     this.selectedSpecialtyId.set(id);
+    this.selectedOfferingId.set(null);
+    this.selectedDisciplineId.set(null);
+    this.selectedGroupIds.set(new Set());
+    this.offerings.set([]);
+    if (id) {
+      this.specialtyService.getOfferings(id).subscribe((offs) => this.offerings.set(offs));
+    }
+    this.reloadGroups(null);
+  }
+
+  onOfferingChange(id: number | null) {
+    this.selectedOfferingId.set(id);
     this.selectedDisciplineId.set(null);
     this.selectedGroupIds.set(new Set());
     this.reloadGroups(id);
   }
 
-  private reloadGroups(specialtyId: number | null) {
+  private reloadGroups(specialtyOfferingId: number | null) {
     this.groupsLoading.set(true);
-    this.groupService.getAll({ size: 200, specialtyId: specialtyId ?? undefined }).subscribe({
+    this.groupService.getAll({ size: 200, specialtyOfferingId: specialtyOfferingId ?? undefined }).subscribe({
       next: (page) => {
         this.groups.set(page.content ?? []);
         this.groupsLoading.set(false);
@@ -215,6 +229,10 @@ export class EntryCreateWizardComponent implements OnInit {
 
   specialtyLabel(s: Specialty): string {
     return `${s.code} ${s.nameUA}`;
+  }
+
+  offeringLabel(o: SpecialtyOffering): string {
+    return `Рік випуску: ${o.graduationYear}`;
   }
 
   disciplineLabel(sd: SpecialtyDisciplineDTO): string {

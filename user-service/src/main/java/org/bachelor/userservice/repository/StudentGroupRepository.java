@@ -16,11 +16,11 @@ public interface StudentGroupRepository extends JpaRepository<StudentGroup, Long
     boolean existsByName(String name);
     Page<StudentGroup> findByNameContainingIgnoreCase(String name, Pageable pageable);
 
-    @Query(value = "SELECT DISTINCT m.studentGroup FROM StudentGroupMember m WHERE m.bookNumber.specialtyId = :specialtyId ORDER BY m.studentGroup.name ASC",
-           countQuery = "SELECT COUNT(DISTINCT m.studentGroup) FROM StudentGroupMember m WHERE m.bookNumber.specialtyId = :specialtyId")
-    Page<StudentGroup> findBySpecialtyId(@Param("specialtyId") Long specialtyId, Pageable pageable);
+    @Query(value = "SELECT DISTINCT m.studentGroup FROM StudentGroupMember m WHERE m.bookNumber.specialtyOfferingId = :specialtyOfferingId ORDER BY m.studentGroup.name ASC",
+           countQuery = "SELECT COUNT(DISTINCT m.studentGroup) FROM StudentGroupMember m WHERE m.bookNumber.specialtyOfferingId = :specialtyOfferingId")
+    Page<StudentGroup> findBySpecialtyOfferingId(@Param("specialtyOfferingId") Long specialtyOfferingId, Pageable pageable);
 
-    @Query(value = "SELECT DISTINCT m.studentGroup FROM StudentGroupMember m WHERE m.bookNumber.specialtyId = :specialtyId AND LOWER(m.studentGroup.name) LIKE LOWER(CONCAT('%', :name, '%')) ORDER BY m.studentGroup.name ASC",
-           countQuery = "SELECT COUNT(DISTINCT m.studentGroup) FROM StudentGroupMember m WHERE m.bookNumber.specialtyId = :specialtyId AND LOWER(m.studentGroup.name) LIKE LOWER(CONCAT('%', :name, '%'))")
-    Page<StudentGroup> findBySpecialtyIdAndNameContaining(@Param("specialtyId") Long specialtyId, @Param("name") String name, Pageable pageable);
+    @Query(value = "SELECT DISTINCT m.studentGroup FROM StudentGroupMember m WHERE m.bookNumber.specialtyOfferingId = :specialtyOfferingId AND LOWER(m.studentGroup.name) LIKE LOWER(CONCAT('%', :name, '%')) ORDER BY m.studentGroup.name ASC",
+           countQuery = "SELECT COUNT(DISTINCT m.studentGroup) FROM StudentGroupMember m WHERE m.bookNumber.specialtyOfferingId = :specialtyOfferingId AND LOWER(m.studentGroup.name) LIKE LOWER(CONCAT('%', :name, '%'))")
+    Page<StudentGroup> findBySpecialtyOfferingIdAndNameContaining(@Param("specialtyOfferingId") Long specialtyOfferingId, @Param("name") String name, Pageable pageable);
 }

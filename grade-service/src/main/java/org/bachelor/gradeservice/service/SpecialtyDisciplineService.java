@@ -6,8 +6,9 @@ import org.bachelor.gradeservice.model.dto.SpecialtyDisciplineFilter;
 import java.util.List;
 
 public interface SpecialtyDisciplineService {
-    SpecialtyDisciplineDTO addSpecialty(Long disciplineId, Long specialtyId);
-    void removeSpecialty(Long disciplineId, Long specialtyId);
+    SpecialtyDisciplineDTO addSpecialty(Long disciplineId, Long specialtyOfferingId);
+    void removeSpecialty(Long disciplineId, Long specialtyOfferingId);
     SpecialtyDisciplineDTO getById(Long id);
     List<SpecialtyDisciplineDTO> getAll(SpecialtyDisciplineFilter filter);
+    boolean existsBySpecialtyOfferingId(Long specialtyOfferingId);
 }

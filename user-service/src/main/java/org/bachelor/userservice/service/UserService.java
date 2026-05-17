@@ -16,7 +16,7 @@ public interface UserService {
     void delete(Long id);
     UserProfileDTO getProfile(Long id);
     void changePassword(Long id, ChangePasswordRequestDTO request);
-    List<UserDTO> findStudentsBySpecialty(Long specialtyId, Integer enrollYear);
+    List<UserDTO> findStudentsBySpecialty(Long specialtyOfferingId, Integer enrollYear);
     List<UserDTO> searchStudents(String query);
     boolean isSetupRequired();
     UserDTO createInitialAdmin(AdminSetupRequestDTO request);

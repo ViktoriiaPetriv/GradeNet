@@ -16,5 +16,5 @@ public class BookNumberDTO {
     private Instant regEndDate;
     private Instant handedDate;
     private BookNumberStatus status;
-    private Long specialtyId;
+    private Long specialtyOfferingId;
 }

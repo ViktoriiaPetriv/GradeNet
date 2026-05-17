@@ -48,6 +48,6 @@ public class BookNumber {
     @Column(name = "status", nullable = false)
     private BookNumberStatus status;
 
-    @Column(name = "specialty_id", nullable = false)
-    private Long specialtyId;
+    @Column(name = "specialty_offering_id")
+    private Long specialtyOfferingId;
 }

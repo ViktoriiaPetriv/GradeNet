@@ -18,7 +18,7 @@ import java.util.Set;
 @Table(name = "specialty_discipline",
         uniqueConstraints = @UniqueConstraint(
                 name = "uq_specialty_discipline",
-                columnNames = {"specialty_id", "discipline_id"}
+                columnNames = {"specialty_offering_id", "discipline_id"}
         )
 )
 public class SpecialtyDiscipline {
@@ -27,8 +27,8 @@ public class SpecialtyDiscipline {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "specialty_id", nullable = false)
-    private Long specialtyId;
+    @Column(name = "specialty_offering_id", nullable = false)
+    private Long specialtyOfferingId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "discipline_id", nullable = false,

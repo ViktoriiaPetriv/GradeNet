@@ -1,9 +1,9 @@
 import { Component, OnInit, Input, Output, EventEmitter, inject } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { switchMap } from 'rxjs';
+import { switchMap, forkJoin } from 'rxjs';
 import { DisciplineService } from '../../../core/services/discipline.service';
 import { SpecialtyService } from '../../../core/services/specialty.service';
-import { Specialty } from '../../../models/org.model';
+import { Specialty, SpecialtyOffering } from '../../../models/org.model';
 import { SpecialtyDisciplineDTO } from '../../../models/discipline.model';
 import { ToastService } from '../../../core/services/toast.service';
 import { ModalComponent } from '../../../shared/modal/modal.component';
@@ -17,12 +17,13 @@ import { ModalComponent } from '../../../shared/modal/modal.component';
 })
 export class SpecialtyDisciplineModalComponent implements OnInit {
   @Input() disciplineId!: number;
-  @Input() existingSpecialtyIds: number[] = [];
+  @Input() existingSpecialtyOfferingIds: number[] = [];
   @Output() saved = new EventEmitter<SpecialtyDisciplineDTO>();
   @Output() cancelled = new EventEmitter<void>();
 
   form!: FormGroup;
   specialties: Specialty[] = [];
+  offerings: SpecialtyOffering[] = [];
   submitting = false;
 
   private fb = inject(FormBuilder);
@@ -33,6 +34,7 @@ export class SpecialtyDisciplineModalComponent implements OnInit {
   ngOnInit() {
     this.form = this.fb.group({
       specialtyId: ['', Validators.required],
+      specialtyOfferingId: ['', Validators.required],
       academicYear: ['', [Validators.required, Validators.pattern(/^\d{4}\/\d{4}$/)]],
       ectsCredits: [null, [Validators.required, Validators.min(1)]],
       totalHours: [null, [Validators.required, Validators.min(1)]],
@@ -45,10 +47,19 @@ export class SpecialtyDisciplineModalComponent implements OnInit {
     });
 
     this.specialtyService.getAll({ size: 200 }).subscribe((page) => {
-      this.specialties = page.content.filter(
-        (s) => !this.existingSpecialtyIds.includes(s.id),
-      );
+      this.specialties = page.content;
     });
+  }
+
+  onSpecialtyChange() {
+    const specialtyId = +this.form.get('specialtyId')!.value;
+    this.form.patchValue({ specialtyOfferingId: '' });
+    this.offerings = [];
+    if (specialtyId) {
+      this.specialtyService.getOfferings(specialtyId).subscribe((offs) => {
+        this.offerings = offs.filter((o) => !this.existingSpecialtyOfferingIds.includes(o.id));
+      });
+    }
   }
 
   submit() {
@@ -61,7 +72,7 @@ export class SpecialtyDisciplineModalComponent implements OnInit {
     const v = this.form.value;
 
     this.disciplineService
-      .addSpecialtyDiscipline(+v.specialtyId, this.disciplineId)
+      .addSpecialtyDiscipline(+v.specialtyOfferingId, this.disciplineId)
       .pipe(
         switchMap((sd) =>
           this.disciplineService.addHours(sd.id, {
@@ -83,8 +94,8 @@ export class SpecialtyDisciplineModalComponent implements OnInit {
       )
       .subscribe({
         next: (sdList) => {
-          const created = sdList.find((sd) => sd.specialtyId === +v.specialtyId);
-          this.toastService.success('Спеціальність додано до дисципліни');
+          const created = sdList.find((sd) => sd.specialtyOfferingId === +v.specialtyOfferingId);
+          this.toastService.success('Набір додано до дисципліни');
           this.submitting = false;
           this.saved.emit(created);
         },

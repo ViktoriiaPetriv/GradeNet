@@ -191,7 +191,7 @@ public class UserServiceImpl implements UserService {
                         book.getStatus().name(),
                         book.getRegStartDate(),
                         book.getRegEndDate(),
-                        book.getSpecialtyId(),
+                        book.getSpecialtyOfferingId(),
                         orgId
                 ))
                 .toList();
@@ -257,7 +257,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<UserDTO> findStudentsBySpecialty(Long specialtyId, Integer enrollYear) {
+    public List<UserDTO> findStudentsBySpecialty(Long specialtyOfferingId, Integer enrollYear) {
         AuthenticatedUser currentUser = SecurityUtils.getCurrentUser();
 
         if (!currentUser.isAdmin() && !currentUser.isManager()) {
@@ -265,8 +265,8 @@ public class UserServiceImpl implements UserService {
         }
 
         List<BookNumber> books = enrollYear != null
-                ? bookNumberRepository.findAllBySpecialtyIdAndEnrollYear(specialtyId, enrollYear)
-                : bookNumberRepository.findAllBySpecialtyId(specialtyId);
+                ? bookNumberRepository.findAllBySpecialtyOfferingIdAndEnrollYear(specialtyOfferingId, enrollYear)
+                : bookNumberRepository.findAllBySpecialtyOfferingId(specialtyOfferingId);
 
         List<Long> studentIds = books.stream()
                 .map(b -> b.getStudent().getId())

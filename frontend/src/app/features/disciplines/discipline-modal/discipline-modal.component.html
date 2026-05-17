@@ -15,7 +15,8 @@
       @if (!isEdit) {
         <div class="form-group full">
           <label class="form-label">Спеціальність *</label>
-          <select class="form-select" formControlName="specialtyId" [class.error]="isInvalid('specialtyId')">
+          <select class="form-select" formControlName="specialtyId" [class.error]="isInvalid('specialtyId')"
+                  (change)="onSpecialtyChange()">
             <option value="">— Оберіть —</option>
             @for (s of specialties; track s.id) {
               <option [value]="s.id">{{ s.code }} — {{ s.nameUA }}</option>
@@ -23,6 +24,27 @@
           </select>
           @if (isInvalid('specialtyId')) {
             <span class="form-error">Оберіть спеціальність</span>
+          }
+        </div>
+
+        <div class="form-group full">
+          <label class="form-label">Набір (рік випуску) *</label>
+          <select class="form-select" formControlName="specialtyOfferingId"
+                  [class.error]="isInvalid('specialtyOfferingId')"
+                  [attr.disabled]="offerings.length === 0 ? true : null">
+            <option value="">
+              @if (!form.get('specialtyId')?.value) {
+                Спочатку оберіть спеціальність
+              } @else {
+                — Оберіть набір —
+              }
+            </option>
+            @for (o of offerings; track o.id) {
+              <option [value]="o.id">Рік випуску: {{ o.graduationYear }}</option>
+            }
+          </select>
+          @if (isInvalid('specialtyOfferingId')) {
+            <span class="form-error">Оберіть набір</span>
           }
         </div>
 

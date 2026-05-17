@@ -28,7 +28,7 @@ export interface StudentInfo {
   bookNumberStatus: string;
   startDate: string;
   endDate?: string;
-  specialtyId: number;
+  specialtyOfferingId: number;
   orgId: number;
 }
 

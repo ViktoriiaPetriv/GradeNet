@@ -45,6 +45,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SERVER_PORT: ${ORG_APP_PORT:-8081}
       JWT_SECRET: ${JWT_SECRET}
+      GRADE_SERVICE_URL: http://grade-service-app:${GRADE_APP_PORT:-8082}
     networks:
       - grade-net-network
 

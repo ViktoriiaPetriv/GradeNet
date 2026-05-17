@@ -5,5 +5,5 @@ import lombok.Data;
 @Data
 public class SpecialtyDisciplineFilter {
     private Long disciplineId;
-    private Long specialtyId;
+    private Long specialtyOfferingId;
 }

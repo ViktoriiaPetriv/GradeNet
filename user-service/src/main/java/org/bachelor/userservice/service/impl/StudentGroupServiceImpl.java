@@ -34,14 +34,14 @@ public class StudentGroupServiceImpl implements StudentGroupService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<StudentGroupDTO> findAll(String name, Long specialtyId, Pageable pageable) {
+    public PageResponse<StudentGroupDTO> findAll(String name, Long specialtyOfferingId, Pageable pageable) {
         boolean hasName = name != null && !name.isBlank();
         Page<StudentGroup> page;
         Pageable unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
-        if (specialtyId != null && hasName) {
-            page = studentGroupRepository.findBySpecialtyIdAndNameContaining(specialtyId, name, unsorted);
-        } else if (specialtyId != null) {
-            page = studentGroupRepository.findBySpecialtyId(specialtyId, unsorted);
+        if (specialtyOfferingId != null && hasName) {
+            page = studentGroupRepository.findBySpecialtyOfferingIdAndNameContaining(specialtyOfferingId, name, unsorted);
+        } else if (specialtyOfferingId != null) {
+            page = studentGroupRepository.findBySpecialtyOfferingId(specialtyOfferingId, unsorted);
         } else if (hasName) {
             page = studentGroupRepository.findByNameContainingIgnoreCase(name, pageable);
         } else {

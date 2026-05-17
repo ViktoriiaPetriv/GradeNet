@@ -98,7 +98,8 @@
             </div>
             } @else {
             <select class="form-select" formControlName="specialtyId" [class.error]="isInvalid('specialtyId')"
-                [attr.disabled]="specialties().length === 0 ? true : null">
+                [attr.disabled]="specialties().length === 0 ? true : null"
+                (change)="onSpecialtyChange()">
                 <option [ngValue]="null">
                     @if (!form.get('degree')?.value || !form.get('eduType')?.value) {
                     Спочатку оберіть рівень та форму навчання
@@ -113,6 +114,28 @@
             }
             @if (isInvalid('specialtyId')) {
             <span class="field-hint">Оберіть спеціальність</span>
+            }
+        </div>
+
+        <!-- Набір (рік випуску) -->
+        <div class="form-group full">
+            <label class="form-label">Набір (рік випуску) *</label>
+            <select class="form-select" formControlName="specialtyOfferingId"
+                [class.error]="isInvalid('specialtyOfferingId')"
+                [attr.disabled]="offerings().length === 0 ? true : null">
+                <option [ngValue]="null">
+                    @if (!form.get('specialtyId')?.value) {
+                    Спочатку оберіть спеціальність
+                    } @else {
+                    — Оберіть набір —
+                    }
+                </option>
+                @for (o of offerings(); track o.id) {
+                <option [ngValue]="o.id">Рік випуску: {{ o.graduationYear }}</option>
+                }
+            </select>
+            @if (isInvalid('specialtyOfferingId')) {
+            <span class="field-hint">Оберіть набір</span>
             }
         </div>
 

@@ -10,6 +10,7 @@ import java.util.Optional;
 
 @Repository
 public interface SpecialtyDisciplineRepository extends JpaRepository<SpecialtyDiscipline, Long>, JpaSpecificationExecutor<SpecialtyDiscipline> {
-    boolean existsBySpecialtyIdAndDisciplineId(Long specialtyId, Long disciplineId);
-    Optional<SpecialtyDiscipline> findBySpecialtyIdAndDisciplineId(Long specialtyId, Long disciplineId);
+    boolean existsBySpecialtyOfferingId(Long specialtyOfferingId);
+    boolean existsBySpecialtyOfferingIdAndDisciplineId(Long specialtyOfferingId, Long disciplineId);
+    Optional<SpecialtyDiscipline> findBySpecialtyOfferingIdAndDisciplineId(Long specialtyOfferingId, Long disciplineId);
 }

@@ -55,7 +55,7 @@
               <div class="sd-entry">
                 <div class="sd-header">
                   <i class="pi pi-graduation-cap sd-icon"></i>
-                  <span class="sd-specialty-name">{{ getSpecialtyName(sd.specialtyId) }}</span>
+                  <span class="sd-specialty-name">{{ getSpecialtyNameForSd(sd.id) }}</span>
                   @if (sortedHours(sd.hours).length > 0) {
                     <button class="btn-toggle-hours" (click)="toggleHoursExpanded(sd.id)" title="Розгорнути/Згорнути">
                       <i class="pi" [ngClass]="isHoursExpanded(sd.id) ? 'pi-chevron-down' : 'pi-chevron-right'"></i>
@@ -139,7 +139,7 @@
 @if (addSdModalOpen() && discipline()) {
   <app-specialty-discipline-modal
     [disciplineId]="discipline()!.id"
-    [existingSpecialtyIds]="existingSpecialtyIds()"
+    [existingSpecialtyOfferingIds]="existingSpecialtyOfferingIds()"
     (saved)="onSdAdded()"
     (cancelled)="addSdModalOpen.set(false)" />
 }

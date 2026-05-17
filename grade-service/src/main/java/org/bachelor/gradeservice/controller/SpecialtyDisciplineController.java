@@ -39,4 +39,9 @@ public class SpecialtyDisciplineController {
     public List<SpecialtyDisciplineDTO> getAll(@ModelAttribute SpecialtyDisciplineFilter filter) {
         return specialtyDisciplineService.getAll(filter);
     }
+
+    @GetMapping("/exists")
+    public boolean existsBySpecialtyOffering(@RequestParam Long specialtyOfferingId) {
+        return specialtyDisciplineService.existsBySpecialtyOfferingId(specialtyOfferingId);
+    }
 }

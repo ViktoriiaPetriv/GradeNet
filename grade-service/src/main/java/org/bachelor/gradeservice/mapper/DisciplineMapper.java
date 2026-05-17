@@ -19,7 +19,7 @@ public interface DisciplineMapper {
     @Mapping(target = "disciplineId", source = "discipline.id")
     @Mapping(target = "name", source = "discipline.name")
     @Mapping(target = "specialtyDisciplineId", source = "specialtyDiscipline.id")
-    @Mapping(target = "specialtyId", source = "specialtyDiscipline.specialtyId")
+    @Mapping(target = "specialtyOfferingId", source = "specialtyDiscipline.specialtyOfferingId")
     @Mapping(target = "hours", source = "hours")
     DisciplineCreateResponseDTO toCreateResponseDTO(Discipline discipline, SpecialtyDiscipline specialtyDiscipline, HoursDTO hours);
 }

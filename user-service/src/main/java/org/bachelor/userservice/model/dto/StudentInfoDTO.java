@@ -8,7 +8,7 @@ public record StudentInfoDTO(
         String bookNumberStatus,
         Instant startDate,
         Instant endDate,
-        Long specialtyId,
+        Long specialtyOfferingId,
         Long orgId
 ) {
 }

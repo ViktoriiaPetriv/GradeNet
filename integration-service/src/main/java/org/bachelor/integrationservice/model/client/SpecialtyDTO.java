@@ -9,4 +9,5 @@ public class SpecialtyDTO {
     private String nameUA;
     private String studyProgramUA;
     private String eduProgramUA;
+    private String degree;
 }

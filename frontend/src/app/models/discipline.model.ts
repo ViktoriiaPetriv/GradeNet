@@ -5,7 +5,7 @@ export interface DisciplineDTO {
 
 export interface DisciplineCreateRequest {
   name: string;
-  specialtyId: number;
+  specialtyOfferingId: number;
   hours: HoursCreateRequest;
 }
 
@@ -40,7 +40,7 @@ export interface HoursDTO {
 
 export interface SpecialtyDisciplineDTO {
   id: number;
-  specialtyId: number;
+  specialtyOfferingId: number;
   discipline: DisciplineDTO;
   hours: HoursDTO[];
 }

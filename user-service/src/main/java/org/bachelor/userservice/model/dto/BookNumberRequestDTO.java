@@ -13,5 +13,5 @@ public record BookNumberRequestDTO(
         @NotNull(message = "Student is required")
         Long studentId,
 
-        Long specialtyId
+        Long specialtyOfferingId
 ) {}

@@ -69,6 +69,19 @@ export interface SpecialtyRequest {
   endDate: string | null;
 }
 
+export interface SpecialtyOffering {
+  id: number;
+  specialtyId: number;
+  externalId: number | null;
+  graduationYear: number;
+}
+
+export interface SpecialtyOfferingRequest {
+  specialtyId: number;
+  externalId?: number | null;
+  graduationYear: number;
+}
+
 export interface OrgInfo {
   facultyId: number;
   facultyName: string;

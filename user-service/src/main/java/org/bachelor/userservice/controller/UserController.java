@@ -57,9 +57,9 @@ public class UserController {
 
     @GetMapping("/students")
     public List<UserDTO> findStudentsBySpecialty(
-            @RequestParam Long specialtyId,
+            @RequestParam Long specialtyOfferingId,
             @RequestParam(required = false) Integer enrollYear) {
-        return userService.findStudentsBySpecialty(specialtyId, enrollYear);
+        return userService.findStudentsBySpecialty(specialtyOfferingId, enrollYear);
     }
 
     @GetMapping("/search")

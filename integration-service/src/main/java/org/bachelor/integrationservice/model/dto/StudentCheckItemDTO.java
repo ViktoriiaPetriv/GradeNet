@@ -16,5 +16,6 @@ public class StudentCheckItemDTO {
     private Long bookNumberId;
     private Long studentId;
     private boolean existsInSystem;
+    private boolean graduationYearMismatch;
     private List<GradeDataDTO> grades;
 }

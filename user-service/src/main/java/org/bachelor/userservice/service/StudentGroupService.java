@@ -9,7 +9,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 public interface StudentGroupService {
-    PageResponse<StudentGroupDTO> findAll(String name, Long specialtyId, Pageable pageable);
+    PageResponse<StudentGroupDTO> findAll(String name, Long specialtyOfferingId, Pageable pageable);
     StudentGroupDTO findById(Long id);
     StudentGroupDTO create(StudentGroupRequestDTO request);
     StudentGroupDTO update(Long id, StudentGroupRequestDTO request);

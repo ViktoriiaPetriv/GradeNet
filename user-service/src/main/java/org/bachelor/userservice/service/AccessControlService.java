@@ -23,10 +23,12 @@ public class AccessControlService {
     private final BookNumberRepository bookNumberRepository;
     private final UserOrganizationRepository userOrganizationRepository;
 
-    public void requireAdminOrManagerOfSpecialty(Long specialtyId) {
+    public void requireAdminOrManagerOfSpecialty(Long specialtyOfferingId) {
         AuthenticatedUser user = SecurityUtils.getCurrentUser();
         if (user.isAdmin()) return;
         if (user.isManager()) {
+            if (specialtyOfferingId == null) return;
+            Long specialtyId = orgServiceClient.getSpecialtyIdByOfferingId(specialtyOfferingId);
             List<Long> specialtyIds = orgServiceClient
                     .getSpecialtyIdsByOrgIds(List.of(user.getOrgId()));
             if (specialtyIds.contains(specialtyId)) return;
@@ -35,10 +37,11 @@ public class AccessControlService {
         throw new AccessDeniedException("Недостатньо прав");
     }
 
-    public List<Long> getManagerSpecialtyIds() {
+    public List<Long> getManagerSpecialtyOfferingIds() {
         AuthenticatedUser user = SecurityUtils.getCurrentUser();
         if (!user.isManager()) throw new AccessDeniedException("Недостатньо прав");
-        return orgServiceClient.getSpecialtyIdsByOrgIds(List.of(user.getOrgId()));
+        List<Long> specialtyIds = orgServiceClient.getSpecialtyIdsByOrgIds(List.of(user.getOrgId()));
+        return orgServiceClient.getOfferingIdsBySpecialtyIds(specialtyIds);
     }
 
     public Set<Long> getAllowedUserIdsForManager() {
@@ -48,7 +51,8 @@ public class AccessControlService {
         Long orgId = user.getOrgId();
 
         List<Long> specialtyIds = orgServiceClient.getSpecialtyIdsByOrgIds(List.of(orgId));
-        List<Long> studentIds = bookNumberRepository.findDistinctStudentIdsBySpecialtyIdIn(specialtyIds);
+        List<Long> offeringIds = orgServiceClient.getOfferingIdsBySpecialtyIds(specialtyIds);
+        List<Long> studentIds = bookNumberRepository.findDistinctStudentIdsBySpecialtyOfferingIdIn(offeringIds);
         List<Long> professorIds = userOrganizationRepository.findUserIdsByOrgIdIn(List.of(orgId));
 
         Set<Long> allIds = new HashSet<>(studentIds);

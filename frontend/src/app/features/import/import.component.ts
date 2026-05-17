@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ImportService } from '../../core/services/import.service';
 import { UserService } from '../../core/services/user.service';
+import { SpecialtyService } from '../../core/services/specialty.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AuthStateService } from '../../core/services/auth-state.service';
 import { TokenService } from '../../core/services/token.service';
@@ -16,7 +17,7 @@ import {
 } from '../../models/import.model';
 import { User } from '../../models/user.model';
 
-type Step = 'upload' | 'disciplines' | 'students' | 'preview' | 'result';
+type Step = 'upload' | 'offering' | 'disciplines' | 'students' | 'preview' | 'result';
 
 interface DisciplineSelection {
   index: number;
@@ -46,6 +47,7 @@ interface PreviewRow {
 export class ImportComponent implements OnInit {
   private importService = inject(ImportService);
   private userService = inject(UserService);
+  private specialtyService = inject(SpecialtyService);
   private toastService = inject(ToastService);
   private authState = inject(AuthStateService);
   private tokenService = inject(TokenService);
@@ -59,6 +61,7 @@ export class ImportComponent implements OnInit {
   isDragging = signal(false);
   parsing = signal(false);
   checkingDisciplines = signal(false);
+  creatingOffering = signal(false);
   creatingDisciplines = signal(false);
   checkingStudents = signal(false);
   importing = signal(false);
@@ -140,7 +143,11 @@ export class ImportComponent implements OnInit {
 
 
   existingStudents = computed(() =>
-    this.studentCheck()?.students.filter((s) => s.existsInSystem) ?? []
+    this.studentCheck()?.students.filter((s) => s.existsInSystem && !s.graduationYearMismatch) ?? []
+  );
+
+  graduationYearMismatchStudents = computed(() =>
+    this.studentCheck()?.students.filter((s) => s.existsInSystem && s.graduationYearMismatch) ?? []
   );
 
   notFoundStudents = computed(() =>
@@ -259,13 +266,42 @@ export class ImportComponent implements OnInit {
           }))
         );
         this.checkingDisciplines.set(false);
-        this.step.set('disciplines');
+        if (check.specialtyOfferingId === null && check.graduationYear !== null) {
+          this.step.set('offering');
+        } else {
+          this.step.set('disciplines');
+        }
       },
       error: () => {
         this.checkingDisciplines.set(false);
         this.toastService.error('Помилка при перевірці дисциплін');
       },
     });
+  }
+
+  confirmCreateOffering() {
+    const check = this.disciplineCheck();
+    if (!check?.specialtyId || !check?.graduationYear) return;
+    this.creatingOffering.set(true);
+    this.specialtyService.createOffering({
+      specialtyId: check.specialtyId,
+      graduationYear: check.graduationYear,
+      externalId: null,
+    }).subscribe({
+      next: (offering) => {
+        this.disciplineCheck.update((c) => c ? { ...c, specialtyOfferingId: offering.id } : c);
+        this.creatingOffering.set(false);
+        this.step.set('disciplines');
+      },
+      error: () => {
+        this.creatingOffering.set(false);
+        this.toastService.error('Помилка при створенні випуску');
+      },
+    });
+  }
+
+  declineCreateOffering() {
+    this.clearFile();
   }
 
   proceedToStudents() {
@@ -283,7 +319,7 @@ export class ImportComponent implements OnInit {
         .createDisciplines(
           file,
           selectionsToCreate,
-          check.specialtyId!,
+          check.specialtyOfferingId!,
           check.academicYear
         )
         .subscribe({
@@ -319,7 +355,7 @@ export class ImportComponent implements OnInit {
       .createDisciplines(
         file,
         selectionsToCreate,
-        check.specialtyId!,
+        check.specialtyOfferingId!,
         check.academicYear
       )
       .subscribe({
@@ -349,7 +385,7 @@ export class ImportComponent implements OnInit {
         this.selectedBookNumberIds.set(
           new Set(
             check.students
-              .filter((s) => s.existsInSystem)
+              .filter((s) => s.existsInSystem && !s.graduationYearMismatch)
               .map((s) => s.bookNumberId!)
           )
         );
@@ -517,6 +553,8 @@ export class ImportComponent implements OnInit {
       this.step.set('disciplines');
     } else if (currentStep === 'disciplines') {
       this.clearFile();
+    } else if (currentStep === 'offering') {
+      this.step.set('upload');
     } else if (currentStep === 'result') {
       this.clearFile();
     }

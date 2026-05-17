@@ -1,6 +1,7 @@
 package org.bachelor.userservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.bachelor.userservice.config.OrgServiceClient;
 import org.bachelor.userservice.exception.NotFoundException;
 import org.bachelor.userservice.exception.ValidationException;
 import org.bachelor.userservice.mapper.BookNumberMapper;
@@ -35,6 +36,7 @@ public class BookNumberServiceImpl implements BookNumberService {
     private final BookNumberMapper bookNumberMapper;
     private final UserRepository userRepository;
     private final AccessControlService accessControlService;
+    private final OrgServiceClient orgServiceClient;
 
     @Override
     @Transactional(readOnly = true)
@@ -47,8 +49,8 @@ public class BookNumberServiceImpl implements BookNumberService {
         }
 
         if (currentUser.isManager()) {
-            List<Long> specialtyIds = accessControlService.getManagerSpecialtyIds();
-            return findAllBySpecialtyIds(specialtyIds, number, pageable);
+            List<Long> offeringIds = accessControlService.getManagerSpecialtyOfferingIds();
+            return findAllBySpecialtyIds(offeringIds, number, pageable);
         }
 
         throw new AccessDeniedException("Недостатньо прав");
@@ -58,7 +60,7 @@ public class BookNumberServiceImpl implements BookNumberService {
     @Transactional(readOnly = true)
     public BookNumberDTO findById(Long id) {
         BookNumber bookNumber = getBookOrThrow(id);
-        accessControlService.requireAdminOrManagerOfSpecialty(bookNumber.getSpecialtyId());
+        accessControlService.requireAdminOrManagerOfSpecialty(bookNumber.getSpecialtyOfferingId());
         return bookNumberMapper.toDto(bookNumber);
     }
 
@@ -92,7 +94,7 @@ public class BookNumberServiceImpl implements BookNumberService {
     @Override
     @Transactional
     public BookNumberDTO create(BookNumberRequestDTO request) {
-        accessControlService.requireAdminOrManagerOfSpecialty(request.specialtyId());
+        accessControlService.requireAdminOrManagerOfSpecialty(request.specialtyOfferingId());
 
         if (bookNumberRepository.existsByNumber(request.number())) {
             throw new ValidationException("Номер залікової книжки вже існує: %s".formatted(request.number()));
@@ -105,8 +107,15 @@ public class BookNumberServiceImpl implements BookNumberService {
             throw new ValidationException("Користувач з ID %s не є студентом".formatted(request.studentId()));
         }
 
-        if (bookNumberRepository.existsByStudentIdAndSpecialtyId(request.studentId(), request.specialtyId())) {
+        if (bookNumberRepository.existsByStudentIdAndSpecialtyOfferingId(request.studentId(), request.specialtyOfferingId())) {
             throw new ValidationException("У цього студента вже є залікова книжка для цієї спеціальності");
+        }
+
+        Long specialtyId = orgServiceClient.getSpecialtyIdByOfferingId(request.specialtyOfferingId());
+        List<Long> allOfferingIds = orgServiceClient.getOfferingIdsBySpecialtyIds(List.of(specialtyId));
+        if (!allOfferingIds.isEmpty() && bookNumberRepository.existsByStudentIdAndSpecialtyOfferingIdInAndStatusNot(
+                request.studentId(), allOfferingIds, BookNumberStatus.HANDED)) {
+            throw new ValidationException("У студента є незакрита залікова книжка на цій спеціальності. Спочатку потрібно видати попередню книжку студенту");
         }
 
         BookNumber bookNumber = bookNumberMapper.toEntity(request);
@@ -121,7 +130,7 @@ public class BookNumberServiceImpl implements BookNumberService {
     @Transactional
     public BookNumberDTO update(Long id, BookNumberRequestDTO request) {
         BookNumber bookNumber = getBookOrThrow(id);
-        accessControlService.requireAdminOrManagerOfSpecialty(bookNumber.getSpecialtyId());
+        accessControlService.requireAdminOrManagerOfSpecialty(bookNumber.getSpecialtyOfferingId());
 
         if (request.number() != null
                 && !bookNumber.getNumber().equals(request.number())
@@ -137,22 +146,22 @@ public class BookNumberServiceImpl implements BookNumberService {
                 throw new ValidationException("Користувач з ID %s не є студентом".formatted(request.studentId()));
             }
 
-            Long specialtyId = request.specialtyId() != null ? request.specialtyId() : bookNumber.getSpecialtyId();
-            if (bookNumberRepository.existsByStudentIdAndSpecialtyId(student.getId(), specialtyId)
+            Long specialtyOfferingId = request.specialtyOfferingId() != null ? request.specialtyOfferingId() : bookNumber.getSpecialtyOfferingId();
+            if (bookNumberRepository.existsByStudentIdAndSpecialtyOfferingId(student.getId(), specialtyOfferingId)
                     && !(student.getId().equals(bookNumber.getStudent().getId())
-                    && specialtyId.equals(bookNumber.getSpecialtyId()))) {
+                    && specialtyOfferingId.equals(bookNumber.getSpecialtyOfferingId()))) {
                 throw new ValidationException("У цього студента вже є залікова книжка для цієї спеціальності");
             }
 
             bookNumber.setStudent(student);
         }
 
-        if (request.specialtyId() != null && !request.specialtyId().equals(bookNumber.getSpecialtyId())) {
+        if (request.specialtyOfferingId() != null && !request.specialtyOfferingId().equals(bookNumber.getSpecialtyOfferingId())) {
             Long studentId = request.studentId() != null ? request.studentId() : bookNumber.getStudent().getId();
-            if (bookNumberRepository.existsByStudentIdAndSpecialtyId(studentId, request.specialtyId())) {
+            if (bookNumberRepository.existsByStudentIdAndSpecialtyOfferingId(studentId, request.specialtyOfferingId())) {
                 throw new ValidationException("У цього студента вже є залікова книжка для цієї спеціальності");
             }
-            bookNumber.setSpecialtyId(request.specialtyId());
+            bookNumber.setSpecialtyOfferingId(request.specialtyOfferingId());
         }
 
         bookNumberMapper.updateEntity(request, bookNumber);
@@ -163,7 +172,7 @@ public class BookNumberServiceImpl implements BookNumberService {
     @Transactional
     public void delete(Long id) {
         BookNumber bookNumber = getBookOrThrow(id);
-        accessControlService.requireAdminOrManagerOfSpecialty(bookNumber.getSpecialtyId());
+        accessControlService.requireAdminOrManagerOfSpecialty(bookNumber.getSpecialtyOfferingId());
         bookNumberRepository.delete(bookNumber);
     }
 
@@ -171,7 +180,7 @@ public class BookNumberServiceImpl implements BookNumberService {
     @Transactional
     public BookNumberDTO markAsFilled(Long id) {
         BookNumber bookNumber = getBookOrThrow(id);
-        accessControlService.requireAdminOrManagerOfSpecialty(bookNumber.getSpecialtyId());
+        accessControlService.requireAdminOrManagerOfSpecialty(bookNumber.getSpecialtyOfferingId());
 
         if (bookNumber.getStatus() != BookNumberStatus.REGISTERED) {
             throw new ValidationException("Залікову книжку можна позначити заповненою лише після її реєстрації");
@@ -186,7 +195,7 @@ public class BookNumberServiceImpl implements BookNumberService {
     @Transactional
     public BookNumberDTO markAsHanded(Long id) {
         BookNumber bookNumber = getBookOrThrow(id);
-        accessControlService.requireAdminOrManagerOfSpecialty(bookNumber.getSpecialtyId());
+        accessControlService.requireAdminOrManagerOfSpecialty(bookNumber.getSpecialtyOfferingId());
 
         if (bookNumber.getStatus() != BookNumberStatus.FILLED) {
             throw new ValidationException("Залікову книжку можна видати студенту лише після її заповнення");
@@ -203,11 +212,11 @@ public class BookNumberServiceImpl implements BookNumberService {
     }
 
     private PageResponse<BookNumberDTO> findAllBySpecialtyIds(
-            List<Long> specialtyIds, String number, Pageable pageable) {
-        if (specialtyIds.isEmpty()) return PageResponse.empty();
+            List<Long> specialtyOfferingIds, String number, Pageable pageable) {
+        if (specialtyOfferingIds.isEmpty()) return PageResponse.empty();
 
         Specification<BookNumber> spec = (root, query, cb) ->
-                root.get("specialtyId").in(specialtyIds);
+                root.get("specialtyOfferingId").in(specialtyOfferingIds);
 
         return getBookNumberDTOPageResponse(number, pageable, spec);
     }
