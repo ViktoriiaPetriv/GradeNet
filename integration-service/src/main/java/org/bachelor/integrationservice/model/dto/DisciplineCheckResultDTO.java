@@ -16,5 +16,7 @@ public class DisciplineCheckResultDTO {
     private String academicYear;
     private String specialtyName;
     private Long specialtyId;
+    private Integer graduationYear;
+    private Long specialtyOfferingId;
     private List<DisciplineCheckItemDTO> disciplines;
 }

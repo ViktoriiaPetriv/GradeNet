@@ -36,4 +36,13 @@ public interface GradeBookEntryRepository extends JpaRepository<GradeBookEntry, 
     boolean existsByBookNumberIdAndSpecialtyDiscipline_Discipline_IdAndStatus(Long bookNumberId, Long disciplineId, EntryStatus status);
 
     boolean existsByBookNumberIdAndSpecialtyDiscipline_Discipline_IdAndResult(Long bookNumberId, Long disciplineId, EntryResult result);
+
+    boolean existsByBookNumberIdAndSpecialtyDiscipline_Discipline_IdAndStatusAndSemester(
+            Long bookNumberId, Long disciplineId, EntryStatus status, Integer semester);
+
+    boolean existsByBookNumberIdAndSpecialtyDiscipline_Discipline_IdAndResultAndSemester(
+            Long bookNumberId, Long disciplineId, EntryResult result, Integer semester);
+
+    Optional<GradeBookEntry> findTopByBookNumberIdAndSpecialtyDisciplineIdAndSemesterOrderByAttemptDesc(
+            Long bookNumberId, Long specialtyDisciplineId, Integer semester);
 }

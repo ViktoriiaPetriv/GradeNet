@@ -37,12 +37,12 @@ public class ImportController {
     public List<CreatedDisciplineInfoDTO> createDisciplines(
             @RequestPart("file") MultipartFile file,
             @RequestParam String disciplineIndices,
-            @RequestParam Long specialtyId,
+            @RequestParam Long specialtyOfferingId,
             @RequestParam String academicYear,
             @RequestHeader("Authorization") String authHeader) throws IOException {
         excelValidationService.validate(file);
         List<Integer> indices = objectMapper.readValue(disciplineIndices, new TypeReference<>() {});
-        return importService.createDisciplines(file.getInputStream(), indices, specialtyId, academicYear, authHeader);
+        return importService.createDisciplines(file.getInputStream(), indices, specialtyOfferingId, academicYear, authHeader);
     }
 
     @PostMapping(value = "/check-students", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

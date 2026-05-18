@@ -37,6 +37,77 @@
 
       <div class="content-grid">
 
+        <div class="left-col">
+
+        <app-info-card title="Набори (роки випуску)" icon="pi pi-users" [count]="offerings().length">
+          @if (isAdmin()) {
+            <div class="offering-actions">
+              @if (!addOfferingOpen()) {
+                <button class="btn-add-offering" (click)="openAddOffering()">
+                  <i class="pi pi-plus"></i> Додати набір
+                </button>
+              }
+            </div>
+          }
+
+          @if (addOfferingOpen()) {
+            <form [formGroup]="offeringForm" (ngSubmit)="submitOffering()" class="offering-form">
+              <div class="offering-form-row">
+                <div class="offering-field">
+                  <label class="form-label">Рік випуску *</label>
+                  <input class="form-input" type="number" formControlName="graduationYear"
+                         placeholder="2025" min="2000" max="2100"
+                         [class.error]="offeringForm.get('graduationYear')?.invalid && offeringForm.get('graduationYear')?.touched" />
+                  @if (offeringForm.get('graduationYear')?.invalid && offeringForm.get('graduationYear')?.touched) {
+                    <span class="form-error">Вкажіть коректний рік (2000–2100)</span>
+                  }
+                </div>
+                <div class="offering-field">
+                  <label class="form-label">Зовнішній ID</label>
+                  <input class="form-input" type="number" formControlName="externalId" placeholder="—" min="1" />
+                </div>
+                <div class="offering-form-btns">
+                  <button type="submit" class="btn-primary-sm" [disabled]="addingOffering()">
+                    @if (addingOffering()) {
+                      <i class="pi pi-spin pi-spinner"></i>
+                    } @else {
+                      <i class="pi pi-check"></i>
+                    }
+                    Додати
+                  </button>
+                  <button type="button" class="btn-cancel-sm" (click)="cancelAddOffering()">
+                    Скасувати
+                  </button>
+                </div>
+              </div>
+            </form>
+          }
+
+          @if (offerings().length === 0 && !addOfferingOpen()) {
+            <div class="empty-offerings">
+              <i class="pi pi-info-circle"></i>
+              Набори не додані
+            </div>
+          }
+
+          @for (o of offerings(); track o.id) {
+            <div class="offering-row">
+              <div class="offering-year">
+                <i class="pi pi-calendar offering-icon"></i>
+                <span class="offering-year-label">Рік випуску: <strong>{{ o.graduationYear }}</strong></span>
+              </div>
+              @if (o.externalId) {
+                <span class="offering-ext-id">ext: {{ o.externalId }}</span>
+              }
+              @if (isAdmin()) {
+                <button class="btn-delete-offering" (click)="deleteOffering(o.id)" title="Видалити набір">
+                  <i class="pi pi-trash"></i>
+                </button>
+              }
+            </div>
+          }
+        </app-info-card>
+
         <app-info-card title="Програми" icon="pi pi-file-edit">
           <div class="info-rows">
             <div class="info-row">
@@ -57,6 +128,8 @@
             </div>
           </div>
         </app-info-card>
+
+        </div>
 
         <div class="right-col">
 
@@ -119,5 +192,18 @@
     confirmLabel="Видалити"
     (confirm)="confirmDelete()"
     (cancel)="closeDelete()"
+  />
+}
+
+@if (deletingOfferingId() !== null) {
+  <app-confirm-dialog
+    title="Видалити набір"
+    message="Ви дійсно хочете видалити цей набір? Усі пов'язані залікові книжки та дисципліни втратять прив'язку до нього."
+    subtext="Цю дію неможливо скасувати."
+    iconType="danger"
+    confirmButtonClass="btn-danger"
+    confirmLabel="Видалити"
+    (confirm)="confirmDeleteOffering()"
+    (cancel)="cancelDeleteOffering()"
   />
 }

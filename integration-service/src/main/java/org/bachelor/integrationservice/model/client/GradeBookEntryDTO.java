@@ -12,4 +12,5 @@ public class GradeBookEntryDTO {
     private Integer attempt;
     private String status;
     private String result;
+    private Integer semester;
 }

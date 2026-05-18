@@ -1,7 +1,8 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { SpecialtyService } from '../../../core/services/specialty.service';
-import { Specialty, OrgInfo } from '../../../models/org.model';
+import { Specialty, OrgInfo, SpecialtyOffering } from '../../../models/org.model';
 import { ToastService } from '../../../core/services/toast.service';
 import { SpecialtyFormComponent } from '../specialty-form/specialty-form.component';
 import { AuthStateService } from '../../../core/services/auth-state.service';
@@ -15,6 +16,7 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-d
   selector: 'app-specialty-detail',
   standalone: true,
   imports: [
+    ReactiveFormsModule,
     SpecialtyFormComponent,
     PageHeaderComponent,
     HeroCardComponent,
@@ -28,12 +30,19 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-d
 export class SpecialtyDetailComponent implements OnInit {
   specialty = signal<Specialty | null>(null);
   orgInfo = signal<OrgInfo | null>(null);
+  offerings = signal<SpecialtyOffering[]>([]);
   loading = signal(true);
   editModalOpen = signal(false);
   deleteModalOpen = signal(false);
 
+  addOfferingOpen = signal(false);
+  addingOffering = signal(false);
+  deletingOfferingId = signal<number | null>(null);
+  offeringForm!: FormGroup;
+
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private fb = inject(FormBuilder);
   private toastService = inject(ToastService);
 
   private authState = inject(AuthStateService);
@@ -42,6 +51,10 @@ export class SpecialtyDetailComponent implements OnInit {
   constructor(private specialtyService: SpecialtyService) {}
 
   ngOnInit() {
+    this.offeringForm = this.fb.group({
+      graduationYear: [null, [Validators.required, Validators.min(2000), Validators.max(2100)]],
+      externalId: [null],
+    });
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.load(id);
   }
@@ -53,11 +66,78 @@ export class SpecialtyDetailComponent implements OnInit {
         this.specialty.set(s);
         this.loading.set(false);
         this.specialtyService.getOrgInfo(id).subscribe((info) => this.orgInfo.set(info));
+        this.loadOfferings(id);
       },
       error: () => {
         this.loading.set(false);
         this.router.navigate(['/specialties']);
       },
+    });
+  }
+
+  loadOfferings(specialtyId: number) {
+    this.specialtyService.getOfferings(specialtyId).subscribe((offs) =>
+      this.offerings.set(offs.sort((a, b) => a.graduationYear - b.graduationYear))
+    );
+  }
+
+  openAddOffering() {
+    this.offeringForm.reset();
+    this.addOfferingOpen.set(true);
+  }
+
+  cancelAddOffering() {
+    this.addOfferingOpen.set(false);
+  }
+
+  submitOffering() {
+    if (this.offeringForm.invalid) {
+      this.offeringForm.markAllAsTouched();
+      return;
+    }
+    const { graduationYear, externalId } = this.offeringForm.value;
+    this.addingOffering.set(true);
+    this.specialtyService.createOffering({
+      specialtyId: this.specialty()!.id,
+      graduationYear: Number(graduationYear),
+      externalId: externalId ? Number(externalId) : null,
+    }).subscribe({
+      next: () => {
+        this.toastService.success('Набір додано');
+        this.addOfferingOpen.set(false);
+        this.addingOffering.set(false);
+        this.loadOfferings(this.specialty()!.id);
+      },
+      error: (err) => {
+        this.addingOffering.set(false);
+        const msg = err?.error?.message ?? '';
+        if (msg.includes('duplicate') || msg.includes('uq_specialty_offering')) {
+          this.toastService.error('Набір із таким роком вже існує');
+        } else {
+          this.toastService.error('Помилка при додаванні набору');
+        }
+      },
+    });
+  }
+
+  deleteOffering(id: number) {
+    this.deletingOfferingId.set(id);
+  }
+
+  cancelDeleteOffering() {
+    this.deletingOfferingId.set(null);
+  }
+
+  confirmDeleteOffering() {
+    const id = this.deletingOfferingId();
+    if (id == null) return;
+    this.specialtyService.deleteOffering(id).subscribe({
+      next: () => {
+        this.toastService.success('Набір видалено');
+        this.deletingOfferingId.set(null);
+        this.loadOfferings(this.specialty()!.id);
+      },
+      error: () => this.toastService.error('Помилка при видаленні набору'),
     });
   }
 

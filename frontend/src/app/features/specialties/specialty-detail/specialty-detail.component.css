@@ -203,6 +203,12 @@
     align-items: start;
 }
 
+.left-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
 .right-col {
     display: flex;
     flex-direction: column;
@@ -310,6 +316,201 @@
     margin-left: 4px;
 }
 
+.offering-actions {
+    margin-bottom: 0.75rem;
+}
+
+.btn-add-offering {
+    background: none;
+    border: 1px dashed var(--border);
+    color: var(--accent);
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+}
+
+.btn-add-offering:hover {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    border-style: solid;
+}
+
+.offering-form {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.9rem 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.offering-form-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.offering-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 120px;
+}
+
+.form-label {
+    font-size: 0.72rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+}
+
+.form-input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 0.88rem;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    width: 100%;
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.form-input.error {
+    border-color: var(--red);
+}
+
+.form-error {
+    font-size: 0.75rem;
+    color: var(--red);
+}
+
+.offering-form-btns {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    padding-bottom: 1px;
+}
+
+.btn-primary-sm {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: opacity 0.15s;
+}
+
+.btn-primary-sm:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-cancel-sm {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 7px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+}
+
+.btn-cancel-sm:hover {
+    border-color: var(--text-muted);
+    color: var(--text);
+}
+
+.empty-offerings {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    padding: 0.5rem 0;
+}
+
+.offering-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.offering-row:last-child {
+    border-bottom: none;
+}
+
+.offering-year {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.offering-icon {
+    color: var(--accent);
+    font-size: 0.9rem;
+}
+
+.offering-year-label {
+    font-size: 0.88rem;
+    color: var(--text);
+}
+
+.offering-ext-id {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: monospace;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 2px 7px;
+}
+
+.btn-delete-offering {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+}
+
+.btn-delete-offering:hover {
+    color: var(--red);
+    background: var(--red-bg);
+}
+
 @media (max-width: 768px) {
     .page {
         padding: 1.5rem;
@@ -317,6 +518,10 @@
 
     .content-grid {
         grid-template-columns: 1fr;
+    }
+
+    .left-col, .right-col {
+        gap: 1rem;
     }
 
     .hero-card {

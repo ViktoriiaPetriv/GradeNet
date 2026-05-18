@@ -10,8 +10,8 @@ public class SpecialtyDisciplineSpecification {
                 disciplineId == null ? null : cb.equal(root.get("discipline").get("id"), disciplineId);
     }
 
-    public static Specification<SpecialtyDiscipline> bySpecialtyId(Long specialtyId) {
+    public static Specification<SpecialtyDiscipline> bySpecialtyOfferingId(Long specialtyOfferingId) {
         return (root, query, cb) ->
-                specialtyId == null ? null : cb.equal(root.get("specialtyId"), specialtyId);
+                specialtyOfferingId == null ? null : cb.equal(root.get("specialtyOfferingId"), specialtyOfferingId);
     }
 }

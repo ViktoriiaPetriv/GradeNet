@@ -5,7 +5,7 @@ import { forkJoin } from 'rxjs';
 import { DisciplineService } from '../../../core/services/discipline.service';
 import { SpecialtyService } from '../../../core/services/specialty.service';
 import { DisciplineDTO, SpecialtyDisciplineDTO, HoursDTO } from '../../../models/discipline.model';
-import { Specialty } from '../../../models/org.model';
+import { Specialty, SpecialtyOffering } from '../../../models/org.model';
 import { AuthStateService } from '../../../core/services/auth-state.service';
 import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 import { HeroCardComponent } from '../../../shared/hero-card/hero-card.component';
@@ -24,6 +24,7 @@ import { AddHoursModalComponent } from '../add-hours-modal/add-hours-modal.compo
 export class DisciplineDetailComponent implements OnInit {
   discipline = signal<DisciplineDTO | null>(null);
   specialtyDisciplines = signal<SpecialtyDisciplineDTO[]>([]);
+  offeringMap = signal<Map<number, SpecialtyOffering>>(new Map());
   specialtyMap = signal<Map<number, Specialty>>(new Map());
   loading = signal(true);
   editModalOpen = signal(false);
@@ -31,7 +32,7 @@ export class DisciplineDetailComponent implements OnInit {
   addHoursTargetSdId = signal<number | null>(null);
   expandedSdIds = signal<Set<number>>(new Set());
 
-  existingSpecialtyIds = () => this.specialtyDisciplines().map((sd) => sd.specialtyId);
+  existingSpecialtyOfferingIds = () => this.specialtyDisciplines().map((sd) => sd.specialtyOfferingId);
 
   toggleHoursExpanded(sdId: number) {
     const current = new Set(this.expandedSdIds());
@@ -49,7 +50,10 @@ export class DisciplineDetailComponent implements OnInit {
 
   getSpecialtyNameForSd(sdId: number): string {
     const sd = this.specialtyDisciplines().find((s) => s.id === sdId);
-    return sd ? this.getSpecialtyName(sd.specialtyId) : '';
+    if (!sd) return '';
+    const offering = this.offeringMap().get(sd.specialtyOfferingId);
+    if (!offering) return `Набір #${sd.specialtyOfferingId}`;
+    return this.getSpecialtyName(offering.specialtyId) + ` (${offering.graduationYear})`;
   }
 
   private route = inject(ActivatedRoute);
@@ -74,9 +78,20 @@ export class DisciplineDetailComponent implements OnInit {
       next: ({ discipline, sdList, specialties }) => {
         this.discipline.set(discipline);
         this.specialtyDisciplines.set(sdList);
-        const map = new Map<number, Specialty>();
-        specialties.content.forEach((s) => map.set(s.id, s));
-        this.specialtyMap.set(map);
+
+        const specMap = new Map<number, Specialty>();
+        specialties.content.forEach((s) => specMap.set(s.id, s));
+        this.specialtyMap.set(specMap);
+
+        const offeringIds = [...new Set(sdList.map((sd) => sd.specialtyOfferingId))];
+        if (offeringIds.length > 0) {
+          forkJoin(offeringIds.map((oid) => this.specialtyService.getOfferingById(oid))).subscribe((offs) => {
+            const offMap = new Map<number, SpecialtyOffering>();
+            offs.forEach((o) => offMap.set(o.id, o));
+            this.offeringMap.set(offMap);
+          });
+        }
+
         this.loading.set(false);
       },
       error: () => {

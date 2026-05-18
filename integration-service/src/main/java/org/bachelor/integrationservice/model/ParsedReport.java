@@ -8,6 +8,7 @@ import java.util.List;
 public class ParsedReport {
     private final String groupName;
     private final String academicYear;
+    private final Integer graduationYear;
     private final String specialtyName;
     private final List<ParsedDiscipline> disciplines;
     private final List<ParsedStudentRow> students;

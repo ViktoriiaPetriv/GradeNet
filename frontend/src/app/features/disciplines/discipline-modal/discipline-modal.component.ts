@@ -3,7 +3,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { DisciplineService } from '../../../core/services/discipline.service';
 import { SpecialtyService } from '../../../core/services/specialty.service';
 import { DisciplineDTO } from '../../../models/discipline.model';
-import { Specialty } from '../../../models/org.model';
+import { Specialty, SpecialtyOffering } from '../../../models/org.model';
 import { ToastService } from '../../../core/services/toast.service';
 import { ModalComponent } from '../../../shared/modal/modal.component';
 
@@ -21,6 +21,7 @@ export class DisciplineModalComponent implements OnInit {
 
   form!: FormGroup;
   specialties: Specialty[] = [];
+  offerings: SpecialtyOffering[] = [];
   submitting = false;
 
   private fb = inject(FormBuilder);
@@ -36,6 +37,7 @@ export class DisciplineModalComponent implements OnInit {
     this.form = this.fb.group({
       name: [this.discipline?.name ?? '', [Validators.required, Validators.maxLength(255)]],
       specialtyId: ['', this.isEdit ? [] : [Validators.required]],
+      specialtyOfferingId: ['', this.isEdit ? [] : [Validators.required]],
       academicYear: ['', this.isEdit ? [] : [Validators.required, Validators.pattern(/^\d{4}\/\d{4}$/)]],
       ectsCredits: [null, this.isEdit ? [] : [Validators.required, Validators.min(1)]],
       totalHours: [null, this.isEdit ? [] : [Validators.required, Validators.min(1)]],
@@ -54,6 +56,17 @@ export class DisciplineModalComponent implements OnInit {
     }
   }
 
+  onSpecialtyChange() {
+    const specialtyId = +this.form.get('specialtyId')!.value;
+    this.form.patchValue({ specialtyOfferingId: '' });
+    this.offerings = [];
+    if (specialtyId) {
+      this.specialtyService.getOfferings(specialtyId).subscribe((offs) => {
+        this.offerings = offs;
+      });
+    }
+  }
+
   submit() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -67,7 +80,7 @@ export class DisciplineModalComponent implements OnInit {
       ? this.disciplineService.update(this.discipline!.id, { name: v.name })
       : this.disciplineService.create({
           name: v.name,
-          specialtyId: +v.specialtyId,
+          specialtyOfferingId: +v.specialtyOfferingId,
           hours: {
             academicYear: v.academicYear,
             ectsCredits: +v.ectsCredits,

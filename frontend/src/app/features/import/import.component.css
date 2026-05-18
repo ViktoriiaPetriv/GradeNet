@@ -151,6 +151,12 @@
   font-weight: 500;
 }
 
+.meta-badge--highlight {
+  background: color-mix(in srgb, #0d9e6e 15%, transparent);
+  color: #0d9e6e;
+  font-weight: 700;
+}
+
 /* ── Discipline Actions ── */
 .disciplines-actions {
   display: flex;

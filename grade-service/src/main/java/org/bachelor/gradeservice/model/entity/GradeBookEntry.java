@@ -15,12 +15,7 @@ import java.util.List;
 @Getter
 @Setter
 @Entity
-@Table(name = "grade_book_entry",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uq_entry",
-                columnNames = {"book_number_id", "specialty_discipline_id", "attempt"}
-        )
-)
+@Table(name = "grade_book_entry")
 public class GradeBookEntry {
 
     @Id

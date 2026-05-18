@@ -8,7 +8,7 @@ import java.util.Set;
 @Data
 public class SpecialtyDisciplineDTO {
     private Long id;
-    private Long specialtyId;
+    private Long specialtyOfferingId;
     private DisciplineDTO discipline;
     private Set<HoursDTO> hours;
 }

@@ -10,11 +10,11 @@ export interface BookNumber {
   regEndDate?: string;
   handedDate?: string;
   status: BookNumberStatus;
-  specialtyId?: number;
+  specialtyOfferingId?: number;
 }
 
 export interface BookNumberRequest {
   number: string;
   studentId: number;
-  specialtyId?: number;
+  specialtyOfferingId?: number;
 }

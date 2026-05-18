@@ -146,6 +146,12 @@ export const routes: Routes = [
       import('./features/import/import.component').then((m) => m.ImportComponent),
   },
   {
+    path: 'journal',
+    canActivate: [authGuard(['ADMIN', 'MANAGER', 'PROFESSOR'])],
+    loadComponent: () =>
+      import('./features/journal/journal.component').then((m) => m.JournalComponent),
+  },
+  {
     path: '',
     canActivate: [setupCompleteGuard, redirectGuard],
     loadComponent: () =>

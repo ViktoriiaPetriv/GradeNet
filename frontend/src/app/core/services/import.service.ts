@@ -30,14 +30,14 @@ export class ImportService {
   createDisciplines(
     file: File,
     disciplineIndices: number[],
-    specialtyId: number,
+    specialtyOfferingId: number,
     academicYear: string
   ): Observable<CreatedDisciplineInfo[]> {
     const fd = new FormData();
     fd.append('file', file);
     const params = new URLSearchParams({
       disciplineIndices: JSON.stringify(disciplineIndices),
-      specialtyId: String(specialtyId),
+      specialtyOfferingId: String(specialtyOfferingId),
       academicYear: academicYear,
     });
     return this.http.post<CreatedDisciplineInfo[]>(

@@ -35,7 +35,7 @@ public class DisciplineServiceImpl implements DisciplineService {
         disciplineRepository.save(discipline);
 
         SpecialtyDiscipline sd = new SpecialtyDiscipline();
-        sd.setSpecialtyId(dto.getSpecialtyId());
+        sd.setSpecialtyOfferingId(dto.getSpecialtyOfferingId());
         sd.setDiscipline(discipline);
         specialtyDisciplineRepository.save(sd);
 

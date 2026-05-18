@@ -5,7 +5,7 @@ import { BookService } from '../../../core/services/book.service';
 import { BookNumber, BookNumberStatus } from '../../../models/book.model';
 import { SpecialtyService } from '../../../core/services/specialty.service';
 import { UserService } from '../../../core/services/user.service';
-import { OrgInfo, Specialty } from '../../../models/org.model';
+import { OrgInfo, Specialty, SpecialtyOffering } from '../../../models/org.model';
 import { User } from '../../../models/user.model';
 import { ToastService } from '../../../core/services/toast.service';
 import { BookModalComponent } from '../book-modal/book-modal.component';
@@ -21,6 +21,7 @@ import { AuthStateService } from '../../../core/services/auth-state.service';
 export class BookDetailComponent implements OnInit {
   book = signal<BookNumber | null>(null);
   student = signal<User | null>(null);
+  offering = signal<SpecialtyOffering | null>(null);
   specialty = signal<Specialty | null>(null);
   orgInfo = signal<OrgInfo | null>(null);
 
@@ -50,9 +51,12 @@ export class BookDetailComponent implements OnInit {
     this.bookService.findById(id).subscribe((book) => {
       this.book.set(book);
       this.userService.findById(book.studentId).subscribe((u) => this.student.set(u));
-      if (book.specialtyId) {
-        this.specialtyService.getById(book.specialtyId).subscribe((s) => this.specialty.set(s));
-        this.specialtyService.getOrgInfo(book.specialtyId).subscribe((o) => this.orgInfo.set(o));
+      if (book.specialtyOfferingId) {
+        this.specialtyService.getOfferingById(book.specialtyOfferingId).subscribe((off) => {
+          this.offering.set(off);
+          this.specialtyService.getById(off.specialtyId).subscribe((s) => this.specialty.set(s));
+          this.specialtyService.getOrgInfo(off.specialtyId).subscribe((o) => this.orgInfo.set(o));
+        });
       }
     });
   }

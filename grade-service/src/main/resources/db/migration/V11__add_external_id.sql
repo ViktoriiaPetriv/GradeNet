@@ -1,0 +1,1 @@
+ALTER TABLE specialty_discipline ADD COLUMN external_id BIGINT;

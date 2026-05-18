@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 import static org.bachelor.gradeservice.repository.SpecialtyDisciplineSpecification.byDisciplineId;
-import static org.bachelor.gradeservice.repository.SpecialtyDisciplineSpecification.bySpecialtyId;
+import static org.bachelor.gradeservice.repository.SpecialtyDisciplineSpecification.bySpecialtyOfferingId;
 
 @RequiredArgsConstructor
 @Service
@@ -30,20 +30,16 @@ public class SpecialtyDisciplineServiceImpl implements SpecialtyDisciplineServic
 
     @Transactional
     @Override
-    public SpecialtyDisciplineDTO addSpecialty(Long disciplineId, Long specialtyId) {
-        if (!orgServiceClient.specialtyExists(specialtyId)) {
-            throw new NotFoundException("Спеціальність не знайдено");
-        }
-
+    public SpecialtyDisciplineDTO addSpecialty(Long disciplineId, Long specialtyOfferingId) {
         Discipline discipline = disciplineRepository.findById(disciplineId)
                 .orElseThrow(() -> new NotFoundException("Дисципліну не знайдено"));
 
-        if (specialtyDisciplineRepository.existsBySpecialtyIdAndDisciplineId(specialtyId, disciplineId)) {
+        if (specialtyDisciplineRepository.existsBySpecialtyOfferingIdAndDisciplineId(specialtyOfferingId, disciplineId)) {
             throw new RestException("Дисципліна вже прив'язана до цієї спеціальності");
         }
 
         SpecialtyDiscipline sd = new SpecialtyDiscipline();
-        sd.setSpecialtyId(specialtyId);
+        sd.setSpecialtyOfferingId(specialtyOfferingId);
         sd.setDiscipline(discipline);
         specialtyDisciplineRepository.save(sd);
 
@@ -52,9 +48,9 @@ public class SpecialtyDisciplineServiceImpl implements SpecialtyDisciplineServic
 
     @Transactional
     @Override
-    public void removeSpecialty(Long disciplineId, Long specialtyId) {
+    public void removeSpecialty(Long disciplineId, Long specialtyOfferingId) {
         SpecialtyDiscipline sd = specialtyDisciplineRepository
-                .findBySpecialtyIdAndDisciplineId(specialtyId, disciplineId)
+                .findBySpecialtyOfferingIdAndDisciplineId(specialtyOfferingId, disciplineId)
                 .orElseThrow(() -> new NotFoundException("Прив'язку не знайдено"));
 
         specialtyDisciplineRepository.delete(sd);
@@ -68,10 +64,15 @@ public class SpecialtyDisciplineServiceImpl implements SpecialtyDisciplineServic
     }
 
     @Override
+    public boolean existsBySpecialtyOfferingId(Long specialtyOfferingId) {
+        return specialtyDisciplineRepository.existsBySpecialtyOfferingId(specialtyOfferingId);
+    }
+
+    @Override
     public List<SpecialtyDisciplineDTO> getAll(SpecialtyDisciplineFilter filter) {
         Specification<SpecialtyDiscipline> spec = Specification.allOf(
                 byDisciplineId(filter.getDisciplineId()),
-                bySpecialtyId(filter.getSpecialtyId())
+                bySpecialtyOfferingId(filter.getSpecialtyOfferingId())
         );
 
         return specialtyDisciplineRepository.findAll(spec)

@@ -2,6 +2,7 @@ package org.bachelor.userservice.service;
 
 import org.bachelor.userservice.model.dto.AdminSetupRequestDTO;
 import org.bachelor.userservice.model.dto.ChangePasswordRequestDTO;
+import org.bachelor.userservice.model.dto.ImportStudentRequestDTO;
 import org.bachelor.userservice.model.dto.UserDTO;
 import org.bachelor.userservice.model.dto.UserProfileDTO;
 import org.bachelor.userservice.model.dto.UserRequestDTO;
@@ -16,8 +17,9 @@ public interface UserService {
     void delete(Long id);
     UserProfileDTO getProfile(Long id);
     void changePassword(Long id, ChangePasswordRequestDTO request);
-    List<UserDTO> findStudentsBySpecialty(Long specialtyId, Integer enrollYear);
+    List<UserDTO> findStudentsBySpecialty(Long specialtyOfferingId, Integer enrollYear);
     List<UserDTO> searchStudents(String query);
     boolean isSetupRequired();
     UserDTO createInitialAdmin(AdminSetupRequestDTO request);
+    UserDTO createStudentFromImport(ImportStudentRequestDTO request);
 }

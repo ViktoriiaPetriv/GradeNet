@@ -9,20 +9,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
 public class ExcelValidationService {
 
     private static final int GROUP_ROW = 6;
-    private static final int YEAR_ROW = 7;
-    private static final int DISCIPLINE_ROW = 10;
-    private static final int STUDENT_START_ROW = 12;
     private static final int DISCIPLINE_START_COL = 2;
 
     private static final Pattern GROUP_PATTERN = Pattern.compile("групи\\s+\\S+");
     private static final Pattern SPECIALTY_PATTERN = Pattern.compile("спеціальності\\s+.+");
-    private static final Pattern YEAR_PATTERN = Pattern.compile("(\\d{4})\\s*[\\-/–—]\\s*(\\d{4})");
 
     public void validate(MultipartFile file) throws IOException {
         if (file == null || file.isEmpty()) {
@@ -54,12 +51,23 @@ public class ExcelValidationService {
 
             Sheet sheet = workbook.getSheetAt(0);
             validateGroupRow(sheet);
-            validateYearRow(sheet);
-            validateDisciplineRow(sheet);
-            validateStudentRows(sheet);
+            int disciplineRow = detectDisciplineRow(sheet);
+            validateYearRow(sheet, disciplineRow);
+            validateDisciplineRow(sheet, disciplineRow);
+            validateStudentRows(sheet, disciplineRow + 2);
         } finally {
             workbook.close();
         }
+    }
+
+    private int detectDisciplineRow(Sheet sheet) {
+        for (int rowIdx = 8; rowIdx <= 12; rowIdx++) {
+            Row row = sheet.getRow(rowIdx);
+            if (row == null) continue;
+            String cell = getCellString(row.getCell(DISCIPLINE_START_COL));
+            if (cell != null && cell.contains("(дисц.)")) return rowIdx;
+        }
+        return 10; // default for zvit/zvit2
     }
 
     private void validateGroupRow(Sheet sheet) {
@@ -82,47 +90,47 @@ public class ExcelValidationService {
         }
     }
 
-    private void validateYearRow(Sheet sheet) {
-        boolean yearFound = false;
-        for (int rowIdx = 0; rowIdx <= Math.min(DISCIPLINE_ROW, sheet.getLastRowNum()); rowIdx++) {
+    private static final Pattern SINGLE_YEAR_PATTERN = Pattern.compile("(\\d{4})\\s*[\\-/–—]\\s*(\\d{4})");
+
+    private void validateYearRow(Sheet sheet, int disciplineRow) {
+        for (int rowIdx = 0; rowIdx <= Math.min(disciplineRow, sheet.getLastRowNum()); rowIdx++) {
             Row row = sheet.getRow(rowIdx);
             if (row == null) continue;
             for (int col = 0; col < row.getLastCellNum(); col++) {
                 String text = getCellString(row.getCell(col));
-                if (text != null && YEAR_PATTERN.matcher(text).find()) {
-                    yearFound = true;
-                    break;
+                if (text == null) continue;
+                Matcher m = SINGLE_YEAR_PATTERN.matcher(text);
+                if (m.find()) {
+                    int y1 = Integer.parseInt(m.group(1));
+                    int y2 = Integer.parseInt(m.group(2));
+                    if (y2 - y1 <= 2) return; // valid single academic year found
                 }
             }
-            if (yearFound) break;
         }
-
-        if (!yearFound) {
-            throw new IllegalArgumentException("Academic year not found in expected format (expected: YYYY-YYYY, YYYY/YYYY, or similar)");
-        }
+        // Year not required for zvit3 format (graduation period spans >1 year)
     }
 
-    private void validateDisciplineRow(Sheet sheet) {
-        Row row = sheet.getRow(DISCIPLINE_ROW);
+    private void validateDisciplineRow(Sheet sheet, int disciplineRow) {
+        Row row = sheet.getRow(disciplineRow);
         if (row == null) {
-            throw new IllegalArgumentException("Row " + (DISCIPLINE_ROW + 1) + " not found (expected to contain discipline names)");
+            throw new IllegalArgumentException("Row " + (disciplineRow + 1) + " not found (expected to contain discipline names)");
         }
 
         String firstDiscipline = getCellString(row.getCell(DISCIPLINE_START_COL));
         if (firstDiscipline == null || firstDiscipline.isBlank()) {
-            throw new IllegalArgumentException("Row " + (DISCIPLINE_ROW + 1) + " does not contain discipline names starting from column " + (DISCIPLINE_START_COL + 1));
+            throw new IllegalArgumentException("Row " + (disciplineRow + 1) + " does not contain discipline names starting from column " + (DISCIPLINE_START_COL + 1));
         }
     }
 
-    private void validateStudentRows(Sheet sheet) {
-        Row firstStudentRow = sheet.getRow(STUDENT_START_ROW);
+    private void validateStudentRows(Sheet sheet, int studentStartRow) {
+        Row firstStudentRow = sheet.getRow(studentStartRow);
         if (firstStudentRow == null) {
-            throw new IllegalArgumentException("Row " + (STUDENT_START_ROW + 1) + " not found (expected to contain student data)");
+            throw new IllegalArgumentException("Row " + (studentStartRow + 1) + " not found (expected to contain student data)");
         }
 
         String studentName = getCellString(firstStudentRow.getCell(1));
         if (studentName == null || studentName.isBlank()) {
-            throw new IllegalArgumentException("Row " + (STUDENT_START_ROW + 1) + " does not contain student names (expected in column B)");
+            throw new IllegalArgumentException("Row " + (studentStartRow + 1) + " does not contain student names (expected in column B)");
         }
     }
 

@@ -1,11 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { Specialty, SpecialtyRequest, PageResponse, OrgInfo } from '../../models/org.model';
+import { Observable, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { Specialty, SpecialtyRequest, SpecialtyOffering, SpecialtyOfferingRequest, PageResponse, OrgInfo } from '../../models/org.model';
 
 @Injectable({ providedIn: 'root' })
 export class SpecialtyService {
   private readonly apiUrl = '/api/specialties';
+  private readonly offeringsUrl = '/api/specialty-offerings';
 
   constructor(private http: HttpClient) {}
 
@@ -55,5 +57,31 @@ export class SpecialtyService {
 
   getOrgInfo(specialtyId: number): Observable<OrgInfo> {
     return this.http.get<OrgInfo>(`${this.apiUrl}/${specialtyId}/org-info`);
+  }
+
+  getOfferings(specialtyId: number): Observable<SpecialtyOffering[]> {
+    return this.http.get<SpecialtyOffering[]>(this.offeringsUrl, {
+      params: new HttpParams().set('specialtyId', specialtyId),
+    });
+  }
+
+  getOfferingByExternalId(externalId: number): Observable<SpecialtyOffering | null> {
+    return this.http
+      .get<SpecialtyOffering>(`${this.offeringsUrl}/by-external-id`, {
+        params: new HttpParams().set('externalId', externalId),
+      })
+      .pipe(catchError(() => of(null)));
+  }
+
+  getOfferingById(id: number): Observable<SpecialtyOffering> {
+    return this.http.get<SpecialtyOffering>(`${this.offeringsUrl}/${id}`);
+  }
+
+  createOffering(request: SpecialtyOfferingRequest): Observable<SpecialtyOffering> {
+    return this.http.post<SpecialtyOffering>(this.offeringsUrl, request);
+  }
+
+  deleteOffering(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.offeringsUrl}/${id}`);
   }
 }

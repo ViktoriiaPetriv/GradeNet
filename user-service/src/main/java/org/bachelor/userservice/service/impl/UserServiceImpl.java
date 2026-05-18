@@ -7,6 +7,7 @@ import org.bachelor.userservice.mapper.UserMapper;
 import org.bachelor.userservice.model.dto.AdminSetupRequestDTO;
 import org.bachelor.userservice.model.dto.AuthenticatedUser;
 import org.bachelor.userservice.model.dto.ChangePasswordRequestDTO;
+import org.bachelor.userservice.model.dto.ImportStudentRequestDTO;
 import org.bachelor.userservice.model.dto.StudentInfoDTO;
 import org.bachelor.userservice.model.dto.UserDTO;
 import org.bachelor.userservice.model.dto.UserProfileDTO;
@@ -28,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @Service
@@ -191,7 +193,7 @@ public class UserServiceImpl implements UserService {
                         book.getStatus().name(),
                         book.getRegStartDate(),
                         book.getRegEndDate(),
-                        book.getSpecialtyId(),
+                        book.getSpecialtyOfferingId(),
                         orgId
                 ))
                 .toList();
@@ -229,6 +231,24 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
+    public UserDTO createStudentFromImport(ImportStudentRequestDTO request) {
+        if (userRepository.findByEmail(request.email()).isPresent()) {
+            return userMapper.toDto(userRepository.findByEmail(request.email()).get());
+        }
+        User user = new User();
+        user.setFirstName(request.firstName());
+        user.setLastName(request.lastName());
+        user.setPatronymic(request.patronymic());
+        user.setEmail(request.email());
+        user.setRole(Role.STUDENT);
+        // Generate a temporary password the student can change later
+        String tempPassword = "Tmp@" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+        user.setPassword(passwordEncoder.encode(tempPassword));
+        return userMapper.toDto(userRepository.save(user));
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public boolean isSetupRequired() {
         return !userRepository.existsByRole(Role.ADMIN);
@@ -257,7 +277,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<UserDTO> findStudentsBySpecialty(Long specialtyId, Integer enrollYear) {
+    public List<UserDTO> findStudentsBySpecialty(Long specialtyOfferingId, Integer enrollYear) {
         AuthenticatedUser currentUser = SecurityUtils.getCurrentUser();
 
         if (!currentUser.isAdmin() && !currentUser.isManager()) {
@@ -265,8 +285,8 @@ public class UserServiceImpl implements UserService {
         }
 
         List<BookNumber> books = enrollYear != null
-                ? bookNumberRepository.findAllBySpecialtyIdAndEnrollYear(specialtyId, enrollYear)
-                : bookNumberRepository.findAllBySpecialtyId(specialtyId);
+                ? bookNumberRepository.findAllBySpecialtyOfferingIdAndEnrollYear(specialtyOfferingId, enrollYear)
+                : bookNumberRepository.findAllBySpecialtyOfferingId(specialtyOfferingId);
 
         List<Long> studentIds = books.stream()
                 .map(b -> b.getStudent().getId())

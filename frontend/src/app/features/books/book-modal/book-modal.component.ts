@@ -9,7 +9,7 @@ import {
   SimpleChanges,
 } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { switchMap, of } from 'rxjs';
+import { switchMap, of, Observable } from 'rxjs';
 import { BookService } from '../../../core/services/book.service';
 import { BookNumber } from '../../../models/book.model';
 import { ToastService } from '../../../core/services/toast.service';
@@ -17,7 +17,7 @@ import { UserService } from '../../../core/services/user.service';
 import { SpecialtyService } from '../../../core/services/specialty.service';
 import { OrgService } from '../../../core/services/org.service';
 import { User } from '../../../models/user.model';
-import { Specialty, Degree, EduType, OrganizationShort, OrgType } from '../../../models/org.model';
+import { Specialty, SpecialtyOffering, Degree, EduType, OrganizationShort, OrgType } from '../../../models/org.model';
 import { forkJoin } from 'rxjs';
 
 @Component({
@@ -39,6 +39,7 @@ export class BookModalComponent implements OnInit, OnChanges {
   students = signal<User[]>([]);
   faculties = signal<OrganizationShort[]>([]);
   specialties = signal<Specialty[]>([]);
+  offerings = signal<SpecialtyOffering[]>([]);
 
   readonly degrees = Object.values(Degree);
   readonly eduTypes = Object.values(EduType);
@@ -75,12 +76,19 @@ export class BookModalComponent implements OnInit, OnChanges {
       const b = this.book();
 
       if (this.isEdit && b) {
-        const base$ = forkJoin({
-          orgInfo: b.specialtyId ? this.specialtyService.getOrgInfo(b.specialtyId) : of(null),
-          specialty: b.specialtyId ? this.specialtyService.getById(b.specialtyId) : of(null),
-        });
+        const offering$: Observable<SpecialtyOffering | null> = b.specialtyOfferingId
+          ? this.specialtyService.getOfferingById(b.specialtyOfferingId)
+          : of(null);
 
-        base$.subscribe(({ orgInfo, specialty }) => {
+        offering$.pipe(
+          switchMap((offering) => {
+            if (!offering) return of({ orgInfo: null, specialty: null, offering: null });
+            return forkJoin({
+              orgInfo: this.specialtyService.getOrgInfo(offering.specialtyId),
+              specialty: this.specialtyService.getById(offering.specialtyId),
+            }).pipe(switchMap(({ orgInfo, specialty }) => of({ orgInfo, specialty, offering })));
+          }),
+        ).subscribe(({ orgInfo, specialty, offering }) => {
           this.form.patchValue(
             {
               number: b.number,
@@ -88,26 +96,29 @@ export class BookModalComponent implements OnInit, OnChanges {
               facultyId: orgInfo?.facultyId ?? null,
               degree: specialty?.degree ?? null,
               eduType: specialty?.eduType ?? null,
-              specialtyId: b.specialtyId ?? null,
+              specialtyId: offering?.specialtyId ?? null,
+              specialtyOfferingId: b.specialtyOfferingId ?? null,
             },
             { emitEvent: false },
           );
 
           if (orgInfo && specialty) {
             this.specialtyService
-              .getByOrg(orgInfo.facultyId, {
-                degree: specialty.degree,
-                eduType: specialty.eduType,
-                page: 0,
-              })
+              .getByOrg(orgInfo.facultyId, { degree: specialty.degree, eduType: specialty.eduType, page: 0 })
               .subscribe((page) => {
                 this.specialties.set(page.content);
+                if (offering) {
+                  this.specialtyService.getOfferings(offering.specialtyId).subscribe((offs) => {
+                    this.offerings.set(offs);
+                  });
+                }
               });
           }
         });
       } else {
         this.form.reset();
         this.specialties.set([]);
+        this.offerings.set([]);
       }
     }
   }
@@ -120,12 +131,14 @@ export class BookModalComponent implements OnInit, OnChanges {
       degree: [null, Validators.required],
       eduType: [null, Validators.required],
       specialtyId: [null, Validators.required],
+      specialtyOfferingId: [null, Validators.required],
     });
   }
 
   onFacultyChange() {
-    this.form.patchValue({ degree: null, eduType: null, specialtyId: null });
+    this.form.patchValue({ degree: null, eduType: null, specialtyId: null, specialtyOfferingId: null });
     this.specialties.set([]);
+    this.offerings.set([]);
   }
 
   onSpecialtyFilterChange() {
@@ -133,7 +146,8 @@ export class BookModalComponent implements OnInit, OnChanges {
     const degree: string | null = this.form.get('degree')!.value;
     const eduType: string | null = this.form.get('eduType')!.value;
 
-    this.form.patchValue({ specialtyId: null });
+    this.form.patchValue({ specialtyId: null, specialtyOfferingId: null });
+    this.offerings.set([]);
 
     if (facultyId && degree && eduType) {
       this.specialtyService.getByOrg(facultyId, { degree, eduType, page: 0 }).subscribe((page) => {
@@ -144,13 +158,23 @@ export class BookModalComponent implements OnInit, OnChanges {
     }
   }
 
+  onSpecialtyChange() {
+    const specialtyId: number | null = this.form.get('specialtyId')!.value;
+    this.form.patchValue({ specialtyOfferingId: null });
+    if (specialtyId) {
+      this.specialtyService.getOfferings(specialtyId).subscribe((offs) => this.offerings.set(offs));
+    } else {
+      this.offerings.set([]);
+    }
+  }
+
   submit() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
 
-    const { facultyId, degree, eduType, ...request } = this.form.value;
+    const { facultyId, degree, eduType, specialtyId, ...request } = this.form.value;
 
     const action$ = this.isEdit
       ? this.bookService.update(this.book()!.id, request)

@@ -1,0 +1,546 @@
+<app-page-header
+  title="Електронний журнал"
+  subtitle="Перегляд та імпорт даних із зовнішнього електронного журналу" />
+
+<div class="journal-container">
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb">
+    <span class="crumb" [class.crumb-active]="step() === 'search'" (click)="step() === 'search' || goToSearch()">
+      <i class="pi pi-search"></i> Пошук
+    </span>
+    @if (['students','disciplines','grade-view','preview','result'].includes(step())) {
+    <i class="pi pi-angle-right crumb-sep"></i>
+    <span class="crumb" [class.crumb-active]="step() === 'students'"
+      (click)="step() !== 'result' && goToStudents()">
+      <i class="pi pi-users"></i> Студенти
+    </span>
+    }
+    @if (['disciplines','grade-view','preview','result'].includes(step())) {
+    <i class="pi pi-angle-right crumb-sep"></i>
+    <span class="crumb" [class.crumb-active]="step() === 'disciplines'"
+      (click)="step() !== 'result' && goToDisciplinesStep()">
+      <i class="pi pi-list"></i> Дисципліни
+    </span>
+    }
+    @if (step() === 'grade-view') {
+    <i class="pi pi-angle-right crumb-sep"></i>
+    <span class="crumb crumb-active">{{ gradeViewDiscipline()?.discipline?.name }}</span>
+    }
+    @if (['preview','result'].includes(step())) {
+    <i class="pi pi-angle-right crumb-sep"></i>
+    <span class="crumb" [class.crumb-active]="step() === 'preview'"
+      (click)="step() !== 'result' && goToPreview()">
+      <i class="pi pi-table"></i> Розподіл
+    </span>
+    }
+    @if (step() === 'result') {
+    <i class="pi pi-angle-right crumb-sep"></i>
+    <span class="crumb crumb-active"><i class="pi pi-check-circle"></i> Результат</span>
+    }
+  </nav>
+
+  <!-- ===== STEP 1: SEARCH ===== -->
+  @if (step() === 'search') {
+  <div class="card">
+    <h3 class="card-title"><i class="pi pi-filter"></i> Фільтри пошуку</h3>
+    <p class="card-desc">Введіть параметри для пошуку спеціальності в електронному журналі.</p>
+
+    <div class="filter-grid">
+      <div class="field">
+        <label class="field-label">Код спеціальності</label>
+        <input type="text" class="field-input" placeholder="Напр. 121"
+          [ngModel]="filterCode()" (ngModelChange)="filterCode.set($event)"
+          (keyup.enter)="searchSpecialties()" />
+      </div>
+      <div class="field">
+        <label class="field-label">Ступінь</label>
+        <select class="field-select" [ngModel]="filterDegree()" (ngModelChange)="filterDegree.set($event)">
+          <option value="">Всі</option>
+          @for (o of degreeOptions; track o.value) {
+          <option [value]="o.value">{{ o.label }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Рік випуску</label>
+        <select class="field-select" [ngModel]="filterYear()"
+          (ngModelChange)="filterYear.set($event ? +$event : null)">
+          <option [value]="null">Всі</option>
+          @for (y of yearOptions(); track y) {
+          <option [value]="y">{{ y }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Форма навчання</label>
+        <select class="field-select" [ngModel]="filterStudyForm()" (ngModelChange)="filterStudyForm.set($event)">
+          <option value="">Всі</option>
+          @for (o of studyFormOptions; track o.value) {
+          <option [value]="o.value">{{ o.label }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <div class="actions actions-left">
+      <button class="btn-primary" [disabled]="loadingSpecialties()" (click)="searchSpecialties()">
+        @if (loadingSpecialties()) { <i class="pi pi-spin pi-spinner"></i> Пошук... }
+        @else { <i class="pi pi-search"></i> Знайти }
+      </button>
+    </div>
+  </div>
+
+  @if (searched() && !loadingSpecialties()) {
+    @if (foundIds().length === 0) {
+    <div class="empty-hint warn-hint">
+      <i class="pi pi-exclamation-triangle"></i>
+      Спеціальності за заданими фільтрами не знайдено.
+    </div>
+    } @else {
+    <div class="card">
+      <h3 class="card-title">
+        <i class="pi pi-check-circle" style="color:#0d9e6e"></i>
+        Знайдені спеціальності
+        <span class="badge">{{ foundIds().length }}</span>
+      </h3>
+      <div class="id-list">
+        @for (id of foundIds(); track id) {
+        <div class="id-card" (click)="loadStudents(id)">
+          <div class="id-badge">ID</div>
+          <div class="id-value">{{ id }}</div>
+          <button class="btn-primary btn-sm">
+            <i class="pi pi-arrow-right"></i> Вибрати
+          </button>
+        </div>
+        }
+      </div>
+    </div>
+    }
+  } @else if (!searched() && !loadingSpecialties()) {
+  <div class="empty-hint">
+    <i class="pi pi-info-circle"></i>
+    Введіть параметри та натисніть «Знайти».
+  </div>
+  }
+  }
+
+  <!-- ===== STEP 2: STUDENTS ===== -->
+  @if (step() === 'students') {
+  <div class="card">
+    <h3 class="card-title">
+      <i class="pi pi-users"></i> Студенти спеціальності
+      <span class="badge">{{ selectedStudentRows().length }} / {{ studentRows().length }}</span>
+    </h3>
+    <p class="card-desc">Оберіть студентів, для яких буде виконано імпорт оцінок. Зелений значок означає, що студент вже є в системі.</p>
+
+    @if (loadingStudents()) {
+    <div class="loading-center"><i class="pi pi-spin pi-spinner"></i> Завантаження...</div>
+    } @else if (studentRows().length === 0) {
+    <div class="empty-hint"><i class="pi pi-info-circle"></i> Студентів не знайдено.</div>
+    } @else {
+    <div class="select-all-row">
+      <label class="check-label">
+        <input type="checkbox" [checked]="allStudentsSelected()"
+          (change)="toggleAllStudents($any($event.target).checked)" />
+        <span>Вибрати всіх</span>
+      </label>
+    </div>
+    <ul class="item-list">
+      @for (row of studentRows(); track row.student.externalId) {
+      <li class="item item-selectable" [class.item-inactive]="!row.selected" (click)="toggleStudent(row)">
+        <input type="checkbox" [checked]="row.selected" (click)="$event.stopPropagation()"
+          (change)="toggleStudent(row)" />
+        <div class="item-body">
+          <span class="item-name">{{ fullName(row.student) }}</span>
+          <span class="item-sub">{{ row.student.email }}</span>
+        </div>
+        <span class="status-tag" [class.tag-exists]="row.student.existsInSystem"
+          [class.tag-new]="!row.student.existsInSystem">
+          {{ row.student.existsInSystem ? 'В системі' : 'Новий' }}
+        </span>
+      </li>
+      }
+    </ul>
+    }
+  </div>
+
+  <div class="actions">
+    <button class="btn-secondary" (click)="goToSearch()">
+      <i class="pi pi-arrow-left"></i> Назад
+    </button>
+    <button class="btn-primary" [disabled]="selectedStudentRows().length === 0 || loadingStudents()"
+      (click)="goToDisciplines()">
+      <i class="pi pi-arrow-right"></i> Дисципліни
+    </button>
+  </div>
+  }
+
+  <!-- ===== STEP 3: DISCIPLINES ===== -->
+  @if (step() === 'disciplines') {
+  <div class="two-cols">
+
+    <!-- Left: disciplines list -->
+    <div class="card" style="min-height:400px">
+      <h3 class="card-title">
+        <i class="pi pi-list"></i> Дисципліни
+        <span class="badge">{{ selectedDisciplineRows().length }} / {{ disciplineRows().length }}</span>
+      </h3>
+      <p class="card-desc">Оберіть дисципліни для імпорту та призначте викладача.</p>
+
+      @if (loadingDisciplines()) {
+      <div class="loading-center"><i class="pi pi-spin pi-spinner"></i> Завантаження...</div>
+      } @else {
+      <div class="disc-import-list">
+        @for (row of disciplineRows(); track row.discipline.externalId) {
+        <div class="disc-import-row" [class.disc-import-row-inactive]="!row.selected">
+          <div class="disc-row-main">
+            <label class="disc-check-label" (click)="$event.stopPropagation()">
+              <input type="checkbox" [checked]="row.selected" (change)="toggleDiscipline(row)" />
+              <div class="disc-name-block">
+                <span class="disc-name">{{ row.discipline.name }}</span>
+                <div class="disc-meta">
+                  @if (row.discipline.semester) {
+                  <span class="disc-chip">{{ row.discipline.semester }} сем.</span>
+                  }
+                  @if (row.discipline.totalHours) {
+                  <span class="disc-chip">{{ row.discipline.totalHours }} год.</span>
+                  }
+                </div>
+              </div>
+            </label>
+            <span class="status-tag status-tag-sm"
+              [class.tag-exists]="row.discipline.existsInSystem"
+              [class.tag-new]="!row.discipline.existsInSystem">
+              {{ row.discipline.existsInSystem ? 'Є' : 'Нова' }}
+            </span>
+            <button class="btn-icon" title="Переглянути оцінки" (click)="viewDisciplineGrades(row)">
+              <i class="pi pi-eye"></i>
+            </button>
+          </div>
+          @if (row.selected) {
+          <div class="disc-attempts">
+            @for (attempt of row.discipline.attempts; track attempt) {
+            <div class="disc-attempt-row">
+              <span class="attempt-label">
+                @if (attempt === 1) { Спроба 1 } @else { Повтор (×{{ attempt }}) }
+              </span>
+              <select class="field-select prof-select"
+                [ngModel]="row.professorByAttempt[attempt]"
+                (ngModelChange)="setProfessor(row, attempt, +$event || null)">
+                <option [value]="null">— Викладач —</option>
+                @for (p of professors(); track p.id) {
+                <option [value]="p.id">{{ professorFullName(p) }}</option>
+                }
+              </select>
+            </div>
+            }
+          </div>
+          }
+        </div>
+        }
+      </div>
+      }
+    </div>
+
+    <!-- Right: import config -->
+    <div class="card">
+      <h3 class="card-title"><i class="pi pi-cog"></i> Налаштування імпорту</h3>
+
+      <div class="field" style="margin-bottom:1rem">
+        <label class="field-label">Пошук спеціальності</label>
+        <input type="text" class="field-input" placeholder="Назва спеціальності..."
+          [ngModel]="importSpecialtySearch()" (ngModelChange)="importSpecialtySearch.set($event)" />
+      </div>
+
+      <div class="field" style="margin-bottom:1rem">
+        <label class="field-label">Спеціальність (системна)</label>
+        <select class="field-select"
+          [ngModel]="selectedInternalSpecialtyId()"
+          (ngModelChange)="onInternalSpecialtyChange(+$event || null)">
+          <option [value]="null">— Оберіть спеціальність —</option>
+          @for (s of filteredInternalSpecialties(); track s.id) {
+          <option [value]="s.id">{{ s.code }} — {{ s.nameUA }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="field" style="margin-bottom:1rem">
+        <label class="field-label">
+          Рік випуску (пропозиція)
+          @if (selectedOfferingId() && offerings().length > 0) {
+          <span class="auto-badge"><i class="pi pi-check-circle"></i> Авто</span>
+          }
+        </label>
+        <select class="field-select" [disabled]="offerings().length === 0"
+          [ngModel]="selectedOfferingId()"
+          (ngModelChange)="selectedOfferingId.set(+$event || null)">
+          <option [value]="null">— Оберіть пропозицію —</option>
+          @for (o of offerings(); track o.id) {
+          <option [value]="o.id">{{ o.graduationYear }} рік випуску</option>
+          }
+        </select>
+      </div>
+
+      <div class="field" style="margin-bottom:1.5rem">
+        <label class="field-label">Навчальний рік</label>
+        <input type="text" class="field-input" placeholder="2024/2025"
+          [ngModel]="importAcademicYear()" (ngModelChange)="importAcademicYear.set($event)" />
+      </div>
+
+      <div class="import-summary">
+        <div class="summary-row">
+          <span>Студентів вибрано:</span>
+          <strong>{{ selectedStudentRows().length }}</strong>
+        </div>
+        <div class="summary-row">
+          <span>Дисциплін вибрано:</span>
+          <strong>{{ selectedDisciplineRows().length }}</strong>
+        </div>
+      </div>
+
+      @if (!canImport() && selectedDisciplineRows().length > 0) {
+      <div class="warn-hint" style="margin-top:1rem;font-size:0.82rem">
+        <i class="pi pi-exclamation-triangle"></i>
+        Призначте викладача для всіх вибраних дисциплін та оберіть пропозицію.
+      </div>
+      }
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn-secondary" (click)="goToStudents()">
+      <i class="pi pi-arrow-left"></i> Назад
+    </button>
+    <button class="btn-import" [disabled]="!canImport() || loadingPreview()" (click)="goToPreview()">
+      @if (loadingPreview()) { <i class="pi pi-spin pi-spinner"></i> Завантаження... }
+      @else { <i class="pi pi-eye"></i> Переглянути }
+    </button>
+  </div>
+  }
+
+  <!-- ===== STEP 4: GRADE VIEW ===== -->
+  @if (step() === 'grade-view') {
+  @if (loadingDiscipline()) {
+  <div class="loading-center"><i class="pi pi-spin pi-spinner"></i> Завантаження...</div>
+  } @else if (disciplineDetail(); as detail) {
+  <div class="card detail-info">
+    <h3 class="card-title"><i class="pi pi-book"></i> {{ detail.name }}</h3>
+    <div class="detail-grid" style="margin-top:0.75rem">
+      <div class="detail-item">
+        <span class="detail-label">Навчальний рік</span>
+        <span class="detail-value">{{ detail.academicYear }}</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">Семестр</span>
+        <span class="detail-value">{{ detail.semester }}</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">Кредити ЄКТС</span>
+        <span class="detail-value">{{ detail.ectsCredits }}</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">Годин</span>
+        <span class="detail-value">{{ detail.totalHours }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 class="card-title">
+      <i class="pi pi-table"></i> Оцінки
+      <span class="badge">{{ gradeRows().length }} студентів</span>
+    </h3>
+    <p class="card-desc">Показано лише вибрані студенти зі списку.</p>
+    <div class="table-scroll">
+      <table class="grade-table">
+        <thead>
+          <tr>
+            <th>Студент</th>
+            <th>Email</th>
+            <th class="col-center">Оцінка</th>
+            <th class="col-center">Спроба</th>
+            <th class="col-center">Дата</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of gradeRows(); track row.grade.studentExternalId) {
+          <tr>
+            <td class="cell-name">
+              {{ row.student ? fullName(row.student) : 'ID ' + row.grade.studentExternalId }}
+            </td>
+            <td class="cell-sub">{{ row.student?.email ?? '—' }}</td>
+            <td class="col-center">
+              @if (row.grade.universityGrade) {
+              <span class="grade-chip" [ngClass]="gradeClass(row.grade.universityGrade)">
+                {{ row.grade.universityGrade }}
+              </span>
+              } @else { <span class="grade-empty">—</span> }
+            </td>
+            <td class="col-center cell-sub">{{ row.grade.attempt ?? '—' }}</td>
+            <td class="col-center cell-sub">{{ row.grade.assessmentDate ?? '—' }}</td>
+          </tr>
+          }
+          @empty {
+          <tr><td colspan="5" class="col-center" style="color:#94a3b8;padding:2rem">
+            Немає оцінок для вибраних студентів.
+          </td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+  }
+
+  <div class="actions">
+    <button class="btn-secondary" (click)="goToDisciplinesStep()">
+      <i class="pi pi-arrow-left"></i> Назад до дисциплін
+    </button>
+  </div>
+  }
+
+  <!-- ===== STEP 5: PREVIEW ===== -->
+  @if (step() === 'preview') {
+  <div class="card">
+    <h3 class="card-title"><i class="pi pi-table"></i> Розподіл оцінок</h3>
+    <p class="card-desc">Перевірте дані перед імпортом. Рядки — студенти, стовпці — вибрані дисципліни.</p>
+
+    @if (loadingPreview()) {
+    <div class="loading-center"><i class="pi pi-spin pi-spinner"></i> Завантаження оцінок...</div>
+    } @else if (previewTable(); as table) {
+    <div class="preview-table-wrapper">
+      <table class="preview-table">
+        <thead>
+          <tr class="header-row">
+            <th class="col-student-th">Студент</th>
+            @for (col of table.columns; track col.discipline.externalId + '-' + col.attempt) {
+            <th class="col-grade-th">
+              <span class="col-disc-name">{{ col.discipline.name }}</span>
+              <span class="col-disc-meta">
+                @if (col.discipline.semester) { {{ col.discipline.semester }} сем. }
+                @if (col.detail?.academicYear) { · {{ col.detail!.academicYear }} }
+                @if (col.attempt > 1) {
+                  <span class="col-disc-retake">Повтор ×{{ col.attempt }}</span>
+                }
+              </span>
+            </th>
+            }
+          </tr>
+          <tr class="subheader-row">
+            <th>Викладач</th>
+            @for (col of table.columns; track col.discipline.externalId + '-' + col.attempt) {
+            <th>{{ col.professor ? professorFullName(col.professor) : '—' }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of table.rows; track row.student.externalId) {
+          <tr>
+            <td class="cell-name cell-student">{{ fullName(row.student) }}</td>
+            @for (cell of row.cells; track $index) {
+            <td class="col-center">
+              @if (cell !== null) {
+              <span class="grade-chip" [ngClass]="gradeClass(cell.universityGrade)">
+                {{ cell.universityGrade ?? '—' }}
+              </span>
+              } @else {
+              <span class="grade-empty">—</span>
+              }
+            </td>
+            }
+          </tr>
+          }
+          @empty {
+          <tr>
+            <td [attr.colspan]="table.columns.length + 1" class="col-center" style="color:#94a3b8;padding:2rem">
+              Немає даних для відображення.
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+  </div>
+
+  <div class="actions">
+    <button class="btn-secondary" (click)="goToDisciplinesStep()">
+      <i class="pi pi-arrow-left"></i> Назад
+    </button>
+    <button class="btn-import" [disabled]="loadingImport() || loadingPreview()" (click)="executeImport()">
+      @if (loadingImport()) { <i class="pi pi-spin pi-spinner"></i> Імпорт... }
+      @else { <i class="pi pi-upload"></i> Розпочати імпорт }
+    </button>
+  </div>
+  }
+
+  <!-- ===== STEP 6: RESULT ===== -->
+  @if (step() === 'result') {
+  @if (importResult(); as res) {
+  <div class="result-stats">
+    <div class="stat-card" [class.stat-green]="res.disciplinesProcessed > 0">
+      <div class="stat-num">{{ res.disciplinesProcessed }}</div>
+      <div class="stat-label">Дисциплін оброблено</div>
+    </div>
+    <div class="stat-card" [class.stat-green]="res.studentsMatched > 0">
+      <div class="stat-num">{{ res.studentsMatched }}</div>
+      <div class="stat-label">Студентів знайдено</div>
+    </div>
+    <div class="stat-card" [class.stat-red]="res.studentsUnmatched > 0">
+      <div class="stat-num">{{ res.studentsUnmatched }}</div>
+      <div class="stat-label">Студентів не знайдено</div>
+    </div>
+    <div class="stat-card" [class.stat-green]="res.gradesCreated > 0">
+      <div class="stat-num">{{ res.gradesCreated }}</div>
+      <div class="stat-label">Оцінок збережено</div>
+    </div>
+  </div>
+
+  @if (res.unmatchedStudents.length > 0) {
+  <div class="card">
+    <h3 class="card-title warn-title"><i class="pi pi-exclamation-triangle"></i> Не знайдені студенти</h3>
+    <ul class="result-list">
+      @for (name of res.unmatchedStudents; track name) { <li>{{ name }}</li> }
+    </ul>
+  </div>
+  }
+
+  @if (res.errors.length > 0) {
+  <div class="card">
+    <h3 class="card-title error-title">
+      <i class="pi pi-times-circle"></i> Помилки
+      <span class="badge">{{ res.errors.length }}</span>
+    </h3>
+    <div class="table-scroll">
+      <table class="grade-table">
+        <thead><tr><th>Студент</th><th>Дисципліна</th><th>Причина</th></tr></thead>
+        <tbody>
+          @for (e of res.errors; track $index) {
+          <tr>
+            <td class="cell-sub">{{ e.studentName ?? '—' }}</td>
+            <td class="cell-sub">{{ e.disciplineName ?? '—' }}</td>
+            <td class="cell-error">{{ e.reason }}</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+  }
+
+  @if (res.errors.length === 0 && res.unmatchedStudents.length === 0) {
+  <div class="success-banner">
+    <i class="pi pi-check-circle"></i>
+    Імпорт завершено успішно без помилок!
+  </div>
+  }
+
+  <div class="actions">
+    <button class="btn-primary" (click)="reset()">
+      <i class="pi pi-refresh"></i> Новий імпорт
+    </button>
+  </div>
+  }
+  }
+
+</div>

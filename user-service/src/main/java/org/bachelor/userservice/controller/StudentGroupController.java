@@ -36,7 +36,7 @@ public class StudentGroupController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'PROFESSOR')")
     public PageResponse<StudentGroupDTO> findAll(
             @RequestParam(required = false) String name,
-            @RequestParam(required = false) Long specialtyId,
+            @RequestParam(required = false) Long specialtyOfferingId,
             @RequestParam(defaultValue = "0") int pageNumber,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "name") String sortBy,
@@ -48,7 +48,7 @@ public class StudentGroupController {
                         ? Sort.by(sortBy).descending()
                         : Sort.by(sortBy).ascending()
         );
-        return studentGroupService.findAll(name, specialtyId, pageable);
+        return studentGroupService.findAll(name, specialtyOfferingId, pageable);
     }
 
     @GetMapping("/{id}")

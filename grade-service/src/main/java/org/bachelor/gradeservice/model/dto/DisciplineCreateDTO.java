@@ -13,7 +13,7 @@ public class DisciplineCreateDTO {
     private String name;
 
     @NotNull
-    private Long specialtyId;
+    private Long specialtyOfferingId;
 
     @NotNull
     @Valid

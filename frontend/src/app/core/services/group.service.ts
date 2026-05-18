@@ -10,12 +10,12 @@ export class GroupService {
 
   constructor(private http: HttpClient) {}
 
-  getAll(params?: { name?: string; page?: number; size?: number; specialtyId?: number }): Observable<PageResponse<StudentGroup>> {
+  getAll(params?: { name?: string; page?: number; size?: number; specialtyOfferingId?: number }): Observable<PageResponse<StudentGroup>> {
     let p = new HttpParams();
     if (params?.name) p = p.set('name', params.name);
     if (params?.page !== undefined) p = p.set('pageNumber', params.page);
     if (params?.size !== undefined) p = p.set('size', params.size);
-    if (params?.specialtyId != null) p = p.set('specialtyId', params.specialtyId);
+    if (params?.specialtyOfferingId != null) p = p.set('specialtyOfferingId', params.specialtyOfferingId);
     return this.http.get<PageResponse<StudentGroup>>(this.apiUrl, { params: p });
   }
 

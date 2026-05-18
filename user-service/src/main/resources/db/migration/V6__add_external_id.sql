@@ -1,0 +1,1 @@
+ALTER TABLE book_number ADD COLUMN external_id BIGINT;

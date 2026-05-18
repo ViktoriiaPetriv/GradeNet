@@ -7,6 +7,6 @@ public class BookNumberDTO {
     private Long id;
     private String number;
     private Long studentId;
-    private Long specialtyId;
+    private Long specialtyOfferingId;
     private String status;
 }

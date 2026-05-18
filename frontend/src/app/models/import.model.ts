@@ -21,6 +21,8 @@ export interface DisciplineCheckResult {
   academicYear: string;
   specialtyName: string | null;
   specialtyId: number | null;
+  graduationYear: number | null;
+  specialtyOfferingId: number | null;
   disciplines: DisciplineCheckItem[];
 }
 
@@ -36,6 +38,7 @@ export interface StudentCheckItem {
   bookNumberId: number | null;
   studentId: number | null;
   existsInSystem: boolean;
+  graduationYearMismatch: boolean;
   grades: GradeData[];
 }
 

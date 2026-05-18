@@ -8,7 +8,7 @@ import { SpecialtyService } from '../../../core/services/specialty.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UserModalComponent } from '../user-modal/user-modal.component';
 import { UserService } from '../../../core/services/user.service';
-import { forkJoin, of, catchError } from 'rxjs';
+import { forkJoin, of, catchError, switchMap } from 'rxjs';
 import { ChangePasswordModalComponent } from '../change-password/change-password.component';
 import { AuthStateService } from '../../../core/services/auth-state.service';
 import { AvatarComponent } from '../../../shared/avatar/avatar.component';
@@ -75,15 +75,18 @@ export class ProfileComponent implements OnInit {
 
     forkJoin(
       p.books.map((book) =>
-        book.specialtyId
-          ? forkJoin({
-            specialty: this.specialtyService
-              .getById(book.specialtyId)
-              .pipe(catchError(() => of(null))),
-            orgInfo: this.specialtyService
-              .getOrgInfo(book.specialtyId)
-              .pipe(catchError(() => of(null))),
-          })
+        book.specialtyOfferingId
+          ? this.specialtyService.getOfferingById(book.specialtyOfferingId).pipe(
+              catchError(() => of(null)),
+              switchMap((offering) =>
+                offering
+                  ? forkJoin({
+                      specialty: this.specialtyService.getById(offering.specialtyId).pipe(catchError(() => of(null))),
+                      orgInfo: this.specialtyService.getOrgInfo(offering.specialtyId).pipe(catchError(() => of(null))),
+                    })
+                  : of({ specialty: null, orgInfo: null }),
+              ),
+            )
           : of({ specialty: null, orgInfo: null }),
       ),
     ).subscribe({

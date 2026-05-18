@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -47,32 +48,47 @@ public class GradeBookEntryServiceImpl implements GradeBookEntryService {
 
         Long disciplineId = sd.getDiscipline().getId();
 
+        Integer semester = dto.getSemester();
+
         return dto.getBookNumberIds().stream()
                 .map(bookNumberId -> {
-                    if (entryRepository.existsByBookNumberIdAndSpecialtyDiscipline_Discipline_IdAndResult(
-                            bookNumberId, disciplineId, EntryResult.PASSED)) {
+                    boolean alreadyPassed = semester != null
+                            ? entryRepository.existsByBookNumberIdAndSpecialtyDiscipline_Discipline_IdAndResultAndSemester(
+                                    bookNumberId, disciplineId, EntryResult.PASSED, semester)
+                            : entryRepository.existsByBookNumberIdAndSpecialtyDiscipline_Discipline_IdAndResult(
+                                    bookNumberId, disciplineId, EntryResult.PASSED);
+                    if (alreadyPassed) {
                         throw new RestException("Студент " + bookNumberId +
                                 " вже успішно пройшов цю дисципліну");
                     }
 
-                    if (entryRepository.existsByBookNumberIdAndSpecialtyDiscipline_Discipline_IdAndStatus(
-                            bookNumberId, disciplineId, EntryStatus.IN_PROGRESS)) {
+                    boolean alreadyInProgress = semester != null
+                            ? entryRepository.existsByBookNumberIdAndSpecialtyDiscipline_Discipline_IdAndStatusAndSemester(
+                                    bookNumberId, disciplineId, EntryStatus.IN_PROGRESS, semester)
+                            : entryRepository.existsByBookNumberIdAndSpecialtyDiscipline_Discipline_IdAndStatus(
+                                    bookNumberId, disciplineId, EntryStatus.IN_PROGRESS);
+                    if (alreadyInProgress) {
                         throw new RestException("Студент " + bookNumberId +
                                 " вже проходить цю дисципліну на іншій спеціальності");
                     }
 
-                    entryRepository.findTopByBookNumberIdAndSpecialtyDisciplineIdOrderByAttemptDesc(
-                                    bookNumberId, dto.getSpecialtyDisciplineId())
-                            .ifPresent(existing -> {
-                                if (existing.getStatus() == EntryStatus.IN_PROGRESS) {
-                                    throw new RestException("Студент " + bookNumberId + " вже має відкритий запис");
-                                }
-                                if (existing.getResult() == EntryResult.PASSED) {
-                                    throw new RestException("Студент " + bookNumberId + " вже зарахований");
-                                }
-                            });
+                    Optional<GradeBookEntry> existingOpt = semester != null
+                            ? entryRepository.findTopByBookNumberIdAndSpecialtyDisciplineIdAndSemesterOrderByAttemptDesc(
+                                    bookNumberId, dto.getSpecialtyDisciplineId(), semester)
+                            : entryRepository.findTopByBookNumberIdAndSpecialtyDisciplineIdOrderByAttemptDesc(
+                                    bookNumberId, dto.getSpecialtyDisciplineId());
+                    existingOpt.ifPresent(existing -> {
+                        if (existing.getStatus() == EntryStatus.IN_PROGRESS) {
+                            throw new RestException("Студент " + bookNumberId + " вже має відкритий запис");
+                        }
+                        if (existing.getResult() == EntryResult.PASSED) {
+                            throw new RestException("Студент " + bookNumberId + " вже зарахований");
+                        }
+                    });
 
-                    int nextAttempt = nextAttempt(bookNumberId, dto.getSpecialtyDisciplineId());
+                    int nextAttempt = semester != null
+                            ? nextAttemptForSemester(bookNumberId, dto.getSpecialtyDisciplineId(), semester)
+                            : nextAttempt(bookNumberId, dto.getSpecialtyDisciplineId());
                     if (dto.getMinAttempt() != null && dto.getMinAttempt() > nextAttempt) {
                         nextAttempt = dto.getMinAttempt();
                     }
@@ -85,7 +101,7 @@ public class GradeBookEntryServiceImpl implements GradeBookEntryService {
                     entry.setAttempt(nextAttempt);
                     entry.setStatus(EntryStatus.IN_PROGRESS);
                     entry.setReportDate(dto.getReportDate());
-                    entry.setSemester(dto.getSemester());
+                    entry.setSemester(semester);
                     return entryMapper.toDTO(entryRepository.save(entry));
                 })
                 .toList();
@@ -250,6 +266,14 @@ public class GradeBookEntryServiceImpl implements GradeBookEntryService {
         return entryRepository
                 .findTopByBookNumberIdAndSpecialtyDisciplineIdOrderByAttemptDesc(
                         bookNumberId, specialtyDisciplineId)
+                .map(e -> e.getAttempt() + 1)
+                .orElse(1);
+    }
+
+    private int nextAttemptForSemester(Long bookNumberId, Long specialtyDisciplineId, Integer semester) {
+        return entryRepository
+                .findTopByBookNumberIdAndSpecialtyDisciplineIdAndSemesterOrderByAttemptDesc(
+                        bookNumberId, specialtyDisciplineId, semester)
                 .map(e -> e.getAttempt() + 1)
                 .orElse(1);
     }

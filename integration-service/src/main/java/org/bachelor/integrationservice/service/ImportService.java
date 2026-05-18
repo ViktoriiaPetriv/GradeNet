@@ -41,15 +41,26 @@ public class ImportService {
         String academicYear = (report.getAcademicYear() != null && !report.getAcademicYear().isBlank())
                 ? report.getAcademicYear() : defaultAcademicYear();
 
-        Long specialtyId = resolveSpecialtyIdByName(report.getSpecialtyName(), authHeader);
-        if (specialtyId == null) {
-            log.warn("Could not resolve specialty by name '{}', will try later from book number", report.getSpecialtyName());
+        org.bachelor.integrationservice.model.client.SpecialtyDTO specialty =
+                resolveSpecialtyByName(report.getSpecialtyName(), authHeader);
+        log.info("checkDisciplines: specialtyName='{}', specialty={}, firstSemester={}",
+                report.getSpecialtyName(), specialty != null ? specialty.getId() + "/" + specialty.getDegree() : "NOT FOUND",
+                getFirstSemester(report));
+        Long specialtyId = specialty != null ? specialty.getId() : null;
+        Integer graduationYear = specialty != null
+                ? ExcelParserService.calculateGraduationYear(academicYear, getFirstSemester(report), specialty.getDegree())
+                : null;
+        Long specialtyOfferingId = (specialtyId != null && graduationYear != null)
+                ? resolveOfferingIdBySpecialtyId(specialtyId, graduationYear, authHeader)
+                : null;
+        if (specialtyOfferingId == null) {
+            log.warn("Could not resolve specialty offering for '{}' graduation year {}", report.getSpecialtyName(), graduationYear);
         }
 
         List<DisciplineDTO> allDisciplines = getAllDisciplines(authHeader);
         Map<String, DisciplineDTO> disciplineByName = new HashMap<>();
         for (DisciplineDTO d : allDisciplines) {
-            disciplineByName.put(d.getName().trim(), d);
+            disciplineByName.put(normalizeDisciplineKey(d.getName()), d);
         }
 
         List<DisciplineCheckItemDTO> disciplineItems = new ArrayList<>();
@@ -57,12 +68,12 @@ public class ImportService {
             String name = parsed.getName();
             String effectiveName = stripRetakeSuffix(name);
 
-            DisciplineDTO existingDiscipline = disciplineByName.get(effectiveName);
+            DisciplineDTO existingDiscipline = disciplineByName.get(normalizeDisciplineKey(effectiveName));
             Long disciplineId = existingDiscipline != null ? existingDiscipline.getId() : null;
             Long specialtyDisciplineId = null;
 
-            if (existingDiscipline != null && specialtyId != null) {
-                SpecialtyDisciplineDTO sd = findSpecialtyDiscipline(specialtyId, disciplineId, authHeader);
+            if (existingDiscipline != null && specialtyOfferingId != null) {
+                SpecialtyDisciplineDTO sd = findSpecialtyDiscipline(specialtyOfferingId, disciplineId, authHeader);
                 specialtyDisciplineId = sd != null ? sd.getId() : null;
             }
 
@@ -83,15 +94,26 @@ public class ImportService {
                 .academicYear(academicYear)
                 .specialtyName(report.getSpecialtyName())
                 .specialtyId(specialtyId)
+                .graduationYear(graduationYear)
+                .specialtyOfferingId(specialtyOfferingId)
                 .disciplines(disciplineItems)
                 .build();
     }
 
     public List<CreatedDisciplineInfoDTO> createDisciplines(
-            InputStream fileInputStream, List<Integer> indices, Long specialtyId,
+            InputStream fileInputStream, List<Integer> indices, Long specialtyOfferingId,
             String academicYear, String authHeader) throws IOException {
         ParsedReport report = excelParserService.parse(fileInputStream);
         String year = (academicYear != null && !academicYear.isBlank()) ? academicYear : defaultAcademicYear();
+
+        // Pre-fetch existing disciplines to avoid duplicate-name errors across semesters
+        Map<String, Long> disciplineIdByName = new HashMap<>();
+        for (DisciplineDTO d : getAllDisciplines(authHeader)) {
+            disciplineIdByName.put(normalizeDisciplineKey(d.getName()), d.getId());
+        }
+
+        // Track SD links created in this batch: disciplineId → specialtyDisciplineId
+        Map<Long, Long> sdByDisciplineId = new HashMap<>();
 
         List<CreatedDisciplineInfoDTO> result = new ArrayList<>();
         for (int idx : indices) {
@@ -101,14 +123,36 @@ public class ImportService {
             String effectiveName = stripRetakeSuffix(parsed.getName());
 
             try {
-                DisciplineCreateResponseDTO created = createDisciplineWithSD(
-                        effectiveName, specialtyId, year, parsed, authHeader);
+                Long disciplineId = disciplineIdByName.get(normalizeDisciplineKey(effectiveName));
+                long sdId;
+
+                if (disciplineId != null) {
+                    // Discipline already exists — reuse it, just ensure SD link exists
+                    Long existingSdId = sdByDisciplineId.get(disciplineId);
+                    if (existingSdId == null) {
+                        SpecialtyDisciplineDTO existing = findSpecialtyDiscipline(specialtyOfferingId, disciplineId, authHeader);
+                        existingSdId = existing != null ? existing.getId()
+                                : createSpecialtyDisciplineWithHours(specialtyOfferingId, disciplineId, year, parsed, authHeader).getId();
+                        sdByDisciplineId.put(disciplineId, existingSdId);
+                    }
+                    sdId = existingSdId;
+                    log.info("Reused discipline at index {}: {} (id={})", idx, effectiveName, disciplineId);
+                } else {
+                    // New discipline — create it along with SD link and hours
+                    DisciplineCreateResponseDTO created = createDisciplineWithSD(
+                            effectiveName, specialtyOfferingId, year, parsed, authHeader);
+                    disciplineId = created.getDisciplineId();
+                    sdId = created.getSpecialtyDisciplineId();
+                    disciplineIdByName.put(normalizeDisciplineKey(effectiveName), disciplineId);
+                    sdByDisciplineId.put(disciplineId, sdId);
+                    log.info("Created discipline at index {}: {} (id={})", idx, effectiveName, disciplineId);
+                }
+
                 result.add(CreatedDisciplineInfoDTO.builder()
                         .index(idx)
-                        .disciplineId(created.getDisciplineId())
-                        .specialtyDisciplineId(created.getSpecialtyDisciplineId())
+                        .disciplineId(disciplineId)
+                        .specialtyDisciplineId(sdId)
                         .build());
-                log.info("Created discipline at index {}: {} (id={})", idx, effectiveName, created.getDisciplineId());
             } catch (Exception e) {
                 log.error("Failed to create discipline at index {}: {}", idx, e.getMessage());
                 throw new RuntimeException("Failed to create discipline: " + effectiveName, e);
@@ -136,9 +180,31 @@ public class ImportService {
             members = findAndAddGroupMembers(group.getId(), report.getStudents(), authHeader, errors);
         }
 
+        // Resolve report graduation year for per-student validation
+        String academicYear = (report.getAcademicYear() != null && !report.getAcademicYear().isBlank())
+                ? report.getAcademicYear() : defaultAcademicYear();
+        org.bachelor.integrationservice.model.client.SpecialtyDTO specialty =
+                resolveSpecialtyByName(report.getSpecialtyName(), authHeader);
+        Integer reportGradYear = ExcelParserService.calculateGraduationYear(
+                academicYear, getFirstSemester(report), specialty != null ? specialty.getDegree() : null);
+        Long reportOfferingId = specialty != null
+                ? resolveOfferingIdBySpecialtyId(specialty.getId(), reportGradYear, authHeader)
+                : null;
+
         List<StudentCheckItemDTO> studentItems = new ArrayList<>();
         for (ParsedStudentRow studentRow : report.getStudents()) {
             GroupMemberDTO member = matchStudent(studentRow.getFullName(), members);
+
+            boolean graduationYearMismatch = false;
+            if (member != null && reportOfferingId != null) {
+                Long studentOfferingId = resolveSpecialtyOfferingId(member.getBookNumberId(), authHeader);
+                graduationYearMismatch = !reportOfferingId.equals(studentOfferingId);
+                if (graduationYearMismatch) {
+                    Integer studentGradYear = getOfferingGraduationYear(studentOfferingId, authHeader);
+                    log.warn("Graduation year mismatch for {}: student={}, report={}",
+                            studentRow.getFullName(), studentGradYear, reportGradYear);
+                }
+            }
 
             List<GradeDataDTO> gradeData = studentRow.getGrades().stream()
                     .map(g -> GradeDataDTO.builder()
@@ -154,6 +220,7 @@ public class ImportService {
                     .bookNumberId(member != null ? member.getBookNumberId() : null)
                     .studentId(member != null ? member.getStudentId() : null)
                     .existsInSystem(member != null)
+                    .graduationYearMismatch(graduationYearMismatch)
                     .grades(gradeData)
                     .build());
         }
@@ -199,20 +266,32 @@ public class ImportService {
             }
         }
 
-        Long specialtyId = resolveSpecialtyIdByName(report.getSpecialtyName(), authHeader);
-        if (specialtyId == null) {
-            log.warn("Could not resolve specialty by name '{}', falling back to book number lookup",
-                    report.getSpecialtyName());
-            specialtyId = resolveSpecialtyId(members.get(0).getBookNumberId(), authHeader);
+        // Resolve target specialty offering from report metadata (correct graduation year by degree)
+        Long targetOfferingId = resolveSpecialtyOfferingIdByName(
+                report.getSpecialtyName(), academicYear, getFirstSemester(report), authHeader);
+
+        // Pre-fetch per-member offering IDs for graduation year validation
+        Map<Long, Long> memberOfferingMap = new HashMap<>();
+        for (GroupMemberDTO m : members) {
+            Long sid = resolveSpecialtyOfferingId(m.getBookNumberId(), authHeader);
+            if (sid != null) memberOfferingMap.put(m.getBookNumberId(), sid);
         }
-        if (specialtyId == null) {
-            errors.add(new ImportErrorDTO(null, null, "Не вдалося визначити спеціальність з файлу або залікових книжок"));
+
+        // Prefer report-derived offering; fall back to first member's offering
+        Long specialtyOfferingId = targetOfferingId != null
+                ? targetOfferingId
+                : memberOfferingMap.get(members.get(0).getBookNumberId());
+        if (specialtyOfferingId == null) {
+            errors.add(new ImportErrorDTO(null, null, "Не вдалося визначити спеціальність із залікової книжки студента"));
             return buildResult(report, 0, 0, 0, unmatchedStudents, errors);
         }
 
+        // Pre-fetch graduation year of the target offering for helpful error messages
+        final Integer reportGradYear = getOfferingGraduationYear(specialtyOfferingId, authHeader);
+
         List<SpecialtyDisciplineDTO> specialtyDisciplines =
-                resolveSpecialtyDisciplines(report.getDisciplines(), specialtyId,
-                        academicYear, authHeader, errors);
+                resolveSpecialtyDisciplines(report.getDisciplines(), specialtyOfferingId,
+                        academicYear, professorByDiscipline.keySet(), authHeader, errors);
 
         int studentsMatched = 0;
         int gradesCreated = 0;
@@ -227,6 +306,19 @@ public class ImportService {
 
             if (selectedStudentBookNumberIds != null && !selectedStudentBookNumberIds.contains(member.getBookNumberId())) {
                 log.debug("Student {} skipped (not in selectedStudentBookNumberIds)", studentRow.getFullName());
+                continue;
+            }
+
+            Long studentOfferingId = memberOfferingMap.get(member.getBookNumberId());
+            if (!specialtyOfferingId.equals(studentOfferingId)) {
+                Integer studentGradYear = getOfferingGraduationYear(studentOfferingId, authHeader);
+                String msg = studentGradYear != null && reportGradYear != null
+                        ? String.format("Студент належить до випуску %d, але звіт для випуску %d",
+                                studentGradYear, reportGradYear)
+                        : "Студент належить до іншого випуску спеціальності";
+                log.warn("Graduation year mismatch for {}: student={}, report={}",
+                        studentRow.getFullName(), studentGradYear, reportGradYear);
+                errors.add(new ImportErrorDTO(studentRow.getFullName(), null, msg));
                 continue;
             }
 
@@ -308,24 +400,25 @@ public class ImportService {
         }
     }
 
-    private Long resolveSpecialtyId(Long bookNumberId, String authHeader) {
+    private Long resolveSpecialtyOfferingId(Long bookNumberId, String authHeader) {
         try {
             BookNumberDTO book = restClient.get()
                     .uri(userServiceUrl + "/api/books/{id}", bookNumberId)
                     .header("Authorization", authHeader)
                     .retrieve()
                     .body(BookNumberDTO.class);
-            return book != null ? book.getSpecialtyId() : null;
+            return book != null ? book.getSpecialtyOfferingId() : null;
         } catch (Exception e) {
             log.error("Failed to get book number {}: {}", bookNumberId, e.getMessage());
             return null;
         }
     }
 
-    private Long resolveSpecialtyIdByName(String specialtyName, String authHeader) {
+    private org.bachelor.integrationservice.model.client.SpecialtyDTO resolveSpecialtyByName(
+            String specialtyName, String authHeader) {
         if (specialtyName == null || specialtyName.isBlank()) return null;
         try {
-            String normalized = specialtyName.trim().toLowerCase();
+            String normalized = normalizeForMatch(specialtyName);
             PageResponse<org.bachelor.integrationservice.model.client.SpecialtyDTO> page = restClient.get()
                     .uri(orgServiceUrl + "/api/specialties?size=200")
                     .header("Authorization", authHeader)
@@ -336,7 +429,6 @@ public class ImportService {
                     .filter(s -> matches(s.getNameUA(), normalized)
                             || matches(s.getStudyProgramUA(), normalized)
                             || matches(s.getEduProgramUA(), normalized))
-                    .map(org.bachelor.integrationservice.model.client.SpecialtyDTO::getId)
                     .findFirst().orElse(null);
         } catch (Exception e) {
             log.error("Failed to resolve specialty by name '{}': {}", specialtyName, e.getMessage());
@@ -344,22 +436,102 @@ public class ImportService {
         }
     }
 
+    private Long resolveSpecialtyOfferingIdByName(String specialtyName, String academicYear,
+                                                   Integer semester, String authHeader) {
+        if (specialtyName == null || specialtyName.isBlank()) return null;
+        try {
+            org.bachelor.integrationservice.model.client.SpecialtyDTO specialty =
+                    resolveSpecialtyByName(specialtyName, authHeader);
+            if (specialty == null) return null;
+            Integer graduationYear = ExcelParserService.calculateGraduationYear(
+                    academicYear, semester, specialty.getDegree());
+            return resolveOfferingIdBySpecialtyId(specialty.getId(), graduationYear, authHeader);
+        } catch (Exception e) {
+            log.error("Failed to resolve specialty offering by name '{}': {}", specialtyName, e.getMessage());
+            return null;
+        }
+    }
+
+    private Integer getOfferingGraduationYear(Long offeringId, String authHeader) {
+        if (offeringId == null) return null;
+        try {
+            record OfferingInfo(Long id, Integer graduationYear) {}
+            OfferingInfo info = restClient.get()
+                    .uri(orgServiceUrl + "/api/specialty-offerings/{id}", offeringId)
+                    .header("Authorization", authHeader)
+                    .retrieve()
+                    .body(OfferingInfo.class);
+            return info != null ? info.graduationYear() : null;
+        } catch (Exception e) {
+            log.warn("Failed to fetch graduation year for offering {}: {}", offeringId, e.getMessage());
+            return null;
+        }
+    }
+
+    private Long resolveOfferingIdBySpecialtyId(Long specialtyId, Integer graduationYear, String authHeader) {
+        try {
+            record OfferingInfo(Long id, Integer graduationYear) {}
+            List<OfferingInfo> offerings = restClient.get()
+                    .uri(orgServiceUrl + "/api/specialty-offerings?specialtyId={id}", specialtyId)
+                    .header("Authorization", authHeader)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<>() {});
+            if (offerings == null || offerings.isEmpty()) return null;
+            if (graduationYear != null) {
+                Optional<OfferingInfo> exact = offerings.stream()
+                        .filter(o -> graduationYear.equals(o.graduationYear()))
+                        .findFirst();
+                if (exact.isPresent()) {
+                    log.info("Matched specialty offering by graduation year {}: id={}", graduationYear, exact.get().id());
+                    return exact.get().id();
+                }
+                log.warn("No offering found for graduation year {}", graduationYear);
+            }
+            return null;
+        } catch (Exception e) {
+            log.error("Failed to fetch offerings for specialty {}: {}", specialtyId, e.getMessage());
+            return null;
+        }
+    }
+
+    private static String normalizeForMatch(String s) {
+        if (s == null) return null;
+        return s.trim().toLowerCase()
+                .replace('’', '\'')   // RIGHT SINGLE QUOTATION MARK '
+                .replace('ʼ', '\'')   // MODIFIER LETTER APOSTROPHE ʼ
+                .replace('‘', '\'');  // LEFT SINGLE QUOTATION MARK '
+    }
+
     private static boolean matches(String field, String normalizedQuery) {
-        return field != null && field.trim().toLowerCase().equals(normalizedQuery);
+        return field != null && normalizeForMatch(field).equals(normalizedQuery);
+    }
+
+    /** Normalizes discipline name for deduplication — lower-cases and replaces Cyrillic/Latin lookalikes. */
+    private static String normalizeDisciplineKey(String name) {
+        if (name == null) return null;
+        return name.trim().toLowerCase()
+                .replace('а', 'a').replace('е', 'e').replace('о', 'o')
+                .replace('с', 'c').replace('р', 'p').replace('х', 'x')
+                .replace('і', 'i');
     }
 
     private List<SpecialtyDisciplineDTO> resolveSpecialtyDisciplines(
-            List<ParsedDiscipline> disciplines, Long specialtyId, String academicYear,
-            String authHeader, List<ImportErrorDTO> errors) {
+            List<ParsedDiscipline> disciplines, Long specialtyOfferingId, String academicYear,
+            Set<Integer> selectedIndices, String authHeader, List<ImportErrorDTO> errors) {
 
         List<DisciplineDTO> allDisciplines = getAllDisciplines(authHeader);
         Map<String, DisciplineDTO> disciplineByName = new HashMap<>();
         for (DisciplineDTO d : allDisciplines) {
-            disciplineByName.put(d.getName().trim(), d);
+            disciplineByName.put(normalizeDisciplineKey(d.getName()), d);
         }
 
         List<SpecialtyDisciplineDTO> result = new ArrayList<>();
-        for (ParsedDiscipline parsed : disciplines) {
+        for (int idx = 0; idx < disciplines.size(); idx++) {
+            if (!selectedIndices.contains(idx)) {
+                result.add(null);
+                continue;
+            }
+            ParsedDiscipline parsed = disciplines.get(idx);
             try {
                 String name = parsed.getName();
                 // "Математика, повторний курс" → use base discipline, grade is a 2nd attempt
@@ -368,23 +540,23 @@ public class ImportService {
                     log.info("Retake discipline detected: '{}' → using base '{}'", name, effectiveName);
                 }
 
-                DisciplineDTO discipline = disciplineByName.get(effectiveName);
+                DisciplineDTO discipline = disciplineByName.get(normalizeDisciplineKey(effectiveName));
                 SpecialtyDisciplineDTO sd;
                 if (discipline == null) {
                     // Create discipline + specialty-discipline + hours in one call
                     DisciplineCreateResponseDTO created = createDisciplineWithSD(
-                            effectiveName, specialtyId, academicYear, parsed, authHeader);
+                            effectiveName, specialtyOfferingId, academicYear, parsed, authHeader);
                     DisciplineDTO newDisc = new DisciplineDTO();
                     newDisc.setId(created.getDisciplineId());
                     newDisc.setName(created.getName());
-                    disciplineByName.put(effectiveName, newDisc);
+                    disciplineByName.put(normalizeDisciplineKey(effectiveName), newDisc);
                     sd = new SpecialtyDisciplineDTO();
                     sd.setId(created.getSpecialtyDisciplineId());
                 } else {
-                    sd = findSpecialtyDiscipline(specialtyId, discipline.getId(), authHeader);
+                    sd = findSpecialtyDiscipline(specialtyOfferingId, discipline.getId(), authHeader);
                     if (sd == null) {
                         sd = createSpecialtyDisciplineWithHours(
-                                specialtyId, discipline.getId(), academicYear, parsed, authHeader);
+                                specialtyOfferingId, discipline.getId(), academicYear, parsed, authHeader);
                     }
                 }
                 result.add(sd);
@@ -417,14 +589,14 @@ public class ImportService {
     }
 
     private DisciplineCreateResponseDTO createDisciplineWithSD(
-            String name, Long specialtyId, String academicYear,
+            String name, Long specialtyOfferingId, String academicYear,
             ParsedDiscipline parsed, String authHeader) {
         String year = (academicYear != null && !academicYear.isBlank()) ? academicYear : defaultAcademicYear();
         Map<String, Object> hours = buildHoursBody(year, parsed);
 
         Map<String, Object> body = new HashMap<>();
         body.put("name", name);
-        body.put("specialtyId", specialtyId);
+        body.put("specialtyOfferingId", specialtyOfferingId);
         body.put("hours", hours);
 
         return restClient.post()
@@ -437,10 +609,10 @@ public class ImportService {
     }
 
     private SpecialtyDisciplineDTO createSpecialtyDisciplineWithHours(
-            Long specialtyId, Long disciplineId, String academicYear,
+            Long specialtyOfferingId, Long disciplineId, String academicYear,
             ParsedDiscipline parsed, String authHeader) {
         // Create the specialty-discipline link, then add hours for this academic year
-        SpecialtyDisciplineDTO sd = createSpecialtyDiscipline(specialtyId, disciplineId, authHeader);
+        SpecialtyDisciplineDTO sd = createSpecialtyDiscipline(specialtyOfferingId, disciplineId, authHeader);
         try {
             String year = (academicYear != null && !academicYear.isBlank()) ? academicYear : defaultAcademicYear();
             Map<String, Object> hours = buildHoursBody(year, parsed);
@@ -466,11 +638,11 @@ public class ImportService {
         return hours;
     }
 
-    private SpecialtyDisciplineDTO findSpecialtyDiscipline(Long specialtyId, Long disciplineId, String authHeader) {
+    private SpecialtyDisciplineDTO findSpecialtyDiscipline(Long specialtyOfferingId, Long disciplineId, String authHeader) {
         try {
             List<SpecialtyDisciplineDTO> list = restClient.get()
-                    .uri(gradeServiceUrl + "/api/specialty-disciplines?specialtyId={s}&disciplineId={d}",
-                            specialtyId, disciplineId)
+                    .uri(gradeServiceUrl + "/api/specialty-disciplines?specialtyOfferingId={s}&disciplineId={d}",
+                            specialtyOfferingId, disciplineId)
                     .header("Authorization", authHeader)
                     .retrieve()
                     .body(new ParameterizedTypeReference<>() {});
@@ -480,10 +652,10 @@ public class ImportService {
         }
     }
 
-    private SpecialtyDisciplineDTO createSpecialtyDiscipline(Long specialtyId, Long disciplineId, String authHeader) {
+    private SpecialtyDisciplineDTO createSpecialtyDiscipline(Long specialtyOfferingId, Long disciplineId, String authHeader) {
         return restClient.post()
-                .uri(gradeServiceUrl + "/api/specialty-disciplines/{specialtyId}?disciplineId={disciplineId}",
-                        specialtyId, disciplineId)
+                .uri(gradeServiceUrl + "/api/specialty-disciplines/{specialtyOfferingId}?disciplineId={disciplineId}",
+                        specialtyOfferingId, disciplineId)
                 .header("Authorization", authHeader)
                 .retrieve()
                 .body(SpecialtyDisciplineDTO.class);
@@ -499,7 +671,17 @@ public class ImportService {
                 .body(new ParameterizedTypeReference<>() {});
         List<GradeBookEntryDTO> existing = (page != null && page.getContent() != null) ? page.getContent() : List.of();
 
-        if (!existing.isEmpty()) return existing.get(0);
+        if (!existing.isEmpty()) {
+            if (semester != null) {
+                GradeBookEntryDTO match = existing.stream()
+                        .filter(e -> semester.equals(e.getSemester()))
+                        .findFirst().orElse(null);
+                if (match != null) return match;
+                // No entry for this semester yet — fall through to create one
+            } else {
+                return existing.get(0);
+            }
+        }
 
         Map<String, Object> body = new HashMap<>();
         body.put("specialtyDisciplineId", sdId);
@@ -642,9 +824,10 @@ public class ImportService {
             String firstInitial = parts.length > 1 ? parts[1].replace(".", "").toLowerCase() : null;
 
             UserDTO matched = allStudents.stream()
-                    .filter(u -> u.getLastName() != null && u.getLastName().toLowerCase().equals(lastName))
+                    .filter(u -> u.getLastName() != null &&
+                            normalizeName(u.getLastName()).toLowerCase().equals(lastName))
                     .filter(u -> firstInitial == null || u.getFirstName() == null ||
-                            u.getFirstName().substring(0, 1).toLowerCase().equals(firstInitial))
+                            normalizeName(u.getFirstName()).substring(0, 1).toLowerCase().equals(firstInitial))
                     .findFirst().orElse(null);
 
             if (matched == null) {
@@ -725,7 +908,12 @@ public class ImportService {
     }
 
     private static String normalizeName(String s) {
-        return s.replaceAll("[\\p{Z}\\s]+", " ").trim();
+        return s.replaceAll("[\\p{Z}\\s]+", " ")
+                .replace('`',  '\'')  // GRAVE ACCENT (backtick)
+                .replace('’', '\'')  // RIGHT SINGLE QUOTATION MARK '
+                .replace('ʼ', '\'')  // MODIFIER LETTER APOSTROPHE ʼ
+                .replace('‘', '\'')  // LEFT SINGLE QUOTATION MARK '
+                .trim();
     }
 
     private GroupMemberDTO matchStudent(String parsedName, List<GroupMemberDTO> members) {
@@ -743,6 +931,13 @@ public class ImportService {
             if (nameParts[1].substring(0, 1).toLowerCase().equals(firstInitial)) return m;
         }
         return null;
+    }
+
+    private static Integer getFirstSemester(ParsedReport report) {
+        return report.getDisciplines().stream()
+                .map(ParsedDiscipline::getSemester)
+                .filter(Objects::nonNull)
+                .findFirst().orElse(null);
     }
 
     private String defaultAcademicYear() {
