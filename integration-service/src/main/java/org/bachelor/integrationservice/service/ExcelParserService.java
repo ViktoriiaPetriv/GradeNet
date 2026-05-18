@@ -30,8 +30,12 @@ public class ExcelParserService {
             Row row = sheet.getRow(rowIdx);
             if (row == null) continue;
             String cell = getCellString(row.getCell(DISCIPLINE_START_COL));
-            if (cell != null && cell.contains("(дисц.)")) return rowIdx;
+            if (cell != null && cell.contains("(дисц.)")) {
+                log.info("Auto-detected discipline row: {}", rowIdx);
+                return rowIdx;
+            }
         }
+        log.info("Discipline row not detected, using default: 10");
         return 10; // default for zvit/zvit2
     }
 
@@ -47,10 +51,15 @@ public class ExcelParserService {
             String specialtyName = parseSpecialtyName(groupRow);
             String academicYear = parseAcademicYear(sheet, disciplineRow);
             List<ParsedDiscipline> disciplines = parseDisciplines(sheet.getRow(disciplineRow));
+            Integer firstSemester = disciplines.stream()
+                    .map(ParsedDiscipline::getSemester).filter(Objects::nonNull).findFirst().orElse(null);
+            log.info("Parsed {} disciplines, firstSemester={}, specialtyName='{}'",
+                    disciplines.size(), firstSemester, specialtyName);
             List<ParsedStudentRow> students = parseStudents(sheet, disciplines.size(), studentStartRow);
             Integer graduationYear = academicYear != null
                     ? calculateGraduationYear(academicYear, disciplines)
                     : parseGraduationYearFromStudyPeriod(sheet, disciplineRow);
+            log.info("academicYear={}, graduationYear={}", academicYear, graduationYear);
 
             return new ParsedReport(groupName, academicYear, graduationYear, specialtyName, disciplines, students);
         }

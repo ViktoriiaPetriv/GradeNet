@@ -15,4 +15,6 @@ public interface SpecialtyOfferingRepository extends JpaRepository<SpecialtyOffe
 
     @Query("SELECT o.id FROM SpecialtyOffering o WHERE o.specialty.id IN :specialtyIds")
     List<Long> findIdsBySpecialtyIdIn(@Param("specialtyIds") List<Long> specialtyIds);
+
+    java.util.Optional<SpecialtyOffering> findByExternalId(Long externalId);
 }

@@ -96,7 +96,7 @@ public class BookNumberServiceImpl implements BookNumberService {
     public BookNumberDTO create(BookNumberRequestDTO request) {
         accessControlService.requireAdminOrManagerOfSpecialty(request.specialtyOfferingId());
 
-        if (bookNumberRepository.existsByNumber(request.number())) {
+        if (request.number() != null && bookNumberRepository.existsByNumber(request.number())) {
             throw new ValidationException("Номер залікової книжки вже існує: %s".formatted(request.number()));
         }
 
@@ -133,7 +133,7 @@ public class BookNumberServiceImpl implements BookNumberService {
         accessControlService.requireAdminOrManagerOfSpecialty(bookNumber.getSpecialtyOfferingId());
 
         if (request.number() != null
-                && !bookNumber.getNumber().equals(request.number())
+                && !request.number().equals(bookNumber.getNumber())
                 && bookNumberRepository.existsByNumber(request.number())) {
             throw new ValidationException("Номер залікової книжки вже існує: %s".formatted(request.number()));
         }

@@ -33,6 +33,14 @@ public class SpecialtyOfferingController {
         return specialtyOfferingService.getAllBySpecialty(specialtyId);
     }
 
+    @GetMapping("/by-external-id")
+    public org.springframework.http.ResponseEntity<SpecialtyOfferingDTO> getByExternalId(
+            @RequestParam Long externalId) {
+        return specialtyOfferingService.getByExternalId(externalId)
+                .map(org.springframework.http.ResponseEntity::ok)
+                .orElse(org.springframework.http.ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/ids-by-specialties")
     public List<Long> getIdsBySpecialtyIds(@RequestParam List<Long> specialtyIds) {
         return specialtyOfferingService.getIdsBySpecialtyIds(specialtyIds);

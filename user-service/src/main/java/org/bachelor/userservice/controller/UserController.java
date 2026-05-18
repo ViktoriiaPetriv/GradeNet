@@ -3,6 +3,7 @@ package org.bachelor.userservice.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.bachelor.userservice.model.dto.ChangePasswordRequestDTO;
+import org.bachelor.userservice.model.dto.ImportStudentRequestDTO;
 import org.bachelor.userservice.model.dto.UserDTO;
 import org.bachelor.userservice.model.dto.UserProfileDTO;
 import org.bachelor.userservice.model.dto.UserRequestDTO;
@@ -53,6 +54,11 @@ public class UserController {
     @PatchMapping("/{id}/password")
     public void changePassword(@PathVariable Long id, @Valid @RequestBody ChangePasswordRequestDTO request) {
         userService.changePassword(id, request);
+    }
+
+    @PostMapping("/import-student")
+    public UserDTO createStudentFromImport(@Valid @RequestBody ImportStudentRequestDTO request) {
+        return userService.createStudentFromImport(request);
     }
 
     @GetMapping("/students")

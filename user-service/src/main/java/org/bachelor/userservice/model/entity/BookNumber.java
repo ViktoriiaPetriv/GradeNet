@@ -27,7 +27,7 @@ public class BookNumber {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "number", nullable = false, unique = true, length = 20)
+    @Column(name = "number", nullable = true, unique = true, length = 20)
     private String number;
 
     @ManyToOne(fetch = FetchType.LAZY)

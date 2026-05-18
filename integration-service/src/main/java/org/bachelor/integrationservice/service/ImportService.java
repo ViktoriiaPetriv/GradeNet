@@ -43,6 +43,9 @@ public class ImportService {
 
         org.bachelor.integrationservice.model.client.SpecialtyDTO specialty =
                 resolveSpecialtyByName(report.getSpecialtyName(), authHeader);
+        log.info("checkDisciplines: specialtyName='{}', specialty={}, firstSemester={}",
+                report.getSpecialtyName(), specialty != null ? specialty.getId() + "/" + specialty.getDegree() : "NOT FOUND",
+                getFirstSemester(report));
         Long specialtyId = specialty != null ? specialty.getId() : null;
         Integer graduationYear = specialty != null
                 ? ExcelParserService.calculateGraduationYear(academicYear, getFirstSemester(report), specialty.getDegree())
@@ -57,7 +60,7 @@ public class ImportService {
         List<DisciplineDTO> allDisciplines = getAllDisciplines(authHeader);
         Map<String, DisciplineDTO> disciplineByName = new HashMap<>();
         for (DisciplineDTO d : allDisciplines) {
-            disciplineByName.put(d.getName().trim(), d);
+            disciplineByName.put(normalizeDisciplineKey(d.getName()), d);
         }
 
         List<DisciplineCheckItemDTO> disciplineItems = new ArrayList<>();
@@ -65,7 +68,7 @@ public class ImportService {
             String name = parsed.getName();
             String effectiveName = stripRetakeSuffix(name);
 
-            DisciplineDTO existingDiscipline = disciplineByName.get(effectiveName);
+            DisciplineDTO existingDiscipline = disciplineByName.get(normalizeDisciplineKey(effectiveName));
             Long disciplineId = existingDiscipline != null ? existingDiscipline.getId() : null;
             Long specialtyDisciplineId = null;
 
@@ -103,6 +106,15 @@ public class ImportService {
         ParsedReport report = excelParserService.parse(fileInputStream);
         String year = (academicYear != null && !academicYear.isBlank()) ? academicYear : defaultAcademicYear();
 
+        // Pre-fetch existing disciplines to avoid duplicate-name errors across semesters
+        Map<String, Long> disciplineIdByName = new HashMap<>();
+        for (DisciplineDTO d : getAllDisciplines(authHeader)) {
+            disciplineIdByName.put(normalizeDisciplineKey(d.getName()), d.getId());
+        }
+
+        // Track SD links created in this batch: disciplineId → specialtyDisciplineId
+        Map<Long, Long> sdByDisciplineId = new HashMap<>();
+
         List<CreatedDisciplineInfoDTO> result = new ArrayList<>();
         for (int idx : indices) {
             if (idx < 0 || idx >= report.getDisciplines().size()) continue;
@@ -111,14 +123,36 @@ public class ImportService {
             String effectiveName = stripRetakeSuffix(parsed.getName());
 
             try {
-                DisciplineCreateResponseDTO created = createDisciplineWithSD(
-                        effectiveName, specialtyOfferingId, year, parsed, authHeader);
+                Long disciplineId = disciplineIdByName.get(normalizeDisciplineKey(effectiveName));
+                long sdId;
+
+                if (disciplineId != null) {
+                    // Discipline already exists — reuse it, just ensure SD link exists
+                    Long existingSdId = sdByDisciplineId.get(disciplineId);
+                    if (existingSdId == null) {
+                        SpecialtyDisciplineDTO existing = findSpecialtyDiscipline(specialtyOfferingId, disciplineId, authHeader);
+                        existingSdId = existing != null ? existing.getId()
+                                : createSpecialtyDisciplineWithHours(specialtyOfferingId, disciplineId, year, parsed, authHeader).getId();
+                        sdByDisciplineId.put(disciplineId, existingSdId);
+                    }
+                    sdId = existingSdId;
+                    log.info("Reused discipline at index {}: {} (id={})", idx, effectiveName, disciplineId);
+                } else {
+                    // New discipline — create it along with SD link and hours
+                    DisciplineCreateResponseDTO created = createDisciplineWithSD(
+                            effectiveName, specialtyOfferingId, year, parsed, authHeader);
+                    disciplineId = created.getDisciplineId();
+                    sdId = created.getSpecialtyDisciplineId();
+                    disciplineIdByName.put(normalizeDisciplineKey(effectiveName), disciplineId);
+                    sdByDisciplineId.put(disciplineId, sdId);
+                    log.info("Created discipline at index {}: {} (id={})", idx, effectiveName, disciplineId);
+                }
+
                 result.add(CreatedDisciplineInfoDTO.builder()
                         .index(idx)
-                        .disciplineId(created.getDisciplineId())
-                        .specialtyDisciplineId(created.getSpecialtyDisciplineId())
+                        .disciplineId(disciplineId)
+                        .specialtyDisciplineId(sdId)
                         .build());
-                log.info("Created discipline at index {}: {} (id={})", idx, effectiveName, created.getDisciplineId());
             } catch (Exception e) {
                 log.error("Failed to create discipline at index {}: {}", idx, e.getMessage());
                 throw new RuntimeException("Failed to create discipline: " + effectiveName, e);
@@ -384,7 +418,7 @@ public class ImportService {
             String specialtyName, String authHeader) {
         if (specialtyName == null || specialtyName.isBlank()) return null;
         try {
-            String normalized = specialtyName.trim().toLowerCase();
+            String normalized = normalizeForMatch(specialtyName);
             PageResponse<org.bachelor.integrationservice.model.client.SpecialtyDTO> page = restClient.get()
                     .uri(orgServiceUrl + "/api/specialties?size=200")
                     .header("Authorization", authHeader)
@@ -460,8 +494,25 @@ public class ImportService {
         }
     }
 
+    private static String normalizeForMatch(String s) {
+        if (s == null) return null;
+        return s.trim().toLowerCase()
+                .replace('’', '\'')   // RIGHT SINGLE QUOTATION MARK '
+                .replace('ʼ', '\'')   // MODIFIER LETTER APOSTROPHE ʼ
+                .replace('‘', '\'');  // LEFT SINGLE QUOTATION MARK '
+    }
+
     private static boolean matches(String field, String normalizedQuery) {
-        return field != null && field.trim().toLowerCase().equals(normalizedQuery);
+        return field != null && normalizeForMatch(field).equals(normalizedQuery);
+    }
+
+    /** Normalizes discipline name for deduplication — lower-cases and replaces Cyrillic/Latin lookalikes. */
+    private static String normalizeDisciplineKey(String name) {
+        if (name == null) return null;
+        return name.trim().toLowerCase()
+                .replace('а', 'a').replace('е', 'e').replace('о', 'o')
+                .replace('с', 'c').replace('р', 'p').replace('х', 'x')
+                .replace('і', 'i');
     }
 
     private List<SpecialtyDisciplineDTO> resolveSpecialtyDisciplines(
@@ -471,7 +522,7 @@ public class ImportService {
         List<DisciplineDTO> allDisciplines = getAllDisciplines(authHeader);
         Map<String, DisciplineDTO> disciplineByName = new HashMap<>();
         for (DisciplineDTO d : allDisciplines) {
-            disciplineByName.put(d.getName().trim(), d);
+            disciplineByName.put(normalizeDisciplineKey(d.getName()), d);
         }
 
         List<SpecialtyDisciplineDTO> result = new ArrayList<>();
@@ -489,7 +540,7 @@ public class ImportService {
                     log.info("Retake discipline detected: '{}' → using base '{}'", name, effectiveName);
                 }
 
-                DisciplineDTO discipline = disciplineByName.get(effectiveName);
+                DisciplineDTO discipline = disciplineByName.get(normalizeDisciplineKey(effectiveName));
                 SpecialtyDisciplineDTO sd;
                 if (discipline == null) {
                     // Create discipline + specialty-discipline + hours in one call
@@ -498,7 +549,7 @@ public class ImportService {
                     DisciplineDTO newDisc = new DisciplineDTO();
                     newDisc.setId(created.getDisciplineId());
                     newDisc.setName(created.getName());
-                    disciplineByName.put(effectiveName, newDisc);
+                    disciplineByName.put(normalizeDisciplineKey(effectiveName), newDisc);
                     sd = new SpecialtyDisciplineDTO();
                     sd.setId(created.getSpecialtyDisciplineId());
                 } else {
@@ -620,7 +671,17 @@ public class ImportService {
                 .body(new ParameterizedTypeReference<>() {});
         List<GradeBookEntryDTO> existing = (page != null && page.getContent() != null) ? page.getContent() : List.of();
 
-        if (!existing.isEmpty()) return existing.get(0);
+        if (!existing.isEmpty()) {
+            if (semester != null) {
+                GradeBookEntryDTO match = existing.stream()
+                        .filter(e -> semester.equals(e.getSemester()))
+                        .findFirst().orElse(null);
+                if (match != null) return match;
+                // No entry for this semester yet — fall through to create one
+            } else {
+                return existing.get(0);
+            }
+        }
 
         Map<String, Object> body = new HashMap<>();
         body.put("specialtyDisciplineId", sdId);
@@ -763,9 +824,10 @@ public class ImportService {
             String firstInitial = parts.length > 1 ? parts[1].replace(".", "").toLowerCase() : null;
 
             UserDTO matched = allStudents.stream()
-                    .filter(u -> u.getLastName() != null && u.getLastName().toLowerCase().equals(lastName))
+                    .filter(u -> u.getLastName() != null &&
+                            normalizeName(u.getLastName()).toLowerCase().equals(lastName))
                     .filter(u -> firstInitial == null || u.getFirstName() == null ||
-                            u.getFirstName().substring(0, 1).toLowerCase().equals(firstInitial))
+                            normalizeName(u.getFirstName()).substring(0, 1).toLowerCase().equals(firstInitial))
                     .findFirst().orElse(null);
 
             if (matched == null) {
@@ -846,7 +908,12 @@ public class ImportService {
     }
 
     private static String normalizeName(String s) {
-        return s.replaceAll("[\\p{Z}\\s]+", " ").trim();
+        return s.replaceAll("[\\p{Z}\\s]+", " ")
+                .replace('`',  '\'')  // GRAVE ACCENT (backtick)
+                .replace('’', '\'')  // RIGHT SINGLE QUOTATION MARK '
+                .replace('ʼ', '\'')  // MODIFIER LETTER APOSTROPHE ʼ
+                .replace('‘', '\'')  // LEFT SINGLE QUOTATION MARK '
+                .trim();
     }
 
     private GroupMemberDTO matchStudent(String parsedName, List<GroupMemberDTO> members) {

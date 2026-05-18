@@ -50,5 +50,9 @@
   "/api/import": {
     "target": "http://localhost:8083",
     "changeOrigin": true
+  },
+  "/api/journal": {
+    "target": "http://localhost:8083",
+    "changeOrigin": true
   }
 }

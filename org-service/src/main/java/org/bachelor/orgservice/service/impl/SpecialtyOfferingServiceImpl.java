@@ -17,6 +17,7 @@ import org.bachelor.orgservice.utils.SecurityUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 @Service
@@ -52,6 +53,11 @@ public class SpecialtyOfferingServiceImpl implements SpecialtyOfferingService {
         return specialtyOfferingRepository.findById(id)
                 .map(mapper::toDto)
                 .orElseThrow(() -> new NotFoundException("Набір не знайдено"));
+    }
+
+    @Override
+    public Optional<SpecialtyOfferingDTO> getByExternalId(Long externalId) {
+        return specialtyOfferingRepository.findByExternalId(externalId).map(mapper::toDto);
     }
 
     @Override

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { Specialty, SpecialtyRequest, SpecialtyOffering, SpecialtyOfferingRequest, PageResponse, OrgInfo } from '../../models/org.model';
 
 @Injectable({ providedIn: 'root' })
@@ -62,6 +63,14 @@ export class SpecialtyService {
     return this.http.get<SpecialtyOffering[]>(this.offeringsUrl, {
       params: new HttpParams().set('specialtyId', specialtyId),
     });
+  }
+
+  getOfferingByExternalId(externalId: number): Observable<SpecialtyOffering | null> {
+    return this.http
+      .get<SpecialtyOffering>(`${this.offeringsUrl}/by-external-id`, {
+        params: new HttpParams().set('externalId', externalId),
+      })
+      .pipe(catchError(() => of(null)));
   }
 
   getOfferingById(id: number): Observable<SpecialtyOffering> {
