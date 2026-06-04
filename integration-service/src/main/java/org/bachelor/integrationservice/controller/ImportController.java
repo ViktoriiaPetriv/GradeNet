@@ -28,9 +28,10 @@ public class ImportController {
     @PostMapping(value = "/check-disciplines", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public DisciplineCheckResultDTO checkDisciplines(
             @RequestPart("file") MultipartFile file,
+            @RequestParam(required = false) Long specialtyId,
             @RequestHeader("Authorization") String authHeader) throws IOException {
         excelValidationService.validate(file);
-        return importService.checkDisciplines(file.getInputStream(), authHeader);
+        return importService.checkDisciplines(file.getInputStream(), specialtyId, authHeader);
     }
 
     @PostMapping(value = "/create-disciplines", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -68,9 +69,39 @@ public class ImportController {
      *
      * selectedStudentBookNumberIds (optional) — JSON string: [42, 7, 15]
      * If provided, only students with these bookNumberIds will have grades imported.
+     *
+     * overwrite (optional, default false) — if true, existing COMPLETED entries are reset
+     * before importing, allowing grades to be overwritten.
      */
     @PostMapping(value = "/grade-report", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ImportResultDTO importGradeReport(
+            @RequestPart("file") MultipartFile file,
+            @RequestParam String professorMap,
+            @RequestParam(required = false) String selectedStudentBookNumberIds,
+            @RequestParam(defaultValue = "false") boolean overwrite,
+            @RequestHeader("Authorization") String authHeader) throws IOException {
+
+        excelValidationService.validate(file);
+        Map<Integer, Long> professorByDiscipline = objectMapper.readValue(
+                professorMap, new TypeReference<>() {});
+
+        List<Long> selectedBookNumbers = null;
+        if (selectedStudentBookNumberIds != null && !selectedStudentBookNumberIds.isBlank()) {
+            selectedBookNumbers = objectMapper.readValue(selectedStudentBookNumberIds, new TypeReference<>() {});
+        }
+
+        return importService.importGradeReport(file, professorByDiscipline, selectedBookNumbers, overwrite, authHeader);
+    }
+
+    /**
+     * Compares grades from the file against existing records in the system.
+     * Returns a diff per student × discipline without performing any writes.
+     *
+     * professorMap — JSON string: {"0": 5, "2": 3, ...} (same format as grade-report)
+     * selectedStudentBookNumberIds (optional) — JSON string: [42, 7, 15]
+     */
+    @PostMapping(value = "/compare-grades", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public GradeComparisonResultDTO compareGrades(
             @RequestPart("file") MultipartFile file,
             @RequestParam String professorMap,
             @RequestParam(required = false) String selectedStudentBookNumberIds,
@@ -85,6 +116,6 @@ public class ImportController {
             selectedBookNumbers = objectMapper.readValue(selectedStudentBookNumberIds, new TypeReference<>() {});
         }
 
-        return importService.importGradeReport(file, professorByDiscipline, selectedBookNumbers, authHeader);
+        return importService.compareGrades(file, professorByDiscipline, selectedBookNumbers, authHeader);
     }
 }

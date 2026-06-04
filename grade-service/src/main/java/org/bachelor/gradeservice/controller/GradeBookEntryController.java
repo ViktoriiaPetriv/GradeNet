@@ -60,6 +60,11 @@ public class GradeBookEntryController {
         return entryService.getAll(filter, pageable);
     }
 
+    @PatchMapping("/{id}/reset")
+    public GradeBookEntryDTO reset(@PathVariable Long id) {
+        return entryService.reset(id);
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
@@ -71,6 +76,14 @@ public class GradeBookEntryController {
             @PathVariable Long bookNumberId,
             @RequestParam(required = false) List<String> academicYears) {
         return entryService.getStudentDisciplines(bookNumberId,
+                new StudentDisciplineFilter(academicYears));
+    }
+
+    @GetMapping("/students/{bookNumberId}/report")
+    public StudentGradeReportDTO getStudentGradeReport(
+            @PathVariable Long bookNumberId,
+            @RequestParam(required = false) List<String> academicYears) {
+        return entryService.getStudentGradeReport(bookNumberId,
                 new StudentDisciplineFilter(academicYears));
     }
 

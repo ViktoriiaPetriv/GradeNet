@@ -1,15 +1,20 @@
 <div class="overlay" [class.active]="isOpen()" (click)="close()"></div>
 
-<button class="hamburger" [class.open]="isOpen()" (click)="toggle()">
+<button class="hamburger" [class.hidden]="isOpen()" (click)="toggle()">
     <span></span><span></span><span></span>
 </button>
 
 <nav class="sidebar" [class.open]="isOpen()">
     <div class="logo">
-        <div class="logo-icon">
-            <img src="logo.png" alt="GradeNet" />
+        <div class="logo-brand">
+            <div class="logo-icon">
+                <img src="logo.png" alt="GradeNet" />
+            </div>
+            <div class="logo-text">GradeNet</div>
         </div>
-        <div class="logo-text">GradeNet</div>
+        <button class="close-btn" (click)="close()">
+            <i class="pi pi-times"></i>
+        </button>
     </div>
 
     <div class="nav-section">Навігація</div>

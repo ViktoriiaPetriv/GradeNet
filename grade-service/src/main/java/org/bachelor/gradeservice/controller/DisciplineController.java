@@ -37,4 +37,10 @@ public class DisciplineController {
                                 @RequestBody @Valid DisciplineUpdateDTO dto) {
         return disciplineService.update(id, dto);
     }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long id) {
+        disciplineService.delete(id);
+    }
 }

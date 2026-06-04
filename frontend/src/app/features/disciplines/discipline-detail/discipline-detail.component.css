@@ -267,6 +267,38 @@
   background: var(--surface-2);
 }
 
+.hours-actions-cell {
+  white-space: nowrap;
+  padding: 0 0.5rem;
+}
+
+.btn-icon-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface-1);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  margin-right: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-icon-sm:hover {
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+
+.btn-icon-sm.btn-icon-danger:hover {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
 .year-cell {
   font-weight: 600;
   font-family: monospace;

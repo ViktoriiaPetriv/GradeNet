@@ -25,12 +25,35 @@
         <!-- Студент -->
         <div class="form-group full">
             <label class="form-label">Студент *</label>
-            <select class="form-select" formControlName="studentId" [class.error]="isInvalid('studentId')">
-                <option [ngValue]="null">— Оберіть студента —</option>
-                @for (s of students(); track s.id) {
-                <option [ngValue]="s.id">{{ getStudentLabel(s) }}</option>
+            <div class="autocomplete-wrapper" [class.input-error]="isInvalid('studentId')">
+                <input
+                    type="text"
+                    class="form-input"
+                    placeholder="Введіть ім'я або email студента..."
+                    [value]="studentSearch()"
+                    (input)="onStudentSearchInput($any($event.target).value)"
+                    (focus)="onStudentInputFocus()"
+                    (blur)="closeStudentDropdown()"
+                />
+                @if (showStudentDropdown() && studentSearch()) {
+                    <ul class="autocomplete-list">
+                        @for (s of filteredStudents(); track s.id) {
+                            <li class="autocomplete-item" (mousedown)="selectStudent(s)">
+                                <span class="student-item-name">{{ s.lastName }} {{ s.firstName }}</span>
+                                <span class="student-item-email">{{ s.email }}</span>
+                            </li>
+                        }
+                        @if (filteredStudents().length === 0) {
+                            <li class="autocomplete-item no-results">Студентів не знайдено</li>
+                        }
+                    </ul>
                 }
-            </select>
+                @if (form.get('studentId')?.value) {
+                    <i class="pi pi-check field-status-ok"></i>
+                } @else if (isInvalid('studentId')) {
+                    <i class="pi pi-exclamation-circle field-status-error"></i>
+                }
+            </div>
             @if (isInvalid('studentId')) {
             <span class="field-hint">Студент є обов'язковим</span>
             }
@@ -46,13 +69,34 @@
         <!-- Факультет -->
         <div class="form-group full">
             <label class="form-label">Факультет *</label>
-            <select class="form-select" formControlName="facultyId" [class.error]="isInvalid('facultyId')"
-                (change)="onFacultyChange()">
-                <option [ngValue]="null">— Оберіть факультет —</option>
-                @for (f of faculties(); track f.id) {
-                <option [ngValue]="f.id">{{ f.name }}</option>
+            <div class="autocomplete-wrapper" [class.input-error]="isInvalid('facultyId')">
+                <input
+                    type="text"
+                    class="form-input"
+                    placeholder="Введіть назву факультету..."
+                    [value]="facultySearch()"
+                    (input)="onFacultySearchInput($any($event.target).value)"
+                    (focus)="onFacultyInputFocus()"
+                    (blur)="closeFacultyDropdown()"
+                />
+                @if (showFacultyDropdown() && facultySearch()) {
+                    <ul class="autocomplete-list">
+                        @for (f of filteredFaculties(); track f.id) {
+                            <li class="autocomplete-item single-line" (mousedown)="selectFaculty(f)">
+                                {{ f.name }}
+                            </li>
+                        }
+                        @if (filteredFaculties().length === 0) {
+                            <li class="autocomplete-item no-results">Факультетів не знайдено</li>
+                        }
+                    </ul>
                 }
-            </select>
+                @if (form.get('facultyId')?.value) {
+                    <i class="pi pi-check field-status-ok"></i>
+                } @else if (isInvalid('facultyId')) {
+                    <i class="pi pi-exclamation-circle field-status-error"></i>
+                }
+            </div>
             @if (isInvalid('facultyId')) {
             <span class="field-hint">Оберіть факультет</span>
             }
@@ -87,31 +131,42 @@
             }
         </div>
 
-        <!-- Спеціальність — активна тільки коли всі три фільтри заповнені -->
+        <!-- Спеціальність -->
         <div class="form-group full">
             <label class="form-label">Спеціальність *</label>
-            @if (specialties().length === 0 && form.get('facultyId')?.value && form.get('degree')?.value &&
-            form.get('eduType')?.value) {
-            <div class="no-specialties">
-                <i class="pi pi-info-circle"></i>
-                За обраними фільтрами спеціальностей не знайдено
-            </div>
-            } @else {
-            <select class="form-select" formControlName="specialtyId" [class.error]="isInvalid('specialtyId')"
-                [attr.disabled]="specialties().length === 0 ? true : null"
-                (change)="onSpecialtyChange()">
-                <option [ngValue]="null">
-                    @if (!form.get('degree')?.value || !form.get('eduType')?.value) {
-                    Спочатку оберіть рівень та форму навчання
-                    } @else {
-                    — Оберіть спеціальність —
-                    }
-                </option>
-                @for (sp of specialties(); track sp.id) {
-                <option [ngValue]="sp.id">{{ sp.code }} — {{ sp.nameUA }}</option>
+            <div class="autocomplete-wrapper" [class.input-error]="isInvalid('specialtyId')">
+                <input
+                    type="text"
+                    class="form-input"
+                    [placeholder]="specialties().length === 0 && form.get('facultyId')?.value && form.get('degree')?.value && form.get('eduType')?.value
+                        ? 'За обраними фільтрами спеціальностей не знайдено'
+                        : !form.get('facultyId')?.value || !form.get('degree')?.value || !form.get('eduType')?.value
+                        ? 'Спочатку оберіть факультет, рівень та форму навчання'
+                        : 'Введіть назву або код спеціальності...'"
+                    [attr.disabled]="(!form.get('facultyId')?.value || !form.get('degree')?.value || !form.get('eduType')?.value) ? true : null"
+                    [value]="specialtySearch()"
+                    (input)="onSpecialtySearchInput($any($event.target).value)"
+                    (focus)="onSpecialtyInputFocus()"
+                    (blur)="closeSpecialtyDropdown()"
+                />
+                @if (showSpecialtyDropdown() && specialtySearch()) {
+                    <ul class="autocomplete-list">
+                        @for (s of filteredSpecialties(); track s.id) {
+                            <li class="autocomplete-item single-line" (mousedown)="selectSpecialty(s)">
+                                {{ s.code }} — {{ s.nameUA }}
+                            </li>
+                        }
+                        @if (filteredSpecialties().length === 0) {
+                            <li class="autocomplete-item no-results">Спеціальностей не знайдено</li>
+                        }
+                    </ul>
                 }
-            </select>
-            }
+                @if (form.get('specialtyId')?.value) {
+                    <i class="pi pi-check field-status-ok"></i>
+                } @else if (isInvalid('specialtyId')) {
+                    <i class="pi pi-exclamation-circle field-status-error"></i>
+                }
+            </div>
             @if (isInvalid('specialtyId')) {
             <span class="field-hint">Оберіть спеціальність</span>
             }

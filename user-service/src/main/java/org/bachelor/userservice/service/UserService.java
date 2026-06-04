@@ -6,11 +6,12 @@ import org.bachelor.userservice.model.dto.ImportStudentRequestDTO;
 import org.bachelor.userservice.model.dto.UserDTO;
 import org.bachelor.userservice.model.dto.UserProfileDTO;
 import org.bachelor.userservice.model.dto.UserRequestDTO;
+import org.bachelor.userservice.model.entity.Role;
 
 import java.util.List;
 
 public interface UserService {
-    List<UserDTO> findAll();
+    List<UserDTO> findAll(Role role);
     UserDTO findById(Long id);
     UserDTO create(UserRequestDTO request);
     UserDTO update(Long id, UserRequestDTO request);

@@ -9,10 +9,10 @@
     <div
       class="step"
       [class.active]="step() === 'upload'"
-      [class.done]="step() !== 'upload' && step() !== 'offering' && step() !== 'result'"
+      [class.done]="step() !== 'upload' && step() !== 'result'"
     >
       <div class="step-circle">
-        @if (step() !== 'upload' && step() !== 'offering' && step() !== 'result') {
+        @if (step() !== 'upload' && step() !== 'result') {
           <i class="pi pi-check"></i>
         } @else {
           1
@@ -95,58 +95,16 @@
       <div class="card-footer">
         <button
           class="btn-primary"
-          (click)="checkDisciplines()"
-          [disabled]="!canProceedToDisciplines() || checkingDisciplines()"
+          (click)="proceedFromUpload()"
+          [disabled]="!canProceedToDisciplines() || parsing() || checkingDisciplines() || creatingOffering()"
         >
-          @if (checkingDisciplines()) {
+          @if (parsing() || checkingDisciplines() || creatingOffering()) {
             <i class="pi pi-spinner pi-spin"></i>
-            Перевірка дисциплін...
+            @if (creatingOffering()) { Створення випуску... } @else { Завантаження... }
           } @else {
             Далі
           }
         </button>
-      </div>
-    </div>
-  }
-
-  <!-- ── STEP 1.5: Offering not found ── -->
-  @if (step() === 'offering') {
-    <div class="card">
-      <div style="padding: 2rem 1.5rem; text-align: center;">
-        <i class="pi pi-exclamation-triangle" style="font-size: 2.5rem; color: #d97706; margin-bottom: 1rem; display: block;"></i>
-        <h3 style="margin: 0 0 0.75rem 0;">Випуск не знайдено</h3>
-        <p style="color: var(--text-muted); margin: 0 0 0.5rem 0;">
-          Спеціальність <strong>{{ disciplineCheck()?.specialtyName }}</strong>
-        </p>
-        <p style="color: var(--text-muted); margin: 0 0 1.5rem 0;">
-          не має набору з роком випуску <strong>{{ disciplineCheck()?.graduationYear }}</strong>.
-        </p>
-        <p style="margin: 0 0 2rem 0;">Створити набір для випуску <strong>{{ disciplineCheck()?.graduationYear }}</strong>?</p>
-        <div style="display: flex; gap: 1rem; justify-content: center;">
-          <button
-            class="btn-secondary"
-            (click)="declineCreateOffering()"
-            [disabled]="creatingOffering()"
-          >
-            Скасувати імпорт
-          </button>
-          <button
-            class="btn-primary"
-            (click)="confirmCreateOffering()"
-            [disabled]="creatingOffering()"
-          >
-            @if (creatingOffering()) {
-              <i class="pi pi-spinner pi-spin"></i>
-              Створення...
-            } @else {
-              Так, створити
-            }
-          </button>
-        </div>
-      </div>
-
-      <div class="card-footer">
-        <button class="btn-secondary" (click)="goBack()">Назад до файлу</button>
       </div>
     </div>
   }
@@ -539,12 +497,110 @@
         }
       </div>
 
+      <!-- ── Comparison section ── -->
+      <div style="padding: 0 1.5rem 1.5rem;">
+        <h3 style="margin: 0 0 1rem 0;">Наявні оцінки в системі</h3>
+
+        @if (comparingGrades()) {
+          <div style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-muted); font-size: 14px;">
+            <i class="pi pi-spinner pi-spin"></i>
+            Звіряємо з базою даних...
+          </div>
+        } @else if (gradeComparison()) {
+          @if (comparisonExistingCount() === 0) {
+            <div style="color: #16a34a; font-size: 14px; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="pi pi-check-circle"></i>
+              Існуючих оцінок не знайдено — буде виконано новий імпорт.
+            </div>
+          } @else {
+            @if (comparisonDiffCount() > 0) {
+              <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 13px;">
+                <i class="pi pi-exclamation-triangle" style="color: #d97706;"></i>
+                Виявлено <strong>{{ comparisonDiffCount() }}</strong> розбіжностей між файлом і системою.
+                Позначте "Перезаписати", щоб замінити існуючі оцінки.
+              </div>
+            } @else {
+              <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 13px; color: #15803d;">
+                <i class="pi pi-check-circle"></i>
+                Всі існуючі оцінки збігаються з файлом.
+              </div>
+            }
+
+            @if (comparisonDiffCount() > 0) {
+            <div class="preview-table-wrapper" style="margin-bottom: 1rem;">
+              <table class="preview-table">
+                <thead>
+                  <tr class="header-row">
+                    <th>Студент</th>
+                    @for (disc of gradeComparison()!.disciplines; track disc.index) {
+                      <th>{{ disc.name }}</th>
+                    }
+                  </tr>
+                  <tr class="subheader-row">
+                    <th></th>
+                    @for (disc of gradeComparison()!.disciplines; track disc.index) {
+                      <th style="font-size: 11px; font-weight: normal;">файл / система</th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (student of gradeComparison()!.students; track student.bookNumberId) {
+                    <tr>
+                      <td>{{ student.fullName }}</td>
+                      @for (disc of gradeComparison()!.disciplines; track disc.index) {
+                        @let cell = getComparisonCell(student, disc.index);
+                        <td class="grade-cell" [style.background]="cell?.hasDiff ? '#fef9c3' : ''">
+                          @if (cell) {
+                            @if (cell.isNew) {
+                              <span style="color: #16a34a; font-size: 12px;">{{ cell.fileGrade ?? '—' }} / новий</span>
+                            } @else if (cell.hasDiff) {
+                              <span style="color: #b45309; font-weight: 600; font-size: 12px;">
+                                {{ cell.fileGrade ?? '—' }} / {{ cell.existingGrade ?? '—' }}
+                              </span>
+                            } @else {
+                              <span style="color: var(--text-muted); font-size: 12px;">
+                                {{ cell.fileGrade ?? '—' }} / {{ cell.existingGrade ?? '—' }}
+                              </span>
+                            }
+                          } @else {
+                            <span class="text-muted">—</span>
+                          }
+                        </td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            }
+
+            @if (comparisonDiffCount() > 0) {
+              <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; padding: 0.75rem; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 6px;">
+                <input
+                  type="checkbox"
+                  [checked]="overwriteGrades()"
+                  (change)="overwriteGrades.set(!overwriteGrades())"
+                  style="margin-top: 2px; flex-shrink: 0;"
+                />
+                <div>
+                  <div style="font-weight: 600; font-size: 14px;">Перезаписати існуючі оцінки</div>
+                  <div style="font-size: 12px; color: #92400e; margin-top: 2px;">
+                    Увага: поточні оцінки буде видалено і замінено оцінками з файлу.
+                    Якщо не обрано — записи з існуючими оцінками будуть пропущені.
+                  </div>
+                </div>
+              </label>
+            }
+          }
+        }
+      </div>
+
       <div class="card-footer">
         <button class="btn-secondary" (click)="goBack()">Назад</button>
         <button
           class="btn-primary"
           (click)="import()"
-          [disabled]="importing()"
+          [disabled]="importing() || comparingGrades()"
         >
           @if (importing()) {
             <i class="pi pi-spinner pi-spin"></i>

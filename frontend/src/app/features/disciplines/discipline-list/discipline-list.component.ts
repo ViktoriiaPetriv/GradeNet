@@ -7,7 +7,7 @@ import { PaginationComponent } from '../../../shared/pagination/pagination.compo
 import { DisciplineModalComponent } from '../discipline-modal/discipline-modal.component';
 import { AuthStateService } from '../../../core/services/auth-state.service';
 import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
-// import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
+import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-discipline-list',
@@ -16,7 +16,7 @@ import { PageHeaderComponent } from '../../../shared/page-header/page-header.com
     PaginationComponent,
     DisciplineModalComponent,
     PageHeaderComponent,
-    // ConfirmDialogComponent,
+    ConfirmDialogComponent,
   ],
   templateUrl: './discipline-list.component.html',
   styleUrl: './discipline-list.component.css',
@@ -32,6 +32,7 @@ export class DisciplineListComponent implements OnInit {
 
   modalOpen = signal(false);
   editingDiscipline = signal<DisciplineDTO | null>(null);
+  deleteTarget = signal<DisciplineDTO | null>(null);
 
   private disciplineService = inject(DisciplineService);
   private toastService = inject(ToastService);
@@ -101,6 +102,31 @@ export class DisciplineListComponent implements OnInit {
   onSaved() {
     this.load();
     this.closeModal();
+  }
+
+  openDeleteModal(d: DisciplineDTO) {
+    this.deleteTarget.set(d);
+  }
+
+  closeDeleteModal() {
+    this.deleteTarget.set(null);
+  }
+
+  confirmDelete() {
+    const d = this.deleteTarget();
+    if (!d) return;
+    this.disciplineService.delete(d.id).subscribe({
+      next: () => {
+        this.toastService.success('Дисципліну видалено');
+        this.load();
+        this.closeDeleteModal();
+      },
+      error: (err) => {
+        const msg = err?.error?.message || 'Помилка при видаленні дисципліни';
+        this.toastService.error(msg);
+        this.closeDeleteModal();
+      },
+    });
   }
 
   viewDiscipline(id: number) {

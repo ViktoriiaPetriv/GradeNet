@@ -15,6 +15,9 @@ public class JournalImportRequestDTO {
     /** Key = journal discipline external_id, Value = map of (attempt → professorId). */
     private Map<Long, Map<Integer, Long>> professorByDisciplineId;
 
+    /** Per-student professor overrides: discipline → attempt → studentExternalId → professorId. */
+    private Map<Long, Map<Integer, Map<Long, Long>>> professorOverridesByStudent;
+
     /** Journal student external IDs to include; null means all students. */
     private List<Long> selectedStudentExternalIds;
 }

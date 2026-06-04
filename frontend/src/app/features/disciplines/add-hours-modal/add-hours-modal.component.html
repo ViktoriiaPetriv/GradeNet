@@ -1,4 +1,4 @@
-<app-modal title="Додати години" (close)="cancelled.emit()">
+<app-modal [title]="isEditMode ? 'Редагувати години' : 'Додати години'" (close)="cancelled.emit()">
 
   @if (specialtyName) {
     <div class="sd-context">
@@ -81,9 +81,9 @@
         @if (submitting) {
           <i class="pi pi-spin pi-spinner"></i>
         } @else {
-          <i class="pi pi-plus"></i>
+          <i [class]="isEditMode ? 'pi pi-check' : 'pi pi-plus'"></i>
         }
-        Додати
+        {{ isEditMode ? 'Зберегти' : 'Додати' }}
       </button>
     </div>
   </form>

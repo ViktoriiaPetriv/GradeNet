@@ -1,14 +1,15 @@
 import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { switchMap } from 'rxjs/operators';
-import { of, forkJoin } from 'rxjs';
+import { forkJoin } from 'rxjs';
 import { JournalService } from '../../core/services/journal.service';
 import { UserService } from '../../core/services/user.service';
 import { SpecialtyService } from '../../core/services/specialty.service';
+import { OrgService } from '../../core/services/org.service';
 import { ToastService } from '../../core/services/toast.service';
 import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
 import {
+  JournalSpecialtyDTO,
   JournalStudentStatus,
   JournalDisciplineStatus,
   JournalDisciplineDetail,
@@ -17,9 +18,10 @@ import {
   STUDY_FORM_OPTIONS,
 } from '../../models/journal.model';
 import { User } from '../../models/user.model';
-import { Specialty, SpecialtyOffering } from '../../models/org.model';
+import { Specialty, SpecialtyOffering, SpecialtyRequest, OrganizationShort, OrgType, Degree, EduType } from '../../models/org.model';
 
-type Step = 'search' | 'students' | 'disciplines' | 'grade-view' | 'preview' | 'result';
+type Step = 'specialty' | 'students' | 'disciplines' | 'grade-view' | 'preview' | 'result';
+type SpecialtyLinkStatus = 'checking' | 'linked' | 'no-offering' | 'no-specialty' | null;
 
 interface StudentRow {
   student: JournalStudentStatus;
@@ -31,6 +33,9 @@ interface DisciplineRow {
   selected: boolean;
   /** attempt number → internal professor user ID */
   professorByAttempt: Record<number, number | null>;
+  /** attempt → studentExternalId → professorId (null = use discipline default) */
+  studentProfessorOverrides: Record<number, Record<number, number | null>>;
+  showStudentOverrides: boolean;
 }
 
 @Component({
@@ -44,40 +49,51 @@ export class JournalComponent implements OnInit {
   private journalService = inject(JournalService);
   private userService = inject(UserService);
   private specialtyService = inject(SpecialtyService);
+  private orgService = inject(OrgService);
   private toastService = inject(ToastService);
 
-  readonly degreeOptions = DEGREE_OPTIONS;
-  readonly studyFormOptions = STUDY_FORM_OPTIONS;
+  step = signal<Step>('specialty');
 
-  step = signal<Step>('search');
-
-  // Step 1 – search filters
-  filterDegree = signal('');
-  filterYear = signal<number | null>(null);
-  filterStudyForm = signal('');
-  filterCode = signal('');
+  // Step 1 – specialty list
   loadingSpecialties = signal(false);
-  foundIds = signal<number[]>([]);
-  searched = signal(false);
+  foundSpecialties = signal<JournalSpecialtyDTO[]>([]);
+  specialtiesLoaded = signal(false);
 
-  // Selected specialty
+  // Step 2 – specialty
+  selectedJournalSpecialty = signal<JournalSpecialtyDTO | null>(null);
+  specialtyLinkStatus = signal<SpecialtyLinkStatus>(null);
+  matchedInternalSpecialty = signal<Specialty | null>(null);
+  createOrgId = signal<number | null>(null);
+  orgs = signal<OrganizationShort[]>([]);
+  loadingOrgs = signal(false);
+  loadingSpecialtyAction = signal(false);
+
+  // Org autocomplete
+  orgSearch = signal('');
+  showOrgDropdown = signal(false);
+  orgDropdownPosition = signal<'above' | 'below'>('below');
+
+  // Step 3 – students
   selectedSpecialtyId = signal<number | null>(null);
-
-  // Step 2 – students
   studentRows = signal<StudentRow[]>([]);
   loadingStudents = signal(false);
+  studentsError = signal(false);
 
-  // Step 3 – disciplines
+  // Step 4 – disciplines
   disciplineRows = signal<DisciplineRow[]>([]);
   loadingDisciplines = signal(false);
+  disciplinesError = signal(false);
   professors = signal<User[]>([]);
-  internalSpecialties = signal<Specialty[]>([]);
   offerings = signal<SpecialtyOffering[]>([]);
   selectedInternalSpecialtyId = signal<number | null>(null);
   selectedOfferingId = signal<number | null>(null);
   importAcademicYear = signal('');
-  importSpecialtySearch = signal('');
   loadingImport = signal(false);
+
+  // Professor autocomplete
+  profSearches = signal<Record<string, string>>({});
+  showProfDropdown = signal<Record<string, boolean>>({});
+  profDropdownPositions = signal<Record<string, 'above' | 'below'>>({});
 
   // Step 4 – grade view
   gradeViewDiscipline = signal<DisciplineRow | null>(null);
@@ -90,17 +106,29 @@ export class JournalComponent implements OnInit {
 
   // Step 6 – result
   importResult = signal<JournalImportResult | null>(null);
+  tooltipText = signal('');
+  tooltipX = signal(0);
+  tooltipY = signal(0);
+  tooltipVisible = signal(false);
 
   // Computed
   selectedStudentRows = computed(() => this.studentRows().filter((r) => r.selected));
   selectedDisciplineRows = computed(() => this.disciplineRows().filter((r) => r.selected));
   allStudentsSelected = computed(() => this.studentRows().every((r) => r.selected));
 
-  filteredInternalSpecialties = computed(() => {
-    const q = this.importSpecialtySearch().toLowerCase().trim();
-    return q
-      ? this.internalSpecialties().filter((s) => s.nameUA.toLowerCase().includes(q))
-      : this.internalSpecialties();
+  canProceedFromSpecialty = computed(() => {
+    const status = this.specialtyLinkStatus();
+    if (status === 'linked' || status === 'no-offering') return true;
+    if (status === 'no-specialty') return this.createOrgId() !== null;
+    return false;
+  });
+
+  selectedSpecialtyInfo = computed(() => this.matchedInternalSpecialty());
+
+  filteredOrgs = computed(() => {
+    const s = this.orgSearch().toLowerCase().trim();
+    if (!s) return this.orgs();
+    return this.orgs().filter((o) => o.name.toLowerCase().includes(s));
   });
 
   canImport = computed(
@@ -133,7 +161,6 @@ export class JournalComponent implements OnInit {
 
     const detailByExtId = new Map(details.map((d) => [d.externalId, d]));
 
-    // gradeMap: disciplineId → attempt → studentExternalId → grade
     const gradeMap = new Map<number, Map<number, Map<number, (typeof details)[0]['grades'][0]>>>();
     for (const d of details) {
       const byAttempt = new Map<number, Map<number, (typeof d.grades)[0]>>();
@@ -145,23 +172,32 @@ export class JournalComponent implements OnInit {
       gradeMap.set(d.externalId, byAttempt);
     }
 
-    // one column per (discipline, attempt)
     const columns = discRows.flatMap((dr) =>
-      (dr.discipline.attempts ?? [1]).map((attempt) => ({
-        discipline: dr.discipline,
-        attempt,
-        detail: detailByExtId.get(dr.discipline.externalId) ?? null,
-        professor: this.professors().find((p) => p.id === (dr.professorByAttempt[attempt] ?? null)) ?? null,
-      }))
+      (dr.discipline.attempts ?? [1]).map((attempt) => {
+        const studentOverrides: Record<number, number | null> = dr.studentProfessorOverrides[attempt] ?? {};
+        return {
+          discipline: dr.discipline,
+          attempt,
+          detail: detailByExtId.get(dr.discipline.externalId) ?? null,
+          professor: this.professors().find((p) => p.id === (dr.professorByAttempt[attempt] ?? null)) ?? null,
+          studentOverrides,
+          hasStudentOverrides: Object.values(studentOverrides).some((v) => v !== null),
+        };
+      })
     );
 
     return {
       columns,
       rows: studentRows.map((sr) => ({
         student: sr.student,
-        cells: columns.map((col) =>
-          gradeMap.get(col.discipline.externalId)?.get(col.attempt)?.get(sr.student.externalId) ?? null
-        ),
+        cells: columns.map((col) => {
+          const grade = gradeMap.get(col.discipline.externalId)?.get(col.attempt)?.get(sr.student.externalId) ?? null;
+          const overrideProfId = col.studentOverrides[sr.student.externalId] ?? null;
+          const overrideProf = overrideProfId
+            ? (this.professors().find((p) => p.id === overrideProfId) ?? null)
+            : null;
+          return { grade, overrideProf };
+        }),
       })),
     };
   });
@@ -169,43 +205,229 @@ export class JournalComponent implements OnInit {
   ngOnInit() {
     const y = new Date().getFullYear();
     this.importAcademicYear.set(`${y}/${y + 1}`);
+    this.loadSpecialties();
   }
 
-  // ── Step 1: Search ─────────────────────────────────────────────────────────
+  // ── Step 1: Specialty ──────────────────────────────────────────────────────
 
-  searchSpecialties() {
+  loadSpecialties() {
     this.loadingSpecialties.set(true);
-    this.foundIds.set([]);
-    this.searched.set(false);
-    this.journalService
-      .getSpecialties({
-        degree: this.filterDegree() || undefined,
-        graduationYear: this.filterYear() ?? undefined,
-        studyForm: this.filterStudyForm() || undefined,
-        code: this.filterCode() || undefined,
-      })
-      .subscribe({
-        next: (ids) => {
-          this.loadingSpecialties.set(false);
-          if (ids.length === 1) {
-            this.loadStudents(ids[0]);
-          } else {
-            this.foundIds.set(ids);
-            this.searched.set(true);
-          }
+    this.foundSpecialties.set([]);
+    this.specialtiesLoaded.set(false);
+    this.journalService.getSpecialties({}).subscribe({
+      next: (specialties) => {
+        this.loadingSpecialties.set(false);
+        this.foundSpecialties.set(specialties);
+        this.specialtiesLoaded.set(true);
+        if (specialties.length === 1) {
+          this.selectJournalSpecialty(specialties[0]);
+        }
+      },
+      error: () => {
+        this.toastService.error('Помилка завантаження спеціальностей');
+        this.loadingSpecialties.set(false);
+      },
+    });
+  }
+
+  // ── Step 2: Specialty ──────────────────────────────────────────────────────
+
+  selectJournalSpecialty(specialty: JournalSpecialtyDTO) {
+    this.selectedJournalSpecialty.set(specialty);
+    this.selectedSpecialtyId.set(specialty.externalId);
+    this.specialtyLinkStatus.set('checking');
+    this.matchedInternalSpecialty.set(null);
+    this.selectedInternalSpecialtyId.set(null);
+    this.selectedOfferingId.set(null);
+    this.offerings.set([]);
+    this.createOrgId.set(null);
+    this.orgSearch.set('');
+    this.showOrgDropdown.set(false);
+
+    this.specialtyService.getOfferingByExternalId(specialty.externalId).subscribe({
+      next: (offering) => {
+        if (offering) {
+          this.specialtyLinkStatus.set('linked');
+          this.selectedOfferingId.set(offering.id);
+          this.selectedInternalSpecialtyId.set(offering.specialtyId);
+          this.specialtyService.getOfferings(offering.specialtyId).subscribe({
+            next: (offs) => this.offerings.set(offs),
+            error: () => {},
+          });
+        } else {
+          this.specialtyService.getAll({ size: 200 }).subscribe({
+            next: (page) => {
+              const match = page.content.find((s) => s.code === specialty.code) ?? null;
+              if (match) {
+                this.matchedInternalSpecialty.set(match);
+                this.selectedInternalSpecialtyId.set(match.id);
+                this.specialtyLinkStatus.set('no-offering');
+                this.specialtyService.getOfferings(match.id).subscribe({
+                  next: (offs) => this.offerings.set(offs),
+                  error: () => {},
+                });
+              } else {
+                this.specialtyLinkStatus.set('no-specialty');
+                this.loadingOrgs.set(true);
+                this.orgService.getAllShort(OrgType.DEPARTMENT).subscribe({
+                  next: (list) => { this.orgs.set(list); this.loadingOrgs.set(false); },
+                  error: () => { this.toastService.error('Не вдалося завантажити підрозділи'); this.loadingOrgs.set(false); },
+                });
+              }
+            },
+            error: () => {
+              this.specialtyLinkStatus.set('no-specialty');
+              this.toastService.error('Не вдалося перевірити спеціальності');
+            },
+          });
+        }
+      },
+      error: () => {
+        this.specialtyLinkStatus.set(null);
+        this.toastService.error('Помилка перевірки зв\'язку спеціальності');
+      },
+    });
+  }
+
+  onOrgSearchChange(value: string) {
+    this.orgSearch.set(value);
+    this.createOrgId.set(null);
+    this.showOrgDropdown.set(true);
+  }
+
+  toggleOrgDropdown() {
+    const isOpening = !this.showOrgDropdown();
+    if (isOpening) {
+      setTimeout(() => {
+        const el = document.querySelector('[data-org-autocomplete]');
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        this.orgDropdownPosition.set(window.innerHeight - rect.bottom < 250 ? 'above' : 'below');
+      }, 0);
+    }
+    this.showOrgDropdown.set(!this.showOrgDropdown());
+  }
+
+  closeOrgDropdown() {
+    setTimeout(() => this.showOrgDropdown.set(false), 150);
+  }
+
+  assignOrg(org: OrganizationShort) {
+    this.createOrgId.set(org.id);
+    this.orgSearch.set(org.name);
+    this.showOrgDropdown.set(false);
+  }
+
+  proceedFromSpecialty() {
+    const status = this.specialtyLinkStatus();
+    const js = this.selectedJournalSpecialty();
+    if (!js) return;
+
+    if (status === 'linked') {
+      this.loadProfessors();
+      this.goToStudents();
+      return;
+    }
+
+    if (status === 'no-offering') {
+      const matched = this.matchedInternalSpecialty();
+      if (!matched) return;
+      this.loadingSpecialtyAction.set(true);
+      this.specialtyService.createOffering({
+        specialtyId: matched.id,
+        externalId: js.externalId,
+        graduationYear: js.graduationYear,
+      }).subscribe({
+        next: (offering) => {
+          this.selectedOfferingId.set(offering.id);
+          this.specialtyLinkStatus.set('linked');
+          this.loadingSpecialtyAction.set(false);
+          this.loadProfessors();
+          this.goToStudents();
         },
         error: () => {
-          this.toastService.error('Помилка пошуку спеціальності');
-          this.loadingSpecialties.set(false);
+          this.toastService.error('Не вдалося створити пропозицію спеціальності');
+          this.loadingSpecialtyAction.set(false);
         },
       });
+      return;
+    }
+
+    if (status === 'no-specialty') {
+      const orgId = this.createOrgId();
+      if (!orgId) return;
+      this.loadingSpecialtyAction.set(true);
+      this.specialtyService.create(this.buildSpecialtyRequest(js, orgId)).subscribe({
+        next: (newSpec) => {
+          this.matchedInternalSpecialty.set(newSpec);
+          this.selectedInternalSpecialtyId.set(newSpec.id);
+          this.specialtyService.createOffering({
+            specialtyId: newSpec.id,
+            externalId: js.externalId,
+            graduationYear: js.graduationYear,
+          }).subscribe({
+            next: (offering) => {
+              this.selectedOfferingId.set(offering.id);
+              this.specialtyLinkStatus.set('linked');
+              this.loadingSpecialtyAction.set(false);
+              this.loadProfessors();
+              this.goToStudents();
+            },
+            error: () => {
+              this.toastService.error('Не вдалося створити пропозицію спеціальності');
+              this.loadingSpecialtyAction.set(false);
+            },
+          });
+        },
+        error: () => {
+          this.toastService.error('Не вдалося створити спеціальність');
+          this.loadingSpecialtyAction.set(false);
+        },
+      });
+    }
   }
 
-  // ── Step 2: Students ───────────────────────────────────────────────────────
+  private buildSpecialtyRequest(js: JournalSpecialtyDTO, orgId: number): SpecialtyRequest {
+    const degreeMap: Record<string, Degree> = {
+      bachelor: Degree.BACHELOR,
+      master: Degree.MASTER,
+      specialist: Degree.SPECIALIST,
+      doctor: Degree.DOCTOR,
+    };
+    const eduTypeMap: Record<string, EduType> = {
+      full_time: EduType.FULL_TIME,
+      part_time: EduType.PART_TIME,
+    };
+    const studyLengthMap: Record<string, number> = {
+      bachelor: 4, master: 2, specialist: 5, doctor: 3,
+    };
+    const degree = degreeMap[js.degree?.toLowerCase()] ?? Degree.BACHELOR;
+    const eduType = eduTypeMap[js.studyForm?.toLowerCase()] ?? EduType.FULL_TIME;
+    const length = studyLengthMap[js.degree?.toLowerCase()] ?? 4;
+    const startYear = js.graduationYear - length;
+    return {
+      code: js.code,
+      nameUA: js.name,
+      nameEN: js.name,
+      studyProgramUA: js.name,
+      studyProgramEN: js.name,
+      eduProgramUA: js.name,
+      eduProgramEN: js.name,
+      orgId,
+      degree,
+      eduType,
+      startDate: `${startYear}-09-01T00:00:00Z`,
+      endDate: null,
+    };
+  }
 
-  loadStudents(id: number) {
-    this.selectedSpecialtyId.set(id);
+  // ── Step 3: Students ───────────────────────────────────────────────────────
+
+  goToStudents() {
+    const id = this.selectedSpecialtyId();
+    if (!id) return;
     this.studentRows.set([]);
+    this.studentsError.set(false);
     this.loadingStudents.set(true);
     this.step.set('students');
     this.journalService.getStudentsWithStatus(id).subscribe({
@@ -214,7 +436,7 @@ export class JournalComponent implements OnInit {
         this.loadingStudents.set(false);
       },
       error: () => {
-        this.toastService.error('Помилка завантаження студентів');
+        this.studentsError.set(true);
         this.loadingStudents.set(false);
       },
     });
@@ -230,31 +452,15 @@ export class JournalComponent implements OnInit {
     this.studentRows.update((rows) => rows.map((r) => ({ ...r, selected: checked })));
   }
 
-  // ── Step 3: Disciplines ────────────────────────────────────────────────────
+  // ── Step 4: Disciplines ────────────────────────────────────────────────────
 
   goToDisciplines() {
     const id = this.selectedSpecialtyId();
     if (!id) return;
     this.disciplineRows.set([]);
+    this.disciplinesError.set(false);
     this.loadingDisciplines.set(true);
     this.step.set('disciplines');
-    if (this.professors().length === 0) this.loadProfessors();
-    if (this.internalSpecialties().length === 0) this.loadInternalSpecialties();
-
-    // Auto-identify offering by journal externalId
-    this.specialtyService.getOfferingByExternalId(id).pipe(
-      switchMap((offering) => {
-        if (offering) {
-          this.selectedOfferingId.set(offering.id);
-          this.selectedInternalSpecialtyId.set(offering.specialtyId);
-          return this.specialtyService.getOfferings(offering.specialtyId);
-        }
-        return of([]);
-      })
-    ).subscribe({
-      next: (offs) => { if (offs.length) this.offerings.set(offs); },
-      error: () => {},
-    });
 
     this.journalService.getDisciplinesWithStatus(id).subscribe({
       next: (disciplines) => {
@@ -263,6 +469,8 @@ export class JournalComponent implements OnInit {
             discipline: d,
             selected: true,
             professorByAttempt: Object.fromEntries((d.attempts ?? [1]).map((a) => [a, null])),
+            studentProfessorOverrides: {},
+            showStudentOverrides: false,
           }))
         );
         const yearFromJournal = disciplines.find((d) => d.academicYear)?.academicYear;
@@ -270,34 +478,17 @@ export class JournalComponent implements OnInit {
         this.loadingDisciplines.set(false);
       },
       error: () => {
-        this.toastService.error('Помилка завантаження дисциплін');
+        this.disciplinesError.set(true);
         this.loadingDisciplines.set(false);
       },
     });
   }
 
   private loadProfessors() {
+    if (this.professors().length > 0) return;
     this.userService.getProfessors().subscribe({
       next: (list) => this.professors.set(list),
       error: () => this.toastService.error('Не вдалося завантажити список викладачів'),
-    });
-  }
-
-  private loadInternalSpecialties() {
-    this.specialtyService.getAll({ size: 200 }).subscribe({
-      next: (page) => this.internalSpecialties.set(page.content),
-      error: () => this.toastService.error('Не вдалося завантажити спеціальності'),
-    });
-  }
-
-  onInternalSpecialtyChange(specialtyId: number | null) {
-    this.selectedInternalSpecialtyId.set(specialtyId);
-    this.selectedOfferingId.set(null);
-    this.offerings.set([]);
-    if (!specialtyId) return;
-    this.specialtyService.getOfferings(specialtyId).subscribe({
-      next: (list) => this.offerings.set(list),
-      error: () => this.toastService.error('Не вдалося завантажити пропозиції спеціальності'),
     });
   }
 
@@ -315,6 +506,90 @@ export class JournalComponent implements OnInit {
           : r
       )
     );
+  }
+
+  profKey(externalId: number, attempt: number): string {
+    return `${externalId}_${attempt}`;
+  }
+
+  getFilteredProfessors(search: string): User[] {
+    const s = search.toLowerCase().trim();
+    if (!s) return this.professors();
+    return this.professors().filter((p) =>
+      this.professorFullName(p).toLowerCase().includes(s)
+    );
+  }
+
+  onProfSearchChange(key: string, value: string) {
+    this.profSearches.update((m) => ({ ...m, [key]: value }));
+    this.showProfDropdown.update((m) => ({ ...m, [key]: true }));
+  }
+
+  toggleProfDropdown(key: string) {
+    const isOpening = !this.showProfDropdown()[key];
+    if (isOpening) {
+      setTimeout(() => this.calculateProfDropdownPosition(key), 0);
+    }
+    this.showProfDropdown.update((m) => ({ ...m, [key]: !m[key] }));
+  }
+
+  closeProfDropdown(key: string) {
+    setTimeout(() => this.showProfDropdown.update((m) => ({ ...m, [key]: false })), 150);
+  }
+
+  assignProfessor(row: DisciplineRow, attempt: number, professorId: number | null) {
+    this.setProfessor(row, attempt, professorId);
+    const key = this.profKey(row.discipline.externalId, attempt);
+    const prof = professorId ? this.professors().find((p) => p.id === professorId) : null;
+    this.profSearches.update((m) => ({ ...m, [key]: prof ? this.professorFullName(prof) : '' }));
+    this.showProfDropdown.update((m) => ({ ...m, [key]: false }));
+  }
+
+  studentProfKey(disciplineExtId: number, attempt: number, studentExtId: number): string {
+    return `s_${disciplineExtId}_${attempt}_${studentExtId}`;
+  }
+
+  assignStudentProfessor(disciplineExtId: number, attempt: number, studentExtId: number, professorId: number | null) {
+    this.disciplineRows.update((rows) =>
+      rows.map((r) =>
+        r.discipline.externalId === disciplineExtId
+          ? {
+              ...r,
+              studentProfessorOverrides: {
+                ...r.studentProfessorOverrides,
+                [attempt]: { ...(r.studentProfessorOverrides[attempt] ?? {}), [studentExtId]: professorId },
+              },
+            }
+          : r
+      )
+    );
+    const key = this.studentProfKey(disciplineExtId, attempt, studentExtId);
+    const prof = professorId ? this.professors().find((p) => p.id === professorId) : null;
+    this.profSearches.update((m) => ({ ...m, [key]: prof ? this.professorFullName(prof) : '' }));
+    this.showProfDropdown.update((m) => ({ ...m, [key]: false }));
+  }
+
+  toggleStudentOverrides(externalId: number) {
+    this.disciplineRows.update((rows) =>
+      rows.map((r) =>
+        r.discipline.externalId === externalId
+          ? { ...r, showStudentOverrides: !r.showStudentOverrides }
+          : r
+      )
+    );
+  }
+
+  getStudentOverrideProfessor(disciplineExtId: number, attempt: number, studentExtId: number): number | null {
+    const row = this.disciplineRows().find((r) => r.discipline.externalId === disciplineExtId);
+    return row?.studentProfessorOverrides[attempt]?.[studentExtId] ?? null;
+  }
+
+  private calculateProfDropdownPosition(key: string) {
+    const element = document.querySelector(`[data-prof-key="${key}"]`);
+    if (!element) return;
+    const rect = element.getBoundingClientRect();
+    const position = window.innerHeight - rect.bottom < 250 ? 'above' : 'below';
+    this.profDropdownPositions.update((m) => ({ ...m, [key]: position }));
   }
 
   // ── Step 4: Grade view ─────────────────────────────────────────────────────
@@ -364,12 +639,25 @@ export class JournalComponent implements OnInit {
     if (!specialtyId || !offeringId) return;
 
     const professorByDisciplineId: Record<number, Record<number, number>> = {};
+    const professorOverridesByStudent: Record<number, Record<number, Record<number, number>>> = {};
     for (const row of this.selectedDisciplineRows()) {
       const byAttempt: Record<number, number> = {};
       for (const [attempt, profId] of Object.entries(row.professorByAttempt)) {
         if (profId !== null) byAttempt[+attempt] = profId;
       }
       professorByDisciplineId[row.discipline.externalId] = byAttempt;
+
+      for (const [attempt, studentMap] of Object.entries(row.studentProfessorOverrides)) {
+        for (const [studentId, profId] of Object.entries(studentMap)) {
+          if (profId !== null) {
+            if (!professorOverridesByStudent[row.discipline.externalId])
+              professorOverridesByStudent[row.discipline.externalId] = {};
+            if (!professorOverridesByStudent[row.discipline.externalId][+attempt])
+              professorOverridesByStudent[row.discipline.externalId][+attempt] = {};
+            professorOverridesByStudent[row.discipline.externalId][+attempt][+studentId] = profId;
+          }
+        }
+      }
     }
 
     const selectedStudentExternalIds = this.selectedStudentRows().map((r) => r.student.externalId);
@@ -381,6 +669,8 @@ export class JournalComponent implements OnInit {
         specialtyOfferingId: offeringId,
         academicYear: this.importAcademicYear(),
         professorByDisciplineId,
+        professorOverridesByStudent: Object.keys(professorOverridesByStudent).length
+          ? professorOverridesByStudent : undefined,
         selectedStudentExternalIds,
       })
       .subscribe({
@@ -399,13 +689,13 @@ export class JournalComponent implements OnInit {
   // ── Navigation ─────────────────────────────────────────────────────────────
 
   goToSearch() {
-    this.step.set('search');
-    this.foundIds.set([]);
-    this.searched.set(false);
-  }
-
-  goToStudents() {
-    this.step.set('students');
+    this.step.set('specialty');
+    this.selectedJournalSpecialty.set(null);
+    this.specialtyLinkStatus.set(null);
+    this.matchedInternalSpecialty.set(null);
+    this.createOrgId.set(null);
+    this.orgSearch.set('');
+    this.showOrgDropdown.set(false);
   }
 
   goToDisciplinesStep() {
@@ -413,12 +703,21 @@ export class JournalComponent implements OnInit {
   }
 
   reset() {
-    this.step.set('search');
-    this.foundIds.set([]);
-    this.searched.set(false);
+    this.step.set('specialty');
+    this.foundSpecialties.set([]);
+    this.specialtiesLoaded.set(false);
+    this.selectedJournalSpecialty.set(null);
+    this.specialtyLinkStatus.set(null);
+    this.matchedInternalSpecialty.set(null);
+    this.createOrgId.set(null);
+    this.orgSearch.set('');
+    this.showOrgDropdown.set(false);
+    this.orgs.set([]);
     this.selectedSpecialtyId.set(null);
     this.studentRows.set([]);
+    this.studentsError.set(false);
     this.disciplineRows.set([]);
+    this.disciplinesError.set(false);
     this.selectedInternalSpecialtyId.set(null);
     this.selectedOfferingId.set(null);
     this.offerings.set([]);
@@ -428,6 +727,7 @@ export class JournalComponent implements OnInit {
     this.previewDetails.set([]);
     const y = new Date().getFullYear();
     this.importAcademicYear.set(`${y}/${y + 1}`);
+    this.loadSpecialties();
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -440,17 +740,39 @@ export class JournalComponent implements OnInit {
     return `${u.lastName} ${u.firstName}${u.patronymic ? ' ' + u.patronymic : ''}`;
   }
 
-  yearOptions(): number[] {
-    const y = new Date().getFullYear();
-    return Array.from({ length: 8 }, (_, i) => y - 2 + i);
-  }
-
   degreeLabel(value: string) {
     return DEGREE_OPTIONS.find((o) => o.value === value)?.label ?? value;
   }
 
   studyFormLabel(value: string) {
     return STUDY_FORM_OPTIONS.find((o) => o.value === value)?.label ?? value;
+  }
+
+  cleanReason(reason: string): string {
+    // strip leading "400 BAD_REQUEST: " prefix
+    let s = reason.replace(/^\d{3,}[^:]*:\s*/, '').trim();
+    // strip surrounding escaped or plain quotes: \"...\", "..."
+    s = s.replace(/^\\?"(.*?)\\?"$/, '$1').trim();
+    // if JSON object, extract "message" field
+    if (s.startsWith('{')) {
+      try {
+        const obj = JSON.parse(s);
+        s = obj.message ?? obj.error ?? s;
+      } catch {}
+    }
+    return s;
+  }
+
+  showErrorTooltip(event: MouseEvent, reason: string) {
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    this.tooltipText.set(this.cleanReason(reason));
+    this.tooltipX.set(rect.left + rect.width / 2);
+    this.tooltipY.set(rect.top - 8);
+    this.tooltipVisible.set(true);
+  }
+
+  hideErrorTooltip() {
+    this.tooltipVisible.set(false);
   }
 
   gradeClass(grade: number | null): string {

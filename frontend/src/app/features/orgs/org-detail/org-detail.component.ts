@@ -58,6 +58,8 @@ export class OrgDetailComponent implements OnInit {
 
   load(id: number) {
     this.loading.set(true);
+    this.parentOrg.set(null);
+    this.departments.set([]);
     this.orgService.getById(id).subscribe({
       next: (o) => {
         this.org.set(o);

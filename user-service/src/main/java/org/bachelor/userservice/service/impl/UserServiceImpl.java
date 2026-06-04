@@ -45,17 +45,23 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<UserDTO> findAll() {
+    public List<UserDTO> findAll(Role role) {
         AuthenticatedUser currentUser = SecurityUtils.getCurrentUser();
 
         if (currentUser.isAdmin()) {
-            return userRepository.findAll().stream().map(userMapper::toDto).toList();
+            return userRepository.findAll().stream()
+                    .filter(u -> role == null || u.getRole() == role)
+                    .map(userMapper::toDto)
+                    .toList();
         }
 
         if (currentUser.isManager()) {
             Set<Long> allIds = accessControlService.getAllowedUserIdsForManager();
             if (allIds.isEmpty()) return List.of();
-            return userRepository.findAllById(allIds).stream().map(userMapper::toDto).toList();
+            return userRepository.findAllById(allIds).stream()
+                    .filter(u -> role == null || u.getRole() == role)
+                    .map(userMapper::toDto)
+                    .toList();
         }
 
         throw new AccessDeniedException("Недостатньо прав");
@@ -137,6 +143,10 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void delete(Long id) {
         User user = getUserOrThrow(id);
+        if (bookNumberRepository.existsByStudentId(id)) {
+            throw new ValidationException(
+                "Неможливо видалити користувача: спочатку видаліть його залікові книжки");
+        }
         userRepository.delete(user);
     }
 

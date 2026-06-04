@@ -16,8 +16,8 @@
 
 .hamburger {
     position: fixed;
-    top: 1.4rem;
-    left: 1.5rem;
+    top: 1.25rem;
+    left: 1.25rem;
     z-index: 101;
     background: var(--surface);
     border: 1px solid var(--border);
@@ -31,11 +31,16 @@
     gap: 5px;
     cursor: pointer;
     box-shadow: var(--shadow);
-    transition: all 0.2s;
+    transition: background 0.2s;
 }
 
 .hamburger:hover {
     background: var(--surface-2);
+}
+
+.hamburger.hidden {
+    opacity: 0;
+    pointer-events: none;
 }
 
 .hamburger span {
@@ -44,26 +49,13 @@
     height: 2px;
     background: var(--text);
     border-radius: 2px;
-    transition: all 0.3s;
-}
-
-.hamburger.open span:nth-child(1) {
-    transform: translateY(7px) rotate(45deg);
-}
-
-.hamburger.open span:nth-child(2) {
-    opacity: 0;
-}
-
-.hamburger.open span:nth-child(3) {
-    transform: translateY(-7px) rotate(-45deg);
 }
 
 .sidebar {
     width: 280px;
     background: var(--surface);
     border-right: 1px solid var(--border);
-    padding: 2rem 1.5rem;
+    padding: 1.25rem 1.5rem 2rem;
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -81,9 +73,38 @@
 .logo {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 0.4rem 0.6rem;
+    justify-content: space-between;
+    height: 40px;
     margin-bottom: 2.5rem;
+}
+
+.logo-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.close-btn {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    color: var(--text-muted);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    transition: color 0.2s, background 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+    box-shadow: var(--shadow);
+}
+
+.close-btn:hover {
+    color: #E53E3E;
+    background: rgba(229, 62, 62, 0.08);
+    border-color: rgba(229, 62, 62, 0.3);
 }
 
 .logo-icon {

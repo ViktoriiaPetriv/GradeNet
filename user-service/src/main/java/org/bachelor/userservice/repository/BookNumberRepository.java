@@ -11,6 +11,7 @@ import java.util.List;
 
 public interface BookNumberRepository extends JpaRepository<BookNumber, Long>, JpaSpecificationExecutor<BookNumber> {
     boolean existsByNumber(String number);
+    boolean existsByStudentId(Long studentId);
     List<BookNumber> findAllByStudentId(Long studentId);
     boolean existsByStudentIdAndSpecialtyOfferingId(Long studentId, Long specialtyOfferingId);
     boolean existsByStudentIdAndSpecialtyOfferingIdInAndStatusNot(Long studentId, List<Long> offeringIds, BookNumberStatus status);

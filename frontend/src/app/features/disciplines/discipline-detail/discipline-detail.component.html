@@ -82,6 +82,9 @@
                           <th>Лаб.</th>
                           <th>Інд.</th>
                           <th>СРС</th>
+                          @if (isAdmin()) {
+                            <th></th>
+                          }
                         </tr>
                       </thead>
                       <tbody>
@@ -96,6 +99,16 @@
                             <td>{{ h.laboratoryHours }}</td>
                             <td>{{ h.individualHours }}</td>
                             <td>{{ h.selfWorkHours }}</td>
+                            @if (isAdmin()) {
+                              <td class="hours-actions-cell">
+                                <button class="btn-icon-sm" title="Редагувати" (click)="editHoursTarget.set(h)">
+                                  <i class="pi pi-pencil"></i>
+                                </button>
+                                <button class="btn-icon-sm btn-icon-danger" title="Видалити" (click)="deleteHoursTarget.set(h)">
+                                  <i class="pi pi-trash"></i>
+                                </button>
+                              </td>
+                            }
                           </tr>
                         }
                       </tbody>
@@ -150,4 +163,24 @@
     [specialtyName]="getSpecialtyNameForSd(addHoursTargetSdId()!)"
     (saved)="onHoursAdded()"
     (cancelled)="addHoursTargetSdId.set(null)" />
+}
+
+@if (editHoursTarget() !== null) {
+  <app-add-hours-modal
+    [specialtyDisciplineId]="0"
+    [specialtyName]="'Навч. рік ' + editHoursTarget()!.academicYear"
+    [hoursToEdit]="editHoursTarget()"
+    (saved)="onHoursEdited()"
+    (cancelled)="editHoursTarget.set(null)" />
+}
+
+@if (deleteHoursTarget() !== null) {
+  <app-confirm-dialog
+    title="Видалити години"
+    [message]="'Видалити запис за ' + deleteHoursTarget()!.academicYear + '?'"
+    subtext="Цю дію не можна скасувати."
+    confirmLabel="Видалити"
+    iconType="danger"
+    (confirm)="confirmDeleteHours()"
+    (cancel)="deleteHoursTarget.set(null)" />
 }

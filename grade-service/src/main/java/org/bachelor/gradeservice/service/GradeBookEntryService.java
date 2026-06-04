@@ -13,6 +13,8 @@ public interface GradeBookEntryService {
     PageResponse<GradeBookEntryDTO> getAll(GradeBookEntryFilter filter, Pageable pageable);
     void delete(Long id);
     List<StudentDisciplineDTO> getStudentDisciplines(Long bookNumberId, StudentDisciplineFilter filter);
+    StudentGradeReportDTO getStudentGradeReport(Long bookNumberId, StudentDisciplineFilter filter);
     List<BulkGradeEntryDTO> getBulkEntries(Long specialtyDisciplineId, String academicYear);
     List<BulkGradeEntryDTO> getGroupReport(Long specialtyDisciplineId, String academicYear);
+    GradeBookEntryDTO reset(Long id);
 }

@@ -1,18 +1,19 @@
-<app-page-header
-  title="Електронний журнал"
-  subtitle="Перегляд та імпорт даних із зовнішнього електронного журналу" />
-
 <div class="journal-container">
+
+  <app-page-header
+    title="Електронний журнал"
+    subtitle="Перегляд та імпорт даних із зовнішнього електронного журналу" />
 
   <!-- Breadcrumb -->
   <nav class="breadcrumb">
-    <span class="crumb" [class.crumb-active]="step() === 'search'" (click)="step() === 'search' || goToSearch()">
-      <i class="pi pi-search"></i> Пошук
+    <span class="crumb" [class.crumb-active]="step() === 'specialty'"
+      (click)="step() !== 'result' && goToSearch()">
+      <i class="pi pi-bookmark"></i> Спеціальність
     </span>
     @if (['students','disciplines','grade-view','preview','result'].includes(step())) {
     <i class="pi pi-angle-right crumb-sep"></i>
     <span class="crumb" [class.crumb-active]="step() === 'students'"
-      (click)="step() !== 'result' && goToStudents()">
+      (click)="step() !== 'result' && step.set('students')">
       <i class="pi pi-users"></i> Студенти
     </span>
     }
@@ -40,92 +41,126 @@
     }
   </nav>
 
-  <!-- ===== STEP 1: SEARCH ===== -->
-  @if (step() === 'search') {
+  <!-- ===== STEP 1: SPECIALTY ===== -->
+  @if (step() === 'specialty') {
   <div class="card">
-    <h3 class="card-title"><i class="pi pi-filter"></i> Фільтри пошуку</h3>
-    <p class="card-desc">Введіть параметри для пошуку спеціальності в електронному журналі.</p>
+    <h3 class="card-title">
+      <i class="pi pi-bookmark"></i> Оберіть спеціальність
+      @if (!loadingSpecialties()) { <span class="badge">{{ foundSpecialties().length }}</span> }
+    </h3>
+    <p class="card-desc">Оберіть спеціальність із журналу для прив'язки до внутрішньої системи.</p>
 
-    <div class="filter-grid">
-      <div class="field">
-        <label class="field-label">Код спеціальності</label>
-        <input type="text" class="field-input" placeholder="Напр. 121"
-          [ngModel]="filterCode()" (ngModelChange)="filterCode.set($event)"
-          (keyup.enter)="searchSpecialties()" />
-      </div>
-      <div class="field">
-        <label class="field-label">Ступінь</label>
-        <select class="field-select" [ngModel]="filterDegree()" (ngModelChange)="filterDegree.set($event)">
-          <option value="">Всі</option>
-          @for (o of degreeOptions; track o.value) {
-          <option [value]="o.value">{{ o.label }}</option>
-          }
-        </select>
-      </div>
-      <div class="field">
-        <label class="field-label">Рік випуску</label>
-        <select class="field-select" [ngModel]="filterYear()"
-          (ngModelChange)="filterYear.set($event ? +$event : null)">
-          <option [value]="null">Всі</option>
-          @for (y of yearOptions(); track y) {
-          <option [value]="y">{{ y }}</option>
-          }
-        </select>
-      </div>
-      <div class="field">
-        <label class="field-label">Форма навчання</label>
-        <select class="field-select" [ngModel]="filterStudyForm()" (ngModelChange)="filterStudyForm.set($event)">
-          <option value="">Всі</option>
-          @for (o of studyFormOptions; track o.value) {
-          <option [value]="o.value">{{ o.label }}</option>
-          }
-        </select>
-      </div>
-    </div>
-
-    <div class="actions actions-left">
-      <button class="btn-primary" [disabled]="loadingSpecialties()" (click)="searchSpecialties()">
-        @if (loadingSpecialties()) { <i class="pi pi-spin pi-spinner"></i> Пошук... }
-        @else { <i class="pi pi-search"></i> Знайти }
-      </button>
-    </div>
-  </div>
-
-  @if (searched() && !loadingSpecialties()) {
-    @if (foundIds().length === 0) {
-    <div class="empty-hint warn-hint">
-      <i class="pi pi-exclamation-triangle"></i>
-      Спеціальності за заданими фільтрами не знайдено.
-    </div>
+    @if (loadingSpecialties()) {
+    <div class="loading-center"><i class="pi pi-spin pi-spinner"></i> Завантаження...</div>
+    } @else if (foundSpecialties().length === 0 && specialtiesLoaded()) {
+    <div class="empty-hint warn-hint"><i class="pi pi-exclamation-triangle"></i> Спеціальностей не знайдено.</div>
     } @else {
-    <div class="card">
-      <h3 class="card-title">
-        <i class="pi pi-check-circle" style="color:#0d9e6e"></i>
-        Знайдені спеціальності
-        <span class="badge">{{ foundIds().length }}</span>
-      </h3>
-      <div class="id-list">
-        @for (id of foundIds(); track id) {
-        <div class="id-card" (click)="loadStudents(id)">
-          <div class="id-badge">ID</div>
-          <div class="id-value">{{ id }}</div>
-          <button class="btn-primary btn-sm">
-            <i class="pi pi-arrow-right"></i> Вибрати
-          </button>
+    <div class="specialty-list">
+      @for (s of foundSpecialties(); track s.externalId) {
+      @let isSelected = selectedJournalSpecialty()?.externalId === s.externalId;
+      <div class="specialty-card" [class.selected]="isSelected" (click)="selectJournalSpecialty(s)">
+        <span class="specialty-code">{{ s.code }}</span>
+        <div class="specialty-body">
+          <div class="specialty-name">{{ s.name }}</div>
+          <div class="specialty-meta">
+            @if (s.degree) { <span class="tag">{{ degreeLabel(s.degree) }}</span> }
+            @if (s.studyForm) { <span class="tag">{{ studyFormLabel(s.studyForm) }}</span> }
+            @if (s.graduationYear) { <span class="tag">Вип. {{ s.graduationYear }}</span> }
+          </div>
+        </div>
+
+        @if (isSelected) {
+          @if (specialtyLinkStatus() === 'checking') {
+          <i class="pi pi-spin pi-spinner specialty-arrow" style="color:#64748b"></i>
+          } @else if (specialtyLinkStatus() === 'linked') {
+          <i class="pi pi-check-circle specialty-arrow" style="color:#0d9e6e"></i>
+          } @else if (specialtyLinkStatus() === 'no-offering' || specialtyLinkStatus() === 'no-specialty') {
+          <i class="pi pi-exclamation-circle specialty-arrow" style="color:#f59e0b"></i>
+          }
+        } @else {
+        <i class="pi pi-angle-right specialty-arrow"></i>
+        }
+      </div>
+
+      @if (isSelected && specialtyLinkStatus() !== 'checking' && specialtyLinkStatus() !== null) {
+      <div class="specialty-status-panel"
+        [class.status-linked]="specialtyLinkStatus() === 'linked'"
+        [class.status-info]="specialtyLinkStatus() === 'no-offering'"
+        [class.status-warn]="specialtyLinkStatus() === 'no-specialty'">
+
+        @if (specialtyLinkStatus() === 'linked') {
+        <i class="pi pi-check-circle"></i>
+        <span>Зв'язок знайдено — спеціальність вже прив'язана до внутрішньої системи.</span>
+        }
+
+        @if (specialtyLinkStatus() === 'no-offering') {
+        <i class="pi pi-info-circle"></i>
+        <span>
+          Знайдено відповідну спеціальність
+          <strong>{{ matchedInternalSpecialty()?.nameUA }}</strong>.
+          Буде автоматично створено нову пропозицію (рік випуску {{ s.graduationYear }}).
+        </span>
+        }
+
+        @if (specialtyLinkStatus() === 'no-specialty') {
+        <div class="no-specialty-form">
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem">
+            <i class="pi pi-exclamation-triangle" style="color:#f59e0b"></i>
+            <span>Спеціальність з кодом <strong>{{ s.code }}</strong> не знайдена в системі. Оберіть підрозділ для створення.</span>
+          </div>
+          @if (loadingOrgs()) {
+          <div style="color:#64748b;font-size:0.85rem"><i class="pi pi-spin pi-spinner"></i> Завантаження підрозділів...</div>
+          } @else {
+          <div class="field" style="max-width:360px">
+            <label class="field-label">Кафедра / підрозділ</label>
+            <div class="autocomplete-wrapper" data-org-autocomplete>
+              <input
+                type="text"
+                class="field-input"
+                placeholder="Введіть назву підрозділу..."
+                [value]="orgSearch()"
+                (input)="onOrgSearchChange($any($event.target).value)"
+                (focus)="toggleOrgDropdown()"
+                (blur)="closeOrgDropdown()"
+              />
+              @if (showOrgDropdown() && orgSearch()) {
+                <ul class="autocomplete-list" [class.dropdown-above]="orgDropdownPosition() === 'above'">
+                  @for (org of filteredOrgs(); track org.id) {
+                    <li class="autocomplete-item" (mousedown)="assignOrg(org)">{{ org.name }}</li>
+                  }
+                  @if (filteredOrgs().length === 0) {
+                    <li class="autocomplete-item no-results">Немає варіантів</li>
+                  }
+                </ul>
+              }
+              @if (createOrgId() === null) {
+                <i class="pi pi-exclamation-circle field-status-error"></i>
+              } @else {
+                <i class="pi pi-check field-status-ok"></i>
+              }
+            </div>
+          </div>
+          }
         </div>
         }
       </div>
+      }
+      }
     </div>
     }
-  } @else if (!searched() && !loadingSpecialties()) {
-  <div class="empty-hint">
-    <i class="pi pi-info-circle"></i>
-    Введіть параметри та натисніть «Знайти».
+  </div>
+
+  <div class="actions">
+    <button class="btn-primary"
+      [disabled]="!canProceedFromSpecialty() || loadingSpecialtyAction() || specialtyLinkStatus() === 'checking'"
+      (click)="proceedFromSpecialty()">
+      @if (loadingSpecialtyAction()) { <i class="pi pi-spin pi-spinner"></i> Обробка... }
+      @else { <i class="pi pi-arrow-right"></i> Далі }
+    </button>
   </div>
   }
-  }
 
-  <!-- ===== STEP 2: STUDENTS ===== -->
+  <!-- ===== STEP 3: STUDENTS ===== -->
   @if (step() === 'students') {
   <div class="card">
     <h3 class="card-title">
@@ -136,8 +171,13 @@
 
     @if (loadingStudents()) {
     <div class="loading-center"><i class="pi pi-spin pi-spinner"></i> Завантаження...</div>
+    } @else if (studentsError()) {
+    <div class="empty-hint warn-hint">
+      <i class="pi pi-exclamation-triangle"></i>
+      Не вдалося завантажити список студентів. Спробуйте повернутись і обрати спеціальність знову.
+    </div>
     } @else if (studentRows().length === 0) {
-    <div class="empty-hint"><i class="pi pi-info-circle"></i> Студентів не знайдено.</div>
+    <div class="empty-hint"><i class="pi pi-info-circle"></i> Для цієї спеціальності студентів не знайдено.</div>
     } @else {
     <div class="select-all-row">
       <label class="check-label">
@@ -166,17 +206,17 @@
   </div>
 
   <div class="actions">
-    <button class="btn-secondary" (click)="goToSearch()">
+    <button class="btn-secondary" (click)="step.set('specialty')">
       <i class="pi pi-arrow-left"></i> Назад
     </button>
     <button class="btn-primary" [disabled]="selectedStudentRows().length === 0 || loadingStudents()"
       (click)="goToDisciplines()">
-      <i class="pi pi-arrow-right"></i> Дисципліни
+      <i class="pi pi-arrow-right"></i> Далі
     </button>
   </div>
   }
 
-  <!-- ===== STEP 3: DISCIPLINES ===== -->
+  <!-- ===== STEP 4: DISCIPLINES ===== -->
   @if (step() === 'disciplines') {
   <div class="two-cols">
 
@@ -190,6 +230,13 @@
 
       @if (loadingDisciplines()) {
       <div class="loading-center"><i class="pi pi-spin pi-spinner"></i> Завантаження...</div>
+      } @else if (disciplinesError()) {
+      <div class="empty-hint warn-hint">
+        <i class="pi pi-exclamation-triangle"></i>
+        Не вдалося завантажити список дисциплін. Спробуйте повернутись і обрати спеціальність знову.
+      </div>
+      } @else if (disciplineRows().length === 0) {
+      <div class="empty-hint"><i class="pi pi-info-circle"></i> Для цієї спеціальності дисциплін не знайдено.</div>
       } @else {
       <div class="disc-import-list">
         @for (row of disciplineRows(); track row.discipline.externalId) {
@@ -221,21 +268,93 @@
           @if (row.selected) {
           <div class="disc-attempts">
             @for (attempt of row.discipline.attempts; track attempt) {
+            @let key = profKey(row.discipline.externalId, attempt);
             <div class="disc-attempt-row">
               <span class="attempt-label">
                 @if (attempt === 1) { Спроба 1 } @else { Повтор (×{{ attempt }}) }
               </span>
-              <select class="field-select prof-select"
-                [ngModel]="row.professorByAttempt[attempt]"
-                (ngModelChange)="setProfessor(row, attempt, +$event || null)">
-                <option [value]="null">— Викладач —</option>
-                @for (p of professors(); track p.id) {
-                <option [value]="p.id">{{ professorFullName(p) }}</option>
+              <div class="autocomplete-wrapper" [attr.data-prof-key]="key">
+                <input
+                  type="text"
+                  class="field-input prof-input"
+                  placeholder="— Викладач —"
+                  [value]="profSearches()[key] || ''"
+                  (input)="onProfSearchChange(key, $any($event.target).value)"
+                  (focus)="toggleProfDropdown(key)"
+                  (blur)="closeProfDropdown(key)"
+                />
+                @if (showProfDropdown()[key] && profSearches()[key]) {
+                  <ul class="autocomplete-list" [class.dropdown-above]="profDropdownPositions()[key] === 'above'">
+                    @for (p of getFilteredProfessors(profSearches()[key]); track p.id) {
+                      <li class="autocomplete-item" (mousedown)="assignProfessor(row, attempt, p.id)">
+                        {{ professorFullName(p) }}
+                      </li>
+                    }
+                    @if (getFilteredProfessors(profSearches()[key]).length === 0) {
+                      <li class="autocomplete-item no-results">Немає варіантів</li>
+                    }
+                  </ul>
                 }
-              </select>
+                @if (row.professorByAttempt[attempt] === null) {
+                  <i class="pi pi-exclamation-circle field-status-error"></i>
+                } @else {
+                  <i class="pi pi-check field-status-ok"></i>
+                }
+              </div>
+            </div>
+            }
+            <button class="btn-student-overrides" (click)="toggleStudentOverrides(row.discipline.externalId)">
+              <i class="pi" [class.pi-chevron-down]="!row.showStudentOverrides" [class.pi-chevron-up]="row.showStudentOverrides"></i>
+              {{ row.showStudentOverrides ? 'Сховати розподіл по студентах' : 'Розподіл по студентах' }}
+            </button>
+          </div>
+
+          @if (row.showStudentOverrides) {
+          <div class="student-overrides">
+            <div class="student-overrides-header">
+              <span class="student-col-label">Студент</span>
+              @for (attempt of row.discipline.attempts; track attempt) {
+                <span class="attempt-col-label">
+                  @if (attempt === 1) { Спроба 1 } @else { Повтор ×{{ attempt }} }
+                </span>
+              }
+            </div>
+            @for (sr of selectedStudentRows(); track sr.student.externalId) {
+            <div class="student-override-row">
+              <span class="student-override-name">{{ fullName(sr.student) }}</span>
+              @for (attempt of row.discipline.attempts; track attempt) {
+              @let skey = studentProfKey(row.discipline.externalId, attempt, sr.student.externalId);
+              <div class="autocomplete-wrapper student-prof-wrapper" [attr.data-prof-key]="skey">
+                <input
+                  type="text"
+                  class="field-input prof-input"
+                  [placeholder]="profSearches()[profKey(row.discipline.externalId, attempt)] || '— за замовч. —'"
+                  [value]="profSearches()[skey] || ''"
+                  (input)="onProfSearchChange(skey, $any($event.target).value)"
+                  (focus)="toggleProfDropdown(skey)"
+                  (blur)="closeProfDropdown(skey)"
+                />
+                @if (showProfDropdown()[skey] && profSearches()[skey]) {
+                  <ul class="autocomplete-list" [class.dropdown-above]="profDropdownPositions()[skey] === 'above'">
+                    @for (p of getFilteredProfessors(profSearches()[skey]); track p.id) {
+                      <li class="autocomplete-item" (mousedown)="assignStudentProfessor(row.discipline.externalId, attempt, sr.student.externalId, p.id)">
+                        {{ professorFullName(p) }}
+                      </li>
+                    }
+                    @if (getFilteredProfessors(profSearches()[skey]).length === 0) {
+                      <li class="autocomplete-item no-results">Немає варіантів</li>
+                    }
+                  </ul>
+                }
+                @if (getStudentOverrideProfessor(row.discipline.externalId, attempt, sr.student.externalId) !== null) {
+                  <i class="pi pi-check field-status-ok"></i>
+                }
+              </div>
+              }
             </div>
             }
           </div>
+          }
           }
         </div>
         }
@@ -247,23 +366,15 @@
     <div class="card">
       <h3 class="card-title"><i class="pi pi-cog"></i> Налаштування імпорту</h3>
 
+      @if (selectedSpecialtyInfo(); as sp) {
       <div class="field" style="margin-bottom:1rem">
-        <label class="field-label">Пошук спеціальності</label>
-        <input type="text" class="field-input" placeholder="Назва спеціальності..."
-          [ngModel]="importSpecialtySearch()" (ngModelChange)="importSpecialtySearch.set($event)" />
+        <label class="field-label">Спеціальність</label>
+        <div style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.75rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem">
+          <span style="font-weight:600;color:#64748b;font-size:0.78rem;background:#e2e8f0;padding:0.15rem 0.4rem;border-radius:4px">{{ sp.code }}</span>
+          <span style="color:#1e293b;font-weight:500">{{ sp.nameUA }}</span>
+        </div>
       </div>
-
-      <div class="field" style="margin-bottom:1rem">
-        <label class="field-label">Спеціальність (системна)</label>
-        <select class="field-select"
-          [ngModel]="selectedInternalSpecialtyId()"
-          (ngModelChange)="onInternalSpecialtyChange(+$event || null)">
-          <option [value]="null">— Оберіть спеціальність —</option>
-          @for (s of filteredInternalSpecialties(); track s.id) {
-          <option [value]="s.id">{{ s.code }} — {{ s.nameUA }}</option>
-          }
-        </select>
-      </div>
+      }
 
       <div class="field" style="margin-bottom:1rem">
         <label class="field-label">
@@ -309,7 +420,7 @@
   </div>
 
   <div class="actions">
-    <button class="btn-secondary" (click)="goToStudents()">
+    <button class="btn-secondary" (click)="step.set('students')">
       <i class="pi pi-arrow-left"></i> Назад
     </button>
     <button class="btn-import" [disabled]="!canImport() || loadingPreview()" (click)="goToPreview()">
@@ -429,7 +540,12 @@
           <tr class="subheader-row">
             <th>Викладач</th>
             @for (col of table.columns; track col.discipline.externalId + '-' + col.attempt) {
-            <th>{{ col.professor ? professorFullName(col.professor) : '—' }}</th>
+            <th>
+              {{ col.professor ? professorFullName(col.professor) : '—' }}
+              @if (col.hasStudentOverrides) {
+                <span class="col-overrides-badge">+ різні</span>
+              }
+            </th>
             }
           </tr>
         </thead>
@@ -439,12 +555,15 @@
             <td class="cell-name cell-student">{{ fullName(row.student) }}</td>
             @for (cell of row.cells; track $index) {
             <td class="col-center">
-              @if (cell !== null) {
-              <span class="grade-chip" [ngClass]="gradeClass(cell.universityGrade)">
-                {{ cell.universityGrade ?? '—' }}
+              @if (cell.grade !== null) {
+              <span class="grade-chip" [ngClass]="gradeClass(cell.grade.universityGrade)">
+                {{ cell.grade.universityGrade ?? '—' }}
               </span>
               } @else {
               <span class="grade-empty">—</span>
+              }
+              @if (cell.overrideProf) {
+              <div class="cell-override-prof">{{ professorFullName(cell.overrideProf) }}</div>
               }
             </td>
             }
@@ -519,7 +638,11 @@
           <tr>
             <td class="cell-sub">{{ e.studentName ?? '—' }}</td>
             <td class="cell-sub">{{ e.disciplineName ?? '—' }}</td>
-            <td class="cell-error">{{ e.reason }}</td>
+            <td class="cell-error">
+              <i class="pi pi-exclamation-circle error-reason-icon"
+                (mouseenter)="showErrorTooltip($event, e.reason)"
+                (mouseleave)="hideErrorTooltip()"></i>
+            </td>
           </tr>
           }
         </tbody>
@@ -544,3 +667,11 @@
   }
 
 </div>
+
+@if (tooltipVisible()) {
+  <div class="error-tooltip-fixed"
+    [style.left.px]="tooltipX()"
+    [style.top.px]="tooltipY()">
+    {{ tooltipText() }}
+  </div>
+}

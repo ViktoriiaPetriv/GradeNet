@@ -14,10 +14,11 @@ import {
   DisciplineCheckItem,
   StudentCheckResult,
   StudentCheckItem,
+  GradeComparisonResult,
 } from '../../models/import.model';
 import { User } from '../../models/user.model';
 
-type Step = 'upload' | 'offering' | 'disciplines' | 'students' | 'preview' | 'result';
+type Step = 'upload' | 'disciplines' | 'students' | 'preview' | 'result';
 
 interface DisciplineSelection {
   index: number;
@@ -70,6 +71,9 @@ export class ImportComponent implements OnInit {
   disciplineSelections = signal<DisciplineSelection[]>([]);
   studentCheck = signal<StudentCheckResult | null>(null);
   selectedBookNumberIds = signal<Set<number>>(new Set());
+  gradeComparison = signal<GradeComparisonResult | null>(null);
+  overwriteGrades = signal(false);
+  comparingGrades = signal(false);
   result = signal<ImportResult | null>(null);
 
   disciplineSearches = signal<Record<number, string>>({});
@@ -81,8 +85,6 @@ export class ImportComponent implements OnInit {
     if (!user) return '';
     return [user.lastName, user.firstName].filter(Boolean).join(' ');
   });
-
-  canProceedToUpload = computed(() => !this.parsing());
 
   canProceedToDisciplines = computed(
     () => this.selectedFile() !== null && !this.parsing()
@@ -190,11 +192,32 @@ export class ImportComponent implements OnInit {
     return { columns, rows, professors };
   });
 
+  comparisonDiffCount = computed(() => {
+    const c = this.gradeComparison();
+    if (!c) return 0;
+    return c.students.reduce(
+      (sum, s) => sum + s.cells.filter((cell) => cell.hasDiff).length,
+      0
+    );
+  });
+
+  comparisonExistingCount = computed(() => {
+    const c = this.gradeComparison();
+    if (!c) return 0;
+    return c.students.reduce(
+      (sum, s) => sum + s.cells.filter((cell) => !cell.isNew).length,
+      0
+    );
+  });
+
+  getComparisonCell(student: GradeComparisonResult['students'][number], disciplineIndex: number) {
+    return student.cells.find((c) => c.disciplineIndex === disciplineIndex) ?? null;
+  }
+
   ngOnInit() {
     if (!this.isProfessor()) {
-      this.userService.findAll().subscribe({
-        next: (users) =>
-          this.professors.set(users.filter((u) => u.role === 'PROFESSOR')),
+      this.userService.findAll('PROFESSOR').subscribe({
+        next: (users) => this.professors.set(users),
         error: () => this.toastService.error('Помилка завантаження викладачів'),
       });
     }
@@ -243,9 +266,10 @@ export class ImportComponent implements OnInit {
     this.step.set('upload');
   }
 
-  checkDisciplines() {
+  proceedFromUpload() {
     const file = this.selectedFile();
     if (!file) return;
+    this.parsing.set(true);
     this.checkingDisciplines.set(true);
 
     this.importService.checkDisciplines(file).subscribe({
@@ -258,50 +282,48 @@ export class ImportComponent implements OnInit {
             name: d.name,
             existsInSystem: d.existsInSystem,
             selected: true,
-            createIfNew: d.existsInSystem ? false : true,
+            createIfNew: !d.existsInSystem,
             professorId: defaultProfId,
             totalHours: d.totalHours,
             ectsCredits: d.ectsCredits,
             semester: d.semester,
           }))
         );
-        this.checkingDisciplines.set(false);
-        if (check.specialtyOfferingId === null && check.graduationYear !== null) {
-          this.step.set('offering');
+
+        if (check.specialtyOfferingId === null && check.graduationYear !== null && check.specialtyId !== null) {
+          this.creatingOffering.set(true);
+          this.specialtyService.createOffering({
+            specialtyId: check.specialtyId,
+            graduationYear: check.graduationYear,
+            externalId: null,
+          }).subscribe({
+            next: (offering) => {
+              this.disciplineCheck.update((c) => c ? { ...c, specialtyOfferingId: offering.id } : c);
+              this.creatingOffering.set(false);
+              this.parsing.set(false);
+              this.checkingDisciplines.set(false);
+              this.toastService.success(`Створено набір випуску ${check.graduationYear}`);
+              this.step.set('disciplines');
+            },
+            error: () => {
+              this.creatingOffering.set(false);
+              this.parsing.set(false);
+              this.checkingDisciplines.set(false);
+              this.toastService.error('Помилка при створенні випуску спеціальності');
+            },
+          });
         } else {
+          this.parsing.set(false);
+          this.checkingDisciplines.set(false);
           this.step.set('disciplines');
         }
       },
       error: () => {
+        this.parsing.set(false);
         this.checkingDisciplines.set(false);
         this.toastService.error('Помилка при перевірці дисциплін');
       },
     });
-  }
-
-  confirmCreateOffering() {
-    const check = this.disciplineCheck();
-    if (!check?.specialtyId || !check?.graduationYear) return;
-    this.creatingOffering.set(true);
-    this.specialtyService.createOffering({
-      specialtyId: check.specialtyId,
-      graduationYear: check.graduationYear,
-      externalId: null,
-    }).subscribe({
-      next: (offering) => {
-        this.disciplineCheck.update((c) => c ? { ...c, specialtyOfferingId: offering.id } : c);
-        this.creatingOffering.set(false);
-        this.step.set('disciplines');
-      },
-      error: () => {
-        this.creatingOffering.set(false);
-        this.toastService.error('Помилка при створенні випуску');
-      },
-    });
-  }
-
-  declineCreateOffering() {
-    this.clearFile();
   }
 
   proceedToStudents() {
@@ -425,7 +447,33 @@ export class ImportComponent implements OnInit {
   }
 
   proceedToPreview() {
+    const file = this.selectedFile();
+    if (!file) return;
+
+    const professorMap: Record<number, number> = {};
+    for (const d of this.disciplineSelections()) {
+      const shouldInclude = d.existsInSystem ? d.selected : d.createIfNew && d.selected;
+      if (!shouldInclude) continue;
+      const pid = this.isProfessor() ? (this.currentUserId() ?? null) : d.professorId;
+      if (pid !== null) professorMap[d.index] = pid;
+    }
+
+    const selectedStudentIds = Array.from(this.selectedBookNumberIds());
+
+    this.comparingGrades.set(true);
+    this.gradeComparison.set(null);
+    this.overwriteGrades.set(false);
     this.step.set('preview');
+
+    this.importService.compareGrades(file, professorMap, selectedStudentIds).subscribe({
+      next: (comparison) => {
+        this.gradeComparison.set(comparison);
+        this.comparingGrades.set(false);
+      },
+      error: () => {
+        this.comparingGrades.set(false);
+      },
+    });
   }
 
   assignDisciplineProfessor(index: number, professorId: number | null) {
@@ -526,7 +574,7 @@ export class ImportComponent implements OnInit {
     this.result.set(null);
 
     this.importService
-      .importGradeReport(file, professorMap, selectedStudentIds)
+      .importGradeReport(file, professorMap, selectedStudentIds, this.overwriteGrades())
       .subscribe({
         next: (res) => {
           this.result.set(res);
@@ -552,8 +600,6 @@ export class ImportComponent implements OnInit {
     } else if (currentStep === 'students') {
       this.step.set('disciplines');
     } else if (currentStep === 'disciplines') {
-      this.clearFile();
-    } else if (currentStep === 'offering') {
       this.step.set('upload');
     } else if (currentStep === 'result') {
       this.clearFile();
