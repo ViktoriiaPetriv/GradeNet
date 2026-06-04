@@ -43,4 +43,16 @@ export class DisciplineService {
     const params = new HttpParams().set('specialtyDisciplineId', specialtyDisciplineId);
     return this.http.post<HoursDTO>('/api/hours', request, { params });
   }
+
+  updateHours(id: number, request: HoursCreateRequest): Observable<HoursDTO> {
+    return this.http.put<HoursDTO>(`/api/hours/${id}`, request);
+  }
+
+  deleteHours(id: number): Observable<void> {
+    return this.http.delete<void>(`/api/hours/${id}`);
+  }
+
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
 }

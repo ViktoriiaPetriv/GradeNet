@@ -10,6 +10,8 @@ import org.bachelor.userservice.model.dto.UserRequestDTO;
 import org.bachelor.userservice.service.UserService;
 import org.springframework.web.bind.annotation.*;
 
+import org.bachelor.userservice.model.entity.Role;
+
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -20,8 +22,9 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    public List<UserDTO> findAll() {
-        return userService.findAll();
+    public List<UserDTO> findAll(@RequestParam(required = false) String role) {
+        Role roleEnum = (role != null && !role.isBlank()) ? Role.valueOf(role) : null;
+        return userService.findAll(roleEnum);
     }
 
     @GetMapping("/{id}")

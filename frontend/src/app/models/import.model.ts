@@ -69,3 +69,31 @@ export interface ImportResult {
   unmatchedStudents: string[];
   errors: ImportError[];
 }
+
+export interface GradeComparisonDiscipline {
+  index: number;
+  name: string;
+}
+
+export interface GradeComparisonCell {
+  disciplineIndex: number;
+  fileGrade: number | null;
+  existingGrade: number | null;
+  existingEntryId: number | null;
+  hasDiff: boolean;
+  isNew: boolean;
+}
+
+export interface GradeComparisonStudent {
+  fullName: string;
+  bookNumberId: number;
+  cells: GradeComparisonCell[];
+}
+
+export interface GradeComparisonResult {
+  groupName: string;
+  academicYear: string;
+  disciplines: GradeComparisonDiscipline[];
+  students: GradeComparisonStudent[];
+  hasAnyDiff: boolean;
+}

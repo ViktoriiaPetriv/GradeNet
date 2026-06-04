@@ -9,8 +9,9 @@ export class UserService {
 
   constructor(private http: HttpClient) {}
 
-  findAll(): Observable<User[]> {
-    return this.http.get<User[]>(this.apiUrl);
+  findAll(role?: string): Observable<User[]> {
+    const params: Record<string, string> = role ? { role } : {};
+    return this.http.get<User[]>(this.apiUrl, { params });
   }
 
   findById(id: number): Observable<User> {

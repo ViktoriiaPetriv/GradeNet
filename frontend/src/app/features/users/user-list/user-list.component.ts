@@ -122,10 +122,17 @@ export class UserListComponent implements OnInit {
   confirmDelete() {
     const user = this.userToDelete();
     if (!user) return;
-    this.userService.delete(user.id).subscribe(() => {
-      this.toastService.success('Користувача видалено');
-      this.loadUsers();
-      this.closeDeleteModal();
+    this.userService.delete(user.id).subscribe({
+      next: () => {
+        this.toastService.success('Користувача видалено');
+        this.loadUsers();
+        this.closeDeleteModal();
+      },
+      error: (err) => {
+        const msg = err?.error?.message || 'Помилка при видаленні користувача';
+        this.toastService.error(msg);
+        this.closeDeleteModal();
+      },
     });
   }
 

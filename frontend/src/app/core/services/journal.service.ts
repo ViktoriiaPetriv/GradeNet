@@ -6,6 +6,7 @@ import {
   JournalDisciplineStatus,
   JournalImportRequest,
   JournalImportResult,
+  JournalSpecialtyDTO,
   JournalStudentStatus,
 } from '../../models/journal.model';
 
@@ -20,13 +21,13 @@ export class JournalService {
     graduationYear?: number;
     studyForm?: string;
     code?: string;
-  }): Observable<number[]> {
+  }): Observable<JournalSpecialtyDTO[]> {
     let params = new HttpParams();
     if (filters.degree) params = params.set('degree', filters.degree);
     if (filters.graduationYear) params = params.set('graduationYear', filters.graduationYear);
     if (filters.studyForm) params = params.set('studyForm', filters.studyForm);
     if (filters.code) params = params.set('code', filters.code);
-    return this.http.get<number[]>(`${this.base}/specialties`, { params });
+    return this.http.get<JournalSpecialtyDTO[]>(`${this.base}/specialties`, { params });
   }
 
   getStudentsWithStatus(specialtyId: number): Observable<JournalStudentStatus[]> {

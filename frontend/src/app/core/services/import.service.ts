@@ -7,6 +7,7 @@ import {
   DisciplineCheckResult,
   StudentCheckResult,
   CreatedDisciplineInfo,
+  GradeComparisonResult,
 } from '../../models/import.model';
 
 @Injectable({ providedIn: 'root' })
@@ -21,10 +22,11 @@ export class ImportService {
     return this.http.post<ParsedReportMeta>(`${this.base}/parse`, fd);
   }
 
-  checkDisciplines(file: File): Observable<DisciplineCheckResult> {
+  checkDisciplines(file: File, specialtyId?: number): Observable<DisciplineCheckResult> {
     const fd = new FormData();
     fd.append('file', file);
-    return this.http.post<DisciplineCheckResult>(`${this.base}/check-disciplines`, fd);
+    const params = specialtyId != null ? `?specialtyId=${specialtyId}` : '';
+    return this.http.post<DisciplineCheckResult>(`${this.base}/check-disciplines${params}`, fd);
   }
 
   createDisciplines(
@@ -55,7 +57,8 @@ export class ImportService {
   importGradeReport(
     file: File,
     professorMap: Record<number, number>,
-    selectedStudentBookNumberIds?: number[]
+    selectedStudentBookNumberIds?: number[],
+    overwrite = false
   ): Observable<ImportResult> {
     const fd = new FormData();
     fd.append('file', file);
@@ -63,6 +66,23 @@ export class ImportService {
     if (selectedStudentBookNumberIds && selectedStudentBookNumberIds.length > 0) {
       params.append('selectedStudentBookNumberIds', JSON.stringify(selectedStudentBookNumberIds));
     }
+    if (overwrite) {
+      params.append('overwrite', 'true');
+    }
     return this.http.post<ImportResult>(`${this.base}/grade-report?${params}`, fd);
+  }
+
+  compareGrades(
+    file: File,
+    professorMap: Record<number, number>,
+    selectedStudentBookNumberIds?: number[]
+  ): Observable<GradeComparisonResult> {
+    const fd = new FormData();
+    fd.append('file', file);
+    const params = new URLSearchParams({ professorMap: JSON.stringify(professorMap) });
+    if (selectedStudentBookNumberIds && selectedStudentBookNumberIds.length > 0) {
+      params.append('selectedStudentBookNumberIds', JSON.stringify(selectedStudentBookNumberIds));
+    }
+    return this.http.post<GradeComparisonResult>(`${this.base}/compare-grades?${params}`, fd);
   }
 }

@@ -5,6 +5,7 @@ import { forkJoin } from 'rxjs';
 import { DisciplineService } from '../../../core/services/discipline.service';
 import { SpecialtyService } from '../../../core/services/specialty.service';
 import { DisciplineDTO, SpecialtyDisciplineDTO, HoursDTO } from '../../../models/discipline.model';
+import { ToastService } from '../../../core/services/toast.service';
 import { Specialty, SpecialtyOffering } from '../../../models/org.model';
 import { AuthStateService } from '../../../core/services/auth-state.service';
 import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
@@ -13,11 +14,12 @@ import { InfoCardComponent } from '../../../shared/info-card/info-card.component
 import { DisciplineModalComponent } from '../discipline-modal/discipline-modal.component';
 import { SpecialtyDisciplineModalComponent } from '../specialty-discipline-modal/specialty-discipline-modal.component';
 import { AddHoursModalComponent } from '../add-hours-modal/add-hours-modal.component';
+import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-discipline-detail',
   standalone: true,
-  imports: [CommonModule, PageHeaderComponent, HeroCardComponent, InfoCardComponent, DisciplineModalComponent, SpecialtyDisciplineModalComponent, AddHoursModalComponent],
+  imports: [CommonModule, PageHeaderComponent, HeroCardComponent, InfoCardComponent, DisciplineModalComponent, SpecialtyDisciplineModalComponent, AddHoursModalComponent, ConfirmDialogComponent],
   templateUrl: './discipline-detail.component.html',
   styleUrl: './discipline-detail.component.css',
 })
@@ -30,6 +32,9 @@ export class DisciplineDetailComponent implements OnInit {
   editModalOpen = signal(false);
   addSdModalOpen = signal(false);
   addHoursTargetSdId = signal<number | null>(null);
+  editHoursTarget = signal<HoursDTO | null>(null);
+  deleteHoursTarget = signal<HoursDTO | null>(null);
+  deletingHours = signal(false);
   expandedSdIds = signal<Set<number>>(new Set());
 
   existingSpecialtyOfferingIds = () => this.specialtyDisciplines().map((sd) => sd.specialtyOfferingId);
@@ -60,6 +65,7 @@ export class DisciplineDetailComponent implements OnInit {
   private router = inject(Router);
   private disciplineService = inject(DisciplineService);
   private specialtyService = inject(SpecialtyService);
+  private toastService = inject(ToastService);
   private authState = inject(AuthStateService);
   isAdmin = this.authState.isAdmin;
 
@@ -114,6 +120,28 @@ export class DisciplineDetailComponent implements OnInit {
   onHoursAdded() {
     this.addHoursTargetSdId.set(null);
     this.load(this.discipline()!.id);
+  }
+
+  onHoursEdited() {
+    this.editHoursTarget.set(null);
+    this.load(this.discipline()!.id);
+  }
+
+  confirmDeleteHours() {
+    const hours = this.deleteHoursTarget();
+    if (!hours) return;
+    this.deletingHours.set(true);
+    this.disciplineService.deleteHours(hours.id).subscribe({
+      next: () => {
+        this.toastService.success('Години видалено');
+        this.deletingHours.set(false);
+        this.deleteHoursTarget.set(null);
+        this.load(this.discipline()!.id);
+      },
+      error: () => {
+        this.deletingHours.set(false);
+      },
+    });
   }
 
   getAvatarColor(id: number): string {

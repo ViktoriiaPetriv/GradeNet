@@ -72,6 +72,30 @@ public class UserServiceClient {
         }
     }
 
+    public record StudentBookInfo(String bookNumber, String firstName, String lastName, String patronymic) {}
+
+    public StudentBookInfo getStudentBookInfo(Long bookNumberId) {
+        try {
+            BookNumberResponse book = userServiceRestClient.get()
+                    .uri("/api/books/{id}", bookNumberId)
+                    .retrieve()
+                    .body(BookNumberResponse.class);
+            if (book == null || book.studentId() == null)
+                return new StudentBookInfo(null, null, null, null);
+
+            UserResponse user = userServiceRestClient.get()
+                    .uri("/api/users/{id}", book.studentId())
+                    .retrieve()
+                    .body(UserResponse.class);
+            if (user == null)
+                return new StudentBookInfo(book.number(), null, null, null);
+
+            return new StudentBookInfo(book.number(), user.firstName(), user.lastName(), user.patronymic());
+        } catch (Exception e) {
+            return new StudentBookInfo(null, null, null, null);
+        }
+    }
+
     private String fallbackName(Long bookNumberId) {
         return "Студент #" + bookNumberId;
     }

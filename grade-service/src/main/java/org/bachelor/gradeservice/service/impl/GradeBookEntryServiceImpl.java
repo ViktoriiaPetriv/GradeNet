@@ -58,8 +58,7 @@ public class GradeBookEntryServiceImpl implements GradeBookEntryService {
                             : entryRepository.existsByBookNumberIdAndSpecialtyDiscipline_Discipline_IdAndResult(
                                     bookNumberId, disciplineId, EntryResult.PASSED);
                     if (alreadyPassed) {
-                        throw new RestException("Студент " + bookNumberId +
-                                " вже успішно пройшов цю дисципліну");
+                        throw new RestException("Студент вже успішно пройшов цю дисципліну");
                     }
 
                     boolean alreadyInProgress = semester != null
@@ -194,6 +193,17 @@ public class GradeBookEntryServiceImpl implements GradeBookEntryService {
 
     @Transactional
     @Override
+    public GradeBookEntryDTO reset(Long id) {
+        GradeBookEntry entry = entryRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Запис не знайдено"));
+        entry.getGrades().clear();
+        entry.setStatus(EntryStatus.IN_PROGRESS);
+        entry.setResult(null);
+        return entryMapper.toDTO(entryRepository.save(entry));
+    }
+
+    @Transactional
+    @Override
     public void delete(Long id) {
         if (!entryRepository.existsById(id)) {
             throw new NotFoundException("Запис не знайдено");
@@ -223,6 +233,20 @@ public class GradeBookEntryServiceImpl implements GradeBookEntryService {
                     return dto;
                 })
                 .toList();
+    }
+
+    @Override
+    public StudentGradeReportDTO getStudentGradeReport(Long bookNumberId, StudentDisciplineFilter filter) {
+        List<StudentDisciplineDTO> disciplines = getStudentDisciplines(bookNumberId, filter);
+        UserServiceClient.StudentBookInfo info = userServiceClient.getStudentBookInfo(bookNumberId);
+        return StudentGradeReportDTO.builder()
+                .bookNumberId(bookNumberId)
+                .bookNumber(info.bookNumber())
+                .studentFirstName(info.firstName())
+                .studentLastName(info.lastName())
+                .studentPatronymic(info.patronymic())
+                .disciplines(disciplines)
+                .build();
     }
 
     @Override

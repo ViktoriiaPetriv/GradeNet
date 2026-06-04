@@ -51,6 +51,7 @@ public class ExcelValidationService {
 
             Sheet sheet = workbook.getSheetAt(0);
             validateGroupRow(sheet);
+
             int disciplineRow = detectDisciplineRow(sheet);
             validateYearRow(sheet, disciplineRow);
             validateDisciplineRow(sheet, disciplineRow);

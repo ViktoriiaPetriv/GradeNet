@@ -62,6 +62,17 @@ public class DisciplineServiceImpl implements DisciplineService {
 
     @Transactional
     @Override
+    public void delete(Long id) {
+        Discipline discipline = disciplineRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Дисципліну не знайдено"));
+        if (!discipline.getSpecialtyDisciplines().isEmpty()) {
+            throw new RestException("Неможливо видалити дисципліну: вона прив'язана до спеціальностей");
+        }
+        disciplineRepository.delete(discipline);
+    }
+
+    @Transactional
+    @Override
     public DisciplineDTO update(Long id, DisciplineUpdateDTO dto) {
         Discipline discipline = disciplineRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Дисципліну не знайдено"));

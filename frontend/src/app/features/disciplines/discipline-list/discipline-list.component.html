@@ -50,6 +50,9 @@
                 <button class="action-btn edit" (click)="openEdit(d); $event.stopPropagation()" title="Редагувати">
                   <i class="pi pi-file-edit"></i>
                 </button>
+                <button class="action-btn delete" (click)="openDeleteModal(d); $event.stopPropagation()" title="Видалити">
+                  <i class="pi pi-trash"></i>
+                </button>
               </td>
             }
           </tr>
@@ -67,4 +70,13 @@
 @if (modalOpen()) {
   <app-discipline-modal [discipline]="editingDiscipline()"
                         (saved)="onSaved()" (cancelled)="closeModal()" />
+}
+
+@if (deleteTarget()) {
+  <app-confirm-dialog
+    title="Видалити дисципліну"
+    [message]="'Видалити дисципліну &quot;' + deleteTarget()!.name + '&quot;? Це можливо лише якщо до неї не прив\'язано жодної спеціальності.'"
+    confirmLabel="Видалити"
+    (confirm)="confirmDelete()"
+    (cancel)="closeDeleteModal()" />
 }
