@@ -34,20 +34,91 @@
     <table>
       <thead>
         <tr>
-          <th>ID</th>
-          <th>Студент</th>
-          <th>Дисципліна</th>
-          <th>Навч. рік</th>
-          <th>Сем.</th>
-          <th>Спроба</th>
-          <th>Статус</th>
-          <th>Результат</th>
-          <th>Дата звіту</th>
+          <th class="sortable-th" (click)="toggleSort('studentName')">
+            Студент
+            <span class="sort-icon">
+              @if (sortBy() === 'studentName') {
+                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+              } @else {
+                <i class="pi pi-sort-alt"></i>
+              }
+            </span>
+          </th>
+          <th class="sortable-th" (click)="toggleSort('specialtyDiscipline.discipline.name')">
+            Дисципліна
+            <span class="sort-icon">
+              @if (sortBy() === 'specialtyDiscipline.discipline.name') {
+                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+              } @else {
+                <i class="pi pi-sort-alt"></i>
+              }
+            </span>
+          </th>
+          <th class="sortable-th" (click)="toggleSort('academicYear')">
+            Навч. рік
+            <span class="sort-icon">
+              @if (sortBy() === 'academicYear') {
+                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+              } @else {
+                <i class="pi pi-sort-alt"></i>
+              }
+            </span>
+          </th>
+          <th class="sortable-th" (click)="toggleSort('semester')">
+            Сем.
+            <span class="sort-icon">
+              @if (sortBy() === 'semester') {
+                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+              } @else {
+                <i class="pi pi-sort-alt"></i>
+              }
+            </span>
+          </th>
+          <th class="sortable-th" (click)="toggleSort('attempt')">
+            Спроба
+            <span class="sort-icon">
+              @if (sortBy() === 'attempt') {
+                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+              } @else {
+                <i class="pi pi-sort-alt"></i>
+              }
+            </span>
+          </th>
+          <th class="sortable-th" (click)="toggleSort('status')">
+            Статус
+            <span class="sort-icon">
+              @if (sortBy() === 'status') {
+                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+              } @else {
+                <i class="pi pi-sort-alt"></i>
+              }
+            </span>
+          </th>
+          <th class="sortable-th" (click)="toggleSort('result')">
+            Результат
+            <span class="sort-icon">
+              @if (sortBy() === 'result') {
+                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+              } @else {
+                <i class="pi pi-sort-alt"></i>
+              }
+            </span>
+          </th>
+          <th class="sortable-th" (click)="toggleSort('reportDate')">
+            Дата звіту
+            <span class="sort-icon">
+              @if (sortBy() === 'reportDate') {
+                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+              } @else {
+                <i class="pi pi-sort-alt"></i>
+              }
+            </span>
+          </th>
           <th></th>
         </tr>
       </thead>
       <tbody>
-        @if (entries().length === 0) {
+        @if (displayEntries().length === 0) {
           <tr>
             <td colspan="10">
               <div class="empty-state">
@@ -57,15 +128,10 @@
             </td>
           </tr>
         }
-        @for (entry of entries(); track entry.id) {
+        @for (entry of displayEntries(); track entry.id) {
           <tr class="clickable-row" (click)="viewEntry(entry.id)">
-            <td class="id-cell">{{ entry.id }}</td>
             <td>
-              @if (entry.studentName) {
-                {{ entry.studentName }}
-              } @else {
-                <span class="text-muted">{{ entry.bookNumberId }}</span>
-              }
+              {{ entry.studentName || entry.bookNumberId }}
             </td>
             <td>
               @if (entry.disciplineName) {

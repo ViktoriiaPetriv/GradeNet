@@ -137,3 +137,28 @@
 }
 .action-btn.view { color: var(--btn); }
 .action-btn.view:hover { background: var(--btn); color: #fff; border-color: var(--btn); }
+
+.sortable-th {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.sortable-th:hover {
+  color: var(--text);
+}
+
+.sort-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 3px;
+  opacity: 0.6;
+}
+
+.sort-icon i {
+  font-size: 0.7rem;
+}
+
+.sortable-th:hover .sort-icon {
+  opacity: 1;
+}

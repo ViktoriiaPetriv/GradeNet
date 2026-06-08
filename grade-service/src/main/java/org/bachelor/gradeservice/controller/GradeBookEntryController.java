@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/records")
@@ -51,11 +52,14 @@ public class GradeBookEntryController {
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir) {
 
+        Set<String> allowed = Set.of("id", "academicYear", "semester", "attempt",
+                "status", "result", "reportDate", "specialtyDiscipline.discipline.name");
+        String field = allowed.contains(sortBy) ? sortBy : "id";
         Pageable pageable = PageRequest.of(
                 pageNumber, size,
                 sortDir.equalsIgnoreCase("desc")
-                        ? Sort.by(sortBy).descending()
-                        : Sort.by(sortBy).ascending()
+                        ? Sort.by(field).descending()
+                        : Sort.by(field).ascending()
         );
         return entryService.getAll(filter, pageable);
     }

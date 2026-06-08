@@ -10,44 +10,52 @@
         </div>
         <div>
           <div class="student-name-title">{{ studentName() || 'Студент' }}</div>
-          <div class="book-number-label">Залікова книжка: {{ b.number }}</div>
+          <div class="book-number-label">Залікова книжка:
+            @if (isStudent()) {
+              <span>{{ b.number }}</span>
+            } @else {
+              <button class="nav-link" (click)="goToBook()">{{ b.number }}</button>
+            }
+          </div>
         </div>
       </div>
     }
-    <button class="report-btn" (click)="openReport()" title="Академічні результати PDF">
-      <i class="pi pi-file-pdf"></i> Звіт PDF
-    </button>
+    @if (!isStudent()) {
+      <button class="report-btn" (click)="openReport()" title="Академічні результати PDF">
+        <i class="pi pi-file-pdf"></i> Звіт PDF
+      </button>
+    }
   </div>
 
-  @if (allYears().length > 0) {
-    <div class="year-filter-card">і
-      <span class="filter-label">Навчальний рік:</span>
+  @if (allSemesters().length > 0) {
+    <div class="year-filter-card">
+      <span class="filter-label">Семестр:</span>
       <div class="year-chips">
         <button
           class="year-chip"
-          [class.active]="selectedYears().size === 0"
-          (click)="clearYears()"
+          [class.active]="selectedSemester() === null"
+          (click)="selectedSemester.set(null)"
         >
-          Всі роки
+          Всі
         </button>
-        @for (year of allYears(); track year) {
+        @for (sem of allSemesters(); track sem) {
           <button
             class="year-chip"
-            [class.active]="isYearSelected(year) && selectedYears().size > 0"
-            (click)="toggleYear(year)"
+            [class.active]="isSemesterSelected(sem)"
+            (click)="toggleSemester(sem)"
           >
-            {{ year }}
+            {{ sem }} семестр
           </button>
         }
       </div>
     </div>
   }
 
-  @if (filteredDisciplines().length > 0) {
+  @if (combinedRows().length > 0) {
     <div class="stats-row">
       <div class="stat-chip stat-total">
         <i class="pi pi-list"></i>
-        Всього: {{ filteredDisciplines().length }}
+        Всього: {{ combinedRows().length }}
       </div>
       <div class="stat-chip stat-passed">
         <i class="pi pi-check-circle"></i>
@@ -68,80 +76,76 @@
     <table>
       <thead>
         <tr>
-          <th>Дисципліна</th>
+          <th>Дисципліна / Робота</th>
           <th>Навч. рік</th>
           <th class="text-center">Сем.</th>
           <th class="text-center">Спроба</th>
-          <th class="text-center">ЄКТС</th>
+          <th class="text-center">Год. / ЄКТС</th>
           <th class="text-center">Бали</th>
           <th class="text-center">ECTS</th>
           <th class="text-center">Нац. оцінка</th>
           <th class="text-center">Статус</th>
           <th class="text-center">Результат</th>
-          <th></th>
         </tr>
       </thead>
       <tbody>
-        @if (filteredDisciplines().length === 0) {
+        @if (combinedRows().length === 0) {
           <tr>
-            <td colspan="11">
+            <td colspan="10">
               <div class="empty-state">
                 <div class="empty-icon">📋</div>
-                <div>Залікових записів не знайдено</div>
+                <div>Записів не знайдено</div>
               </div>
             </td>
           </tr>
         }
-        @for (d of filteredDisciplines(); track d.entryId) {
-          <tr class="clickable-row" [class]="rowClass(d)" (click)="viewEntry(d.entryId, $event)">
-            <td class="discipline-name">{{ d.disciplineName }}</td>
-            <td class="text-muted text-sm">{{ d.academicYear }}</td>
-            <td class="text-center text-muted text-sm">{{ d.semester ?? '—' }}</td>
-            <td class="text-center">{{ d.attempt }}</td>
+        @for (row of combinedRows(); track $index) {
+          <tr [class.clickable-row]="!isStudent()" [class.row-passed]="row.result === 'PASSED'" [class.row-failed]="row.result === 'FAILED'" (click)="navigateTo(row)">
+            <td class="discipline-name">
+              @if (row.kind === 'work') {
+                {{ workTypeLabel(row.workType!) }}
+              } @else {
+                {{ row.name }}
+              }
+            </td>
+            <td class="text-muted text-sm">{{ row.academicYear }}</td>
+            <td class="text-center text-muted text-sm">{{ row.semester ?? '—' }}</td>
+            <td class="text-center">{{ row.attempt ?? '—' }}</td>
             <td class="text-center">
-              @if (ectsCredits(d) !== null) {
-                <span class="ects-credits-badge">{{ ectsCredits(d) }}</span>
+              @if (row.ectsCredits !== null) {
+                <span class="ects-credits-badge">{{ row.ectsCredits }}</span>
               } @else {
                 <span class="text-muted">—</span>
               }
             </td>
             <td class="text-center">
-              @if (latestGrade(d); as g) {
-                <span class="grade-badge">{{ g.universityGrade }}</span>
+              @if (row.universityGrade !== null) {
+                <span class="grade-badge">{{ row.universityGrade }}</span>
               } @else {
                 <span class="text-muted">—</span>
               }
             </td>
             <td class="text-center">
-              @if (latestGrade(d); as g) {
-                <span class="ects-badge ects-{{ g.ectsGrade }}">{{ g.ectsGrade }}</span>
+              @if (row.ectsGrade) {
+                <span class="ects-badge ects-{{ row.ectsGrade }}">{{ row.ectsGrade }}</span>
               } @else {
                 <span class="text-muted">—</span>
               }
             </td>
-            <td class="text-sm text-center">{{ nationalLabel(latestGrade(d)?.nationalGrade) }}</td>
+            <td class="text-sm text-center">{{ row.nationalGradeLabel }}</td>
             <td class="text-center">
-              <span class="status-badge status-{{ d.status }}">
-                {{ statusLabel(d.status) }}
-              </span>
+              @if (row.kind === 'discipline') {
+                <span class="status-badge {{ row.statusCss }}">{{ row.statusLabel }}</span>
+              } @else {
+                <span [class]="row.statusCss">{{ row.statusLabel }}</span>
+              }
             </td>
             <td class="text-center">
-              @if (d.result) {
-                <span class="result-badge result-{{ d.result }}">
-                  {{ resultLabel(d.result) }}
-                </span>
+              @if (row.result) {
+                <span class="result-badge {{ row.resultCss }}">{{ row.resultLabel }}</span>
               } @else {
                 <span class="text-muted">—</span>
               }
-            </td>
-            <td>
-              <button
-                class="action-btn view"
-                (click)="viewEntry(d.entryId, $event)"
-                title="Переглянути запис"
-              >
-                <i class="pi pi-eye"></i>
-              </button>
             </td>
           </tr>
         }

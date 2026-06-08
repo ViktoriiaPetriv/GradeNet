@@ -172,3 +172,28 @@ tbody tr:hover {
   margin-bottom: 1rem;
   opacity: 0.4;
 }
+
+.sortable-th {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.sortable-th:hover {
+  color: var(--text);
+}
+
+.sort-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 3px;
+  opacity: 0.6;
+}
+
+.sort-icon i {
+  font-size: 0.7rem;
+}
+
+.sortable-th:hover .sort-icon {
+  opacity: 1;
+}

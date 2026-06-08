@@ -34,6 +34,9 @@ export class OrgListComponent implements OnInit {
   typeFilter = signal<OrgType | ''>('');
   orgTypes = Object.values(OrgType);
 
+  sortBy = signal<string | null>(null);
+  sortDir = signal<'asc' | 'desc'>('asc');
+
   currentPage = signal(0);
   totalPages = signal(0);
   perPage = signal(10);
@@ -65,12 +68,30 @@ export class OrgListComponent implements OnInit {
     this.load();
   }
 
+  toggleSort(column: string) {
+    if (this.sortBy() === column) {
+      if (this.sortDir() === 'asc') {
+        this.sortDir.set('desc');
+      } else {
+        this.sortBy.set(null);
+        this.sortDir.set('asc');
+      }
+    } else {
+      this.sortBy.set(column);
+      this.sortDir.set('asc');
+    }
+    this.currentPage.set(0);
+    this.load();
+  }
+
   load() {
     this.orgService
       .getAll({
         orgType: this.typeFilter() || undefined,
         page: this.currentPage(),
         size: this.perPage(),
+        sortBy: this.sortBy() ?? undefined,
+        sortDir: this.sortBy() ? this.sortDir() : undefined,
       })
       .subscribe((r) => {
         this.orgs.set(r.content);

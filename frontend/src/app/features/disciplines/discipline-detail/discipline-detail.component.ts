@@ -1,6 +1,6 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { DisciplineService } from '../../../core/services/discipline.service';
 import { SpecialtyService } from '../../../core/services/specialty.service';
@@ -19,7 +19,7 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-d
 @Component({
   selector: 'app-discipline-detail',
   standalone: true,
-  imports: [CommonModule, PageHeaderComponent, HeroCardComponent, InfoCardComponent, DisciplineModalComponent, SpecialtyDisciplineModalComponent, AddHoursModalComponent, ConfirmDialogComponent],
+  imports: [CommonModule, RouterLink, PageHeaderComponent, HeroCardComponent, InfoCardComponent, DisciplineModalComponent, SpecialtyDisciplineModalComponent, AddHoursModalComponent, ConfirmDialogComponent],
   templateUrl: './discipline-detail.component.html',
   styleUrl: './discipline-detail.component.css',
 })
@@ -68,6 +68,7 @@ export class DisciplineDetailComponent implements OnInit {
   private toastService = inject(ToastService);
   private authState = inject(AuthStateService);
   isAdmin = this.authState.isAdmin;
+  isAdminOrManager = this.authState.isAdminOrManager;
 
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('id'));
@@ -147,6 +148,12 @@ export class DisciplineDetailComponent implements OnInit {
   getAvatarColor(id: number): string {
     const colors = ['#5B6AF0', '#0D9E6E', '#D97706', '#7C3AED', '#E53E3E', '#0891B2'];
     return colors[id % colors.length];
+  }
+
+  getSpecialtyIdForSd(sdId: number): number | null {
+    const sd = this.specialtyDisciplines().find((s) => s.id === sdId);
+    if (!sd) return null;
+    return this.offeringMap().get(sd.specialtyOfferingId)?.specialtyId ?? null;
   }
 
   getSpecialtyName(id: number): string {

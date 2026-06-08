@@ -20,11 +20,56 @@
         <table>
             <thead>
                 <tr>
-                    <th>Номер</th>
-                    <th>Студент</th>
-                    <th>Дата реєстрації</th>
-                    <th>Дата видачі</th>
-                    <th>Статус</th>
+                    <th class="sortable-th" (click)="toggleSort('number')">
+                        Номер
+                        <span class="sort-icon">
+                            @if (sortBy() === 'number') {
+                                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+                            } @else {
+                                <i class="pi pi-sort-alt"></i>
+                            }
+                        </span>
+                    </th>
+                    <th class="sortable-th" (click)="toggleSort('student.lastName')">
+                        Студент
+                        <span class="sort-icon">
+                            @if (sortBy() === 'student.lastName') {
+                                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+                            } @else {
+                                <i class="pi pi-sort-alt"></i>
+                            }
+                        </span>
+                    </th>
+                    <th class="sortable-th" (click)="toggleSort('regStartDate')">
+                        Дата реєстрації
+                        <span class="sort-icon">
+                            @if (sortBy() === 'regStartDate') {
+                                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+                            } @else {
+                                <i class="pi pi-sort-alt"></i>
+                            }
+                        </span>
+                    </th>
+                    <th class="sortable-th" (click)="toggleSort('handedDate')">
+                        Дата видачі
+                        <span class="sort-icon">
+                            @if (sortBy() === 'handedDate') {
+                                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+                            } @else {
+                                <i class="pi pi-sort-alt"></i>
+                            }
+                        </span>
+                    </th>
+                    <th class="sortable-th" (click)="toggleSort('status')">
+                        Статус
+                        <span class="sort-icon">
+                            @if (sortBy() === 'status') {
+                                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+                            } @else {
+                                <i class="pi pi-sort-alt"></i>
+                            }
+                        </span>
+                    </th>
                     <th>Дії</th>
                 </tr>
             </thead>

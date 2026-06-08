@@ -22,8 +22,26 @@
     <table>
       <thead>
       <tr>
-        <th>Назва</th>
-        <th>Тип</th>
+        <th class="sortable-th" (click)="toggleSort('name')">
+          Назва
+          <span class="sort-icon">
+            @if (sortBy() === 'name') {
+              <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+            } @else {
+              <i class="pi pi-sort-alt"></i>
+            }
+          </span>
+        </th>
+        <th class="sortable-th" (click)="toggleSort('orgType')">
+          Тип
+          <span class="sort-icon">
+            @if (sortBy() === 'orgType') {
+              <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+            } @else {
+              <i class="pi pi-sort-alt"></i>
+            }
+          </span>
+        </th>
         <th>Батьківська організація</th>
         <th>Дії</th>
       </tr>

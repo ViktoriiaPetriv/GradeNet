@@ -10,9 +10,11 @@ export class BookService {
 
   constructor(private http: HttpClient) {}
 
-  findAll(number?: string, page = 0, size = 20): Observable<PageResponse<BookNumber>> {
+  findAll(number?: string, page = 0, size = 20, sortBy?: string, sortDir?: 'asc' | 'desc'): Observable<PageResponse<BookNumber>> {
     let params = new HttpParams().set('pageNumber', page).set('size', size);
     if (number) params = params.set('number', number);
+    if (sortBy) params = params.set('sortBy', sortBy);
+    if (sortDir) params = params.set('sortDir', sortDir);
     return this.http.get<PageResponse<BookNumber>>(this.apiUrl, { params });
   }
 

@@ -1,0 +1,159 @@
+<div class="page">
+  <div class="detail-layout">
+
+    <app-page-header
+      [showBack]="true"
+      [backLink]="'/commissions'"
+    />
+
+    @if (commission()) {
+      <app-hero-card
+        avatarLetter="К"
+        [avatarColor]="isActive(commission()!) ? '#0D9E6E' : '#8B93A7'"
+        [title]="'Комісія #' + commission()!.id"
+        [subtitle]="formatDate(commission()!.startDate) + ' — ' + (commission()!.endDate ? formatDate(commission()!.endDate!) : '...')">
+        <ng-container badges>
+          @if (isActive(commission()!)) {
+            <span class="status-chip active"><i class="pi pi-check-circle"></i> Активна</span>
+          } @else {
+            <span class="status-chip inactive"><i class="pi pi-times-circle"></i> Неактивна</span>
+          }
+          <span class="count-chip">
+            <i class="pi pi-users"></i>
+            {{ commission()!.members.length }}
+            {{ commission()!.members.length === 1 ? 'член' : commission()!.members.length < 5 ? 'члени' : 'членів' }}
+          </span>
+        </ng-container>
+      </app-hero-card>
+
+      <div class="content-grid">
+
+        <div class="left-col">
+          <app-info-card title="Члени комісії" icon="pi pi-users" [count]="commission()!.members.length">
+            @if (isAdminOrManager()) {
+              <div class="members-card-actions">
+                <button class="btn-add" (click)="openAddMember()">
+                  <i class="pi pi-user-plus"></i> Додати члена комісії
+                </button>
+              </div>
+            }
+
+            @if (commission()!.members.length === 0) {
+              <div class="empty-state">
+                <i class="pi pi-users"></i>
+                Членів комісії не знайдено
+              </div>
+            }
+
+            @for (member of commission()!.members; track member.id) {
+              <div class="member-entry">
+                <div class="member-avatar">{{ getProfessorName(member.professorId)[0] }}</div>
+                <div class="member-info">
+                  <a class="member-name member-link" [routerLink]="['/profile', member.professorId]">{{ getProfessorName(member.professorId) }}</a>
+                  @if (member.isHead) {
+                    <span class="badge-head">Голова комісії</span>
+                  } @else {
+                    <span class="badge-member">Член комісії</span>
+                  }
+                </div>
+                @if (isAdminOrManager()) {
+                  <button class="btn-icon-sm btn-icon-danger" (click)="openRemoveMember(member)" title="Видалити">
+                    <i class="pi pi-trash"></i>
+                  </button>
+                }
+              </div>
+            }
+          </app-info-card>
+        </div>
+
+        <div class="right-col">
+          <app-info-card title="Загальна інформація" icon="pi pi-info-circle">
+            <div class="info-rows">
+              <div class="info-row">
+                <span class="info-label">Статус</span>
+                <span class="info-value">
+                  @if (isActive(commission()!)) {
+                    <span class="status-badge active">Активна</span>
+                  } @else {
+                    <span class="status-badge inactive">Неактивна</span>
+                  }
+                </span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Дата початку</span>
+                <span class="info-value">{{ formatDate(commission()!.startDate) }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Дата завершення</span>
+                <span class="info-value">{{ commission()!.endDate ? formatDate(commission()!.endDate!) : '—' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Кількість членів</span>
+                <span class="info-value">{{ commission()!.members.length }}</span>
+              </div>
+            </div>
+          </app-info-card>
+        </div>
+
+      </div>
+    }
+
+  </div>
+</div>
+
+@if (addMemberModalOpen()) {
+  <app-modal title="Додати члена комісії" (close)="closeAddMember()">
+    <form [formGroup]="addForm" (ngSubmit)="submitAddMember()">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Викладач *</label>
+          <select
+            class="form-select"
+            formControlName="professorId"
+            [class.error]="isInvalid('professorId')"
+          >
+            <option [ngValue]="null" disabled>Оберіть викладача</option>
+            @for (p of availableProfessors(); track p.id) {
+              <option [ngValue]="p.id">
+                {{ p.lastName }} {{ p.firstName }} {{ p.patronymic ?? '' }}
+              </option>
+            }
+          </select>
+          @if (isInvalid('professorId')) {
+            <span class="form-error">Обов'язкове поле</span>
+          }
+        </div>
+
+        <div class="form-group full checkbox-group">
+          <label class="checkbox-label" [class.disabled]="hasHead()">
+            <input type="checkbox" formControlName="isHead" [attr.disabled]="hasHead() ? true : null" />
+            <span>Голова комісії</span>
+          </label>
+          @if (hasHead()) {
+            <span class="head-hint">Голова вже призначений</span>
+          }
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeAddMember()">
+          <i class="pi pi-times"></i> Скасувати
+        </button>
+        <button type="submit" class="btn-primary">Додати</button>
+      </div>
+    </form>
+  </app-modal>
+}
+
+@if (removeModalOpen()) {
+  <app-confirm-dialog
+    title="Видалення члена комісії"
+    [message]="'Ви впевнені, що хочете видалити <strong>' + getProfessorName(memberToRemove()?.professorId ?? 0) + '</strong> з комісії?'"
+    subtext="Цю дію неможливо скасувати."
+    iconType="danger"
+    confirmButtonClass="btn-danger"
+    confirmLabel="Видалити"
+    (confirm)="confirmRemoveMember()"
+    (cancel)="closeRemoveMember()"
+  />
+}

@@ -1,0 +1,481 @@
+<form [formGroup]="baseForm" (ngSubmit)="submit()">
+
+  <!-- Студент -->
+  <div class="section-title">Студент</div>
+  <div class="form-grid two-col">
+
+    @if (!selectedStudent() && !isEdit) {
+      <div class="form-group full">
+        <label class="form-label">
+          Пошук студента *
+          @if (baseForm.get('bookNumberId')?.invalid && baseForm.get('bookNumberId')?.touched) {
+            <span class="label-req">(обов'язкове)</span>
+          }
+        </label>
+        <div class="search-wrapper">
+          <input
+            class="form-input"
+            [class.error]="baseForm.get('bookNumberId')?.invalid && baseForm.get('bookNumberId')?.touched"
+            type="text"
+            [formControl]="studentSearch"
+            placeholder="Введіть прізвище..."
+            autocomplete="off"
+          />
+          @if (searching()) { <span class="search-spinner">⏳</span> }
+          @if (searchResults().length > 0) {
+            <div class="search-dropdown">
+              @for (s of searchResults(); track s.id) {
+                <div class="search-item" (click)="selectStudent(s)">
+                  {{ s.lastName }} {{ s.firstName }} {{ s.patronymic ?? '' }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (selectedStudent()) {
+      <div class="form-group">
+        <label class="form-label">Студент</label>
+        <div class="selected-student">
+          <span>{{ selectedStudent()!.lastName }} {{ selectedStudent()!.firstName }} {{ selectedStudent()!.patronymic ?? '' }}</span>
+          <button type="button" class="clear-btn" (click)="clearStudent()" title="Змінити">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          Залікова книжка *
+          @if (isInvalid(baseForm, 'bookNumberId')) {
+            <span class="label-req">(обов'язкове)</span>
+          }
+        </label>
+        <select
+          class="form-select"
+          (change)="onBookSelect($event)"
+          [class.error]="isInvalid(baseForm, 'bookNumberId')"
+        >
+          <option value="">Оберіть книжку</option>
+          @for (b of studentBooks(); track b.bookId) {
+            <option [value]="b.bookId" [selected]="baseForm.get('bookNumberId')?.value === b.bookId">
+              {{ b.bookNumber }}
+            </option>
+          }
+        </select>
+      </div>
+    }
+
+    @if (isEdit && !changingStudent()) {
+      <div class="form-group">
+        <label class="form-label">Залікова книжка</label>
+        <div class="selected-student">
+          <span>ID: {{ work()!.bookNumberId }}</span>
+          <button type="button" class="clear-btn" (click)="startChangingStudent()" title="Змінити">
+            <i class="pi pi-pencil"></i>
+          </button>
+        </div>
+      </div>
+    }
+
+    @if (isEdit && changingStudent()) {
+      <div class="form-group full">
+        <label class="form-label">Пошук студента</label>
+        <div class="search-wrapper">
+          <input
+            class="form-input"
+            type="text"
+            [formControl]="studentSearch"
+            placeholder="Введіть прізвище..."
+            autocomplete="off"
+          />
+          @if (searchResults().length > 0) {
+            <div class="search-dropdown">
+              @for (s of searchResults(); track s.id) {
+                <div class="search-item" (click)="selectStudent(s)">
+                  {{ s.lastName }} {{ s.firstName }} {{ s.patronymic ?? '' }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Комісія -->
+  <div class="section-title">Комісія</div>
+  <div class="form-grid one-col">
+    <div class="form-group">
+      <label class="form-label">
+        Комісія *
+        @if (baseForm.get('commissionId')?.invalid && baseForm.get('commissionId')?.touched) {
+          <span class="label-req">(обов'язкове)</span>
+        }
+      </label>
+      <button
+        type="button"
+        class="commission-picker-btn"
+        [class.selected]="selectedCommission()"
+        [class.error]="baseForm.get('commissionId')?.invalid && baseForm.get('commissionId')?.touched"
+        (click)="openCommissionPicker()"
+      >
+        @if (selectedCommission()) {
+          <div class="commission-selected-info">
+            <i class="pi pi-sitemap"></i>
+            <span>{{ commissionDateLabel(selectedCommission()!) }}</span>
+            <span class="commission-member-count">{{ selectedCommission()!.members.length }} членів</span>
+          </div>
+        } @else {
+          <span class="placeholder-text"><i class="pi pi-search"></i> Оберіть комісію</span>
+        }
+      </button>
+    </div>
+  </div>
+
+  <!-- Основна інформація -->
+  <div class="section-title">Основні дані</div>
+  <div class="form-grid two-col">
+    <div class="form-group">
+      <label class="form-label">Тип роботи *</label>
+      <select class="form-select" formControlName="type">
+        @for (t of workTypes; track t.value) {
+          <option [value]="t.value">{{ t.label }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">{{ selectedType === 'QUALIFICATION' ? 'Дата захисту роботи' : 'Дата захисту звіту' }}</label>
+      <input class="form-input" type="date" formControlName="eventDate" />
+    </div>
+
+    @if (selectedType !== 'EDUCATIONAL_PRACTICE' && selectedType !== 'PRODUCTION_PRACTICE') {
+      <div class="form-group full">
+        <label class="form-label">
+          Назва *
+          @if (isInvalid(baseForm, 'title')) {
+            <span class="label-req">(обов'язкове)</span>
+          }
+        </label>
+        <input
+          class="form-input"
+          type="text"
+          formControlName="title"
+          placeholder="Назва роботи"
+          [class.error]="isInvalid(baseForm, 'title')"
+        />
+      </div>
+    }
+  </div>
+
+  <!-- Деталі курсової -->
+  @if (selectedType === 'COURSE_WORK') {
+    <div class="section-title">Деталі курсової роботи</div>
+    <div class="form-grid two-col" [formGroup]="courseForm">
+      <div class="form-group">
+        <label class="form-label">
+          Семестр *
+          @if (isInvalid(courseForm, 'semester')) {
+            <span class="label-req">(обов'язкове)</span>
+          }
+        </label>
+        <input
+          class="form-input"
+          type="number"
+          formControlName="semester"
+          placeholder="1"
+          min="1"
+          [class.error]="isInvalid(courseForm, 'semester')"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Статус *</label>
+        <select class="form-select" formControlName="state">
+          @for (s of stateOptions; track s.value) {
+            <option [value]="s.value">{{ s.label }}</option>
+          }
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Кредитів ECTS</label>
+        <input
+          class="form-input"
+          type="number"
+          formControlName="ectsCredits"
+          placeholder="3"
+          min="1"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Загальна кількість годин</label>
+        <input
+          class="form-input"
+          type="number"
+          formControlName="totalHours"
+          placeholder="90"
+          min="1"
+        />
+      </div>
+    </div>
+  }
+
+  <!-- Деталі практики -->
+  @if (selectedType === 'EDUCATIONAL_PRACTICE' || selectedType === 'PRODUCTION_PRACTICE') {
+    <div class="section-title">Деталі практики</div>
+    <div class="form-grid two-col" [formGroup]="practiceForm">
+      <div class="form-group">
+        <label class="form-label">
+          Курс *
+          @if (isInvalid(practiceForm, 'course')) {
+            <span class="label-req">(обов'язкове)</span>
+          }
+        </label>
+        <input
+          class="form-input"
+          type="number"
+          formControlName="course"
+          placeholder="1–6"
+          min="1"
+          [class.error]="isInvalid(practiceForm, 'course')"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label">
+          Кредитів ECTS *
+          @if (isInvalid(practiceForm, 'ectsCredits')) {
+            <span class="label-req">(обов'язкове)</span>
+          }
+        </label>
+        <input
+          class="form-input"
+          type="number"
+          formControlName="ectsCredits"
+          placeholder="3"
+          min="1"
+          [class.error]="isInvalid(practiceForm, 'ectsCredits')"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Загальна кількість годин</label>
+        <input
+          class="form-input"
+          type="number"
+          formControlName="totalHours"
+          placeholder="90"
+          min="1"
+        />
+      </div>
+    </div>
+    <div class="form-grid two-col mt-0" [formGroup]="practiceForm">
+      <div class="form-group full">
+        <label class="form-label">
+          Організація *
+          @if (isInvalid(practiceForm, 'organization')) {
+            <span class="label-req">(обов'язкове)</span>
+          }
+        </label>
+        <input
+          class="form-input"
+          type="text"
+          formControlName="organization"
+          placeholder="Назва підприємства"
+          [class.error]="isInvalid(practiceForm, 'organization')"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label">
+          Дата початку *
+          @if (isInvalid(practiceForm, 'startDate')) {
+            <span class="label-req">(обов'язкове)</span>
+          }
+        </label>
+        <input
+          class="form-input"
+          type="date"
+          formControlName="startDate"
+          [class.error]="isInvalid(practiceForm, 'startDate')"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label">
+          Дата завершення
+          @if (practiceForm.get('endDate')?.hasValidator(required)) { * }
+          @if (isInvalid(practiceForm, 'endDate')) {
+            <span class="label-req">(обов'язкове)</span>
+          }
+        </label>
+        <input
+          class="form-input"
+          type="date"
+          formControlName="endDate"
+          [class.error]="isInvalid(practiceForm, 'endDate')"
+        />
+      </div>
+      <div class="form-group full">
+        <label class="form-label">
+          Керівник *
+          @if (isInvalid(practiceForm, 'supervisorId')) {
+            <span class="label-req">(обов'язкове)</span>
+          }
+        </label>
+        <div class="search-wrapper">
+          @if (!selectedSupervisor()) {
+            <input
+              class="form-input"
+              [class.error]="isInvalid(practiceForm, 'supervisorId')"
+              type="text"
+              [formControl]="supervisorSearch"
+              placeholder="Введіть прізвище..."
+              autocomplete="off"
+            />
+            @if (supervisorResults().length > 0) {
+              <div class="search-dropdown">
+                @for (p of supervisorResults(); track p.id) {
+                  <div class="search-item" (click)="selectSupervisor(p)">{{ fullName(p) }}</div>
+                }
+              </div>
+            }
+          } @else {
+            <div class="selected-student">
+              <span>{{ fullName(selectedSupervisor()!) }}</span>
+              <button type="button" class="clear-btn" (click)="clearSupervisor()">
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Опис роботи</label>
+        <textarea class="form-input textarea" formControlName="workDescription" placeholder="Короткий опис завдань практики" rows="3"></textarea>
+      </div>
+    </div>
+  }
+
+  <!-- Деталі кваліфікаційної -->
+  @if (selectedType === 'QUALIFICATION') {
+    <div class="section-title">Деталі кваліфікаційної роботи</div>
+    <div class="form-grid qual-grid" [formGroup]="qualificationForm">
+      <div class="form-group">
+        <label class="form-label">
+          Керівник *
+          @if (isInvalid(qualificationForm, 'supervisorId')) {
+            <span class="label-req">(обов'язкове)</span>
+          }
+        </label>
+        <div class="search-wrapper">
+          @if (!selectedSupervisor()) {
+            <input
+              class="form-input"
+              [class.error]="isInvalid(qualificationForm, 'supervisorId')"
+              type="text"
+              [formControl]="supervisorSearch"
+              placeholder="Введіть прізвище..."
+              autocomplete="off"
+            />
+            @if (supervisorResults().length > 0) {
+              <div class="search-dropdown">
+                @for (p of supervisorResults(); track p.id) {
+                  <div class="search-item" (click)="selectSupervisor(p)">{{ fullName(p) }}</div>
+                }
+              </div>
+            }
+          } @else {
+            <div class="selected-student">
+              <span>{{ fullName(selectedSupervisor()!) }}</span>
+              <button type="button" class="clear-btn" (click)="clearSupervisor()">
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Статус *</label>
+        <select class="form-select" formControlName="state">
+          @for (s of stateOptions; track s.value) {
+            <option [value]="s.value">{{ s.label }}</option>
+          }
+        </select>
+      </div>
+    </div>
+  }
+
+  <div class="modal-footer">
+    <button type="button" class="btn-cancel" (click)="cancelled.emit()">
+      <i class="pi pi-times"></i> Скасувати
+    </button>
+    <button type="submit" class="btn-primary">
+      {{ isEdit ? 'Зберегти' : 'Створити' }}
+    </button>
+  </div>
+</form>
+
+@if (commissionPickerOpen()) {
+  <app-modal title="Оберіть комісію" size="md" (close)="closeCommissionPicker()">
+    <div class="commission-picker-content">
+
+      @if (commissions().length === 0) {
+        <div class="commission-empty">Комісій не знайдено</div>
+      }
+
+      @if (activeCommissions().length > 0) {
+        <div class="picker-group-label">
+          <i class="pi pi-check-circle"></i> Активні
+        </div>
+        @for (c of activeCommissions(); track c.id) {
+          <ng-container *ngTemplateOutlet="commissionCard; context: { $implicit: c }"></ng-container>
+        }
+      } @else {
+        <div class="commission-empty">Активних комісій немає</div>
+      }
+
+      @if (inactiveCommissions().length > 0) {
+        <button class="toggle-inactive-btn" (click)="showInactiveCommissions.set(!showInactiveCommissions())">
+          <i class="pi" [class.pi-chevron-right]="!showInactiveCommissions()" [class.pi-chevron-down]="showInactiveCommissions()"></i>
+          Неактивні комісії ({{ inactiveCommissions().length }})
+        </button>
+        @if (showInactiveCommissions()) {
+          @for (c of inactiveCommissions(); track c.id) {
+            <ng-container *ngTemplateOutlet="commissionCard; context: { $implicit: c }"></ng-container>
+          }
+        }
+      }
+
+    </div>
+  </app-modal>
+}
+
+<ng-template #commissionCard let-c>
+  <div
+    class="commission-card"
+    [class.active]="selectedCommission()?.id === c.id"
+    (click)="selectCommission(c)"
+  >
+    <div class="commission-card-dates">
+      <i class="pi pi-calendar"></i>
+      <strong>{{ commissionDateLabel(c) }}</strong>
+      @if (isCommissionActive(c)) {
+        <span class="comm-status-active">Активна</span>
+      } @else {
+        <span class="comm-status-inactive">Неактивна</span>
+      }
+      @if (selectedCommission()?.id === c.id) {
+        <i class="pi pi-check selected-check"></i>
+      }
+    </div>
+    <div class="commission-card-members">
+      @if (c.members.length === 0) {
+        <span class="no-members">Членів немає</span>
+      }
+      @for (m of c.members; track m.id) {
+        <span class="commission-member-chip" [class.head-chip]="m.isHead">
+          {{ professorName(m.professorId) }}{{ m.isHead ? ' (Голова)' : '' }}
+        </span>
+      }
+    </div>
+  </div>
+</ng-template>

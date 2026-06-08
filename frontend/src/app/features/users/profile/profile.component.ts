@@ -5,7 +5,7 @@ import { Specialty } from '../../../models/org.model';
 import { OrgInfo } from '../../../models/org.model';
 import { TokenService } from '../../../core/services/token.service';
 import { SpecialtyService } from '../../../core/services/specialty.service';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { UserModalComponent } from '../user-modal/user-modal.component';
 import { UserService } from '../../../core/services/user.service';
 import { forkJoin, of, catchError, switchMap } from 'rxjs';
@@ -27,6 +27,7 @@ interface BookWithDetails {
   standalone: true,
   imports: [
     CommonModule,
+    RouterLink,
     UserModalComponent,
     ChangePasswordModalComponent,
     AvatarComponent,
@@ -158,6 +159,10 @@ export class ProfileComponent implements OnInit {
 
   get isManager(): boolean {
     return this.authState.isManager();
+  }
+
+  get isAdminOrManager(): boolean {
+    return this.isAdmin || this.isManager;
   }
 
   get isOwner(): boolean {

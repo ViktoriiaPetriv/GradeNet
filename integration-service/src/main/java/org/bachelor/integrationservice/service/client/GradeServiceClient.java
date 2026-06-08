@@ -235,10 +235,10 @@ public class GradeServiceClient {
                 .toBodilessEntity();
     }
 
-    public void createGrade(Long entryId, Integer universityGrade, String assessmentDate, String authHeader) {
+    public void createGrade(Long entryId, Integer universityGrade, String assessmentDate, Integer assessmentTypeCode, String authHeader) {
         Map<String, Object> body = new HashMap<>();
         body.put("entryId", entryId);
-        body.put("assessmentType", "EXAM");
+        body.put("assessmentType", convertAssessmentType(assessmentTypeCode));
         body.put("assessmentDate", assessmentDate != null ? assessmentDate + "T00:00:00" : LocalDateTime.now().toString());
         if (universityGrade != null) body.put("universityGrade", universityGrade);
         restClient.post()
@@ -248,6 +248,15 @@ public class GradeServiceClient {
                 .body(body)
                 .retrieve()
                 .toBodilessEntity();
+    }
+
+    private String convertAssessmentType(Integer code) {
+        return switch (code) {
+            case 12  -> "CREDIT"; // залік
+            case 11,
+                 31  -> "EXAM";   // екзамен, державний іспит
+            default  -> throw new IllegalArgumentException("Невідомий тип контролю: " + code);
+        };
     }
 
     public void closeEntries(List<Long> entryIds, String authHeader) {

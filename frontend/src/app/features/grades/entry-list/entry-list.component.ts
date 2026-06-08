@@ -20,6 +20,21 @@ export class EntryListComponent implements OnInit {
   statusFilter = signal<EntryStatus | ''>('');
   academicYearFilter = signal('');
   createWizardOpen = signal(false);
+  sortBy = signal<string | null>(null);
+  sortDir = signal<'asc' | 'desc'>('asc');
+
+  displayEntries = computed(() => {
+    const list = this.entries();
+    if (this.sortBy() !== 'studentName') return list;
+    const dir = this.sortDir();
+    return [...list].sort((a, b) => {
+      const aVal = (a.studentName ?? '').toLowerCase();
+      const bVal = (b.studentName ?? '').toLowerCase();
+      if (aVal < bVal) return dir === 'asc' ? -1 : 1;
+      if (aVal > bVal) return dir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  });
 
   currentPage = signal(1);
   totalPages = signal(0);
@@ -44,6 +59,22 @@ export class EntryListComponent implements OnInit {
     this.load();
   }
 
+  toggleSort(column: string) {
+    if (this.sortBy() === column) {
+      if (this.sortDir() === 'asc') {
+        this.sortDir.set('desc');
+      } else {
+        this.sortBy.set(null);
+        this.sortDir.set('asc');
+      }
+    } else {
+      this.sortBy.set(column);
+      this.sortDir.set('asc');
+    }
+    this.currentPage.set(1);
+    this.load();
+  }
+
   load() {
     const filter: GradeBookEntryFilter = {};
     const status = this.statusFilter();
@@ -54,8 +85,11 @@ export class EntryListComponent implements OnInit {
       const uid = this.currentUserId();
       if (uid) filter.professorId = uid;
     }
+    const col = this.sortBy();
+    const serverCol = col === 'studentName' ? 'id' : (col ?? 'id');
+    const serverDir = col === 'studentName' ? 'asc' : (col ? this.sortDir() : 'desc');
     this.gradeService
-      .getEntries(filter, this.currentPage() - 1, this.perPage())
+      .getEntries(filter, this.currentPage() - 1, this.perPage(), serverCol, serverDir)
       .subscribe((r) => {
         this.entries.set(r.content);
         this.totalPages.set(r.totalPages);
@@ -92,6 +126,11 @@ export class EntryListComponent implements OnInit {
 
   viewEntry(id: number) {
     this.router.navigate(['/grades', id]);
+  }
+
+  viewStudentGrades(bookNumberId: number, event: Event) {
+    event.stopPropagation();
+    this.router.navigate(['/grades/student', bookNumberId]);
   }
 
   openBulkGrade() {

@@ -309,6 +309,18 @@
     margin-top: 2px;
 }
 
+.org-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+    transition: opacity 0.15s;
+}
+
+.org-link:hover {
+    opacity: 0.75;
+    text-decoration: underline;
+}
+
 .tree-connector {
     width: 1px;
     height: 14px;

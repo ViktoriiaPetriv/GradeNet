@@ -227,6 +227,17 @@
   color: var(--text);
 }
 
+.sd-link {
+  color: var(--accent);
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.sd-link:hover {
+  opacity: 0.75;
+  text-decoration: underline;
+}
+
 .hours-table-wrap {
   overflow-x: auto;
   border-radius: 10px;

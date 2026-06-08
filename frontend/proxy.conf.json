@@ -54,5 +54,13 @@
   "/api/journal": {
     "target": "http://localhost:8083",
     "changeOrigin": true
+  },
+  "/api/commissions": {
+    "target": "http://localhost:8084",
+    "changeOrigin": true
+  },
+  "/api/works": {
+    "target": "http://localhost:8084",
+    "changeOrigin": true
   }
 }

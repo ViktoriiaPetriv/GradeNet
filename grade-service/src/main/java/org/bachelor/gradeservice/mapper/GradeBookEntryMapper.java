@@ -9,7 +9,7 @@ import org.mapstruct.Mapping;
 
 import java.util.Set;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {GradeMapper.class})
 public interface GradeBookEntryMapper {
 
     @Mapping(target = "specialtyDisciplineId", source = "specialtyDiscipline.id")

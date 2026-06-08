@@ -16,24 +16,28 @@ export class SpecialtyService {
     eduType?: string;
     page?: number;
     size?: number;
+    sortBy?: string;
+    sortDir?: 'asc' | 'desc';
   }): Observable<PageResponse<Specialty>> {
     let p = new HttpParams();
     if (params?.degree) p = p.set('degree', params.degree);
     if (params?.eduType) p = p.set('eduType', params.eduType);
     if (params?.page !== undefined) p = p.set('page', params.page);
     if (params?.size !== undefined) p = p.set('size', params.size ?? 20);
+    if (params?.sortBy) p = p.set('sort', `${params.sortBy},${params.sortDir ?? 'asc'}`);
     return this.http.get<PageResponse<Specialty>>(this.apiUrl, { params: p });
   }
 
   getByOrg(
     orgId: number,
-    params?: { degree?: string; eduType?: string; page?: number; size?: number },
+    params?: { degree?: string; eduType?: string; page?: number; size?: number; sortBy?: string; sortDir?: 'asc' | 'desc' },
   ): Observable<PageResponse<Specialty>> {
     let p = new HttpParams();
     if (params?.degree) p = p.set('degree', params.degree);
     if (params?.eduType) p = p.set('eduType', params.eduType);
     if (params?.page !== undefined) p = p.set('page', params.page);
     if (params?.size !== undefined) p = p.set('size', params.size ?? 100);
+    if (params?.sortBy) p = p.set('sort', `${params.sortBy},${params.sortDir ?? 'asc'}`);
     return this.http.get<PageResponse<Specialty>>(`${this.apiUrl}/organization/${orgId}`, {
       params: p,
     });

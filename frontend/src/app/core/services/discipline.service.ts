@@ -25,6 +25,10 @@ export class DisciplineService {
     return this.http.put<DisciplineDTO>(`${this.apiUrl}/${id}`, request);
   }
 
+  getSpecialtyDisciplineById(id: number): Observable<SpecialtyDisciplineDTO> {
+    return this.http.get<SpecialtyDisciplineDTO>(`/api/specialty-disciplines/${id}`);
+  }
+
   getSpecialtyDisciplines(disciplineId: number): Observable<SpecialtyDisciplineDTO[]> {
     const params = new HttpParams().set('disciplineId', disciplineId);
     return this.http.get<SpecialtyDisciplineDTO[]>('/api/specialty-disciplines', { params });

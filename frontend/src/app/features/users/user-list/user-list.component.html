@@ -22,10 +22,46 @@
     <table>
       <thead>
       <tr>
-        <th>Користувач</th>
-        <th>Email</th>
-        <th>Дата народження</th>
-        <th>Роль</th>
+        <th class="sortable-th" (click)="toggleSort('lastName')">
+          Користувач
+          <span class="sort-icon">
+            @if (sortBy() === 'lastName') {
+              <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+            } @else {
+              <i class="pi pi-sort-alt"></i>
+            }
+          </span>
+        </th>
+        <th class="sortable-th" (click)="toggleSort('email')">
+          Email
+          <span class="sort-icon">
+            @if (sortBy() === 'email') {
+              <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+            } @else {
+              <i class="pi pi-sort-alt"></i>
+            }
+          </span>
+        </th>
+        <th class="sortable-th" (click)="toggleSort('birthDate')">
+          Дата народження
+          <span class="sort-icon">
+            @if (sortBy() === 'birthDate') {
+              <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+            } @else {
+              <i class="pi pi-sort-alt"></i>
+            }
+          </span>
+        </th>
+        <th class="sortable-th" (click)="toggleSort('role')">
+          Роль
+          <span class="sort-icon">
+            @if (sortBy() === 'role') {
+              <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+            } @else {
+              <i class="pi pi-sort-alt"></i>
+            }
+          </span>
+        </th>
         @if (isAdminOrManager()) {
           <th>Дії</th>
         }

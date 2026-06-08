@@ -152,6 +152,7 @@ th.col-assessment {
 .col-num { width: 4%; text-align: center; }
 .col-discipline { width: 12%; }
 .col-assessment { width: 6%; text-align: center; }
+.col-assessment-wide { width: 8%; text-align: left; }
 .col-discipline-cell { text-align: left; word-break: break-word; }
 .col-year { width: 10%; text-align: center; }
 .col-ects { width: 3.5%; text-align: center; }
@@ -182,6 +183,13 @@ th.col-assessment {
   text-align: right;
 }
 
+
+.subsection-title {
+  font-size: 10.5pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  padding: 8px 0 4px;
+}
 
 /* ===== Порожньо ===== */
 .empty-state {

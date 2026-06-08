@@ -1,5 +1,5 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { SpecialtyService } from '../../../core/services/specialty.service';
 import { Specialty, OrgInfo, SpecialtyOffering } from '../../../models/org.model';
@@ -17,6 +17,7 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-d
   standalone: true,
   imports: [
     ReactiveFormsModule,
+    RouterLink,
     SpecialtyFormComponent,
     PageHeaderComponent,
     HeroCardComponent,

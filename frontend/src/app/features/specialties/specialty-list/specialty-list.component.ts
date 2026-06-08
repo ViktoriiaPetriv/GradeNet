@@ -34,6 +34,8 @@ export class SpecialtyListComponent implements OnInit {
   perPage = signal(10);
   degreeFilter = signal('');
   eduTypeFilter = signal('');
+  sortBy = signal<string | null>(null);
+  sortDir = signal<'asc' | 'desc'>('asc');
   degrees = Object.values(Degree);
   eduTypes = Object.values(EduType);
   modalOpen = signal(false);
@@ -94,17 +96,36 @@ export class SpecialtyListComponent implements OnInit {
     this.load();
   }
 
+  toggleSort(column: string) {
+    if (this.sortBy() === column) {
+      if (this.sortDir() === 'asc') {
+        this.sortDir.set('desc');
+      } else {
+        this.sortBy.set(null);
+        this.sortDir.set('asc');
+      }
+    } else {
+      this.sortBy.set(column);
+      this.sortDir.set('asc');
+    }
+    this.currentPage.set(0);
+    this.load();
+  }
+
   load() {
     this.loading.set(true);
     const deptId = this.selectedDeptId();
     const facultyId = this.selectedFacultyId();
     const orgId = deptId ?? facultyId ?? null;
+    const col = this.sortBy();
 
     const params = {
       degree: this.degreeFilter() || undefined,
       eduType: this.eduTypeFilter() || undefined,
       page: this.currentPage(),
       size: this.perPage(),
+      sortBy: col ?? undefined,
+      sortDir: col ? this.sortDir() : undefined,
     };
 
     const obs = orgId

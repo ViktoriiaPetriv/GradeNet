@@ -140,7 +140,13 @@
                   <span class="org-type-dot faculty-dot"></span>
                   <div>
                     <div class="org-type-label">Факультет</div>
-                    <div class="org-name">{{ orgInfo()!.facultyName }}</div>
+                    <div class="org-name">
+                      @if (isAdmin() && orgInfo()!.facultyId) {
+                        <a class="org-link" [routerLink]="['/orgs', orgInfo()!.facultyId]">{{ orgInfo()!.facultyName }}</a>
+                      } @else {
+                        {{ orgInfo()!.facultyName }}
+                      }
+                    </div>
                   </div>
                 </div>
                 <div class="tree-connector"></div>
@@ -148,7 +154,13 @@
                   <span class="org-type-dot dept-dot"></span>
                   <div>
                     <div class="org-type-label">Кафедра</div>
-                    <div class="org-name">{{ orgInfo()!.departmentName }}</div>
+                    <div class="org-name">
+                      @if (isAdmin() && orgInfo()!.departmentId) {
+                        <a class="org-link" [routerLink]="['/orgs', orgInfo()!.departmentId]">{{ orgInfo()!.departmentName }}</a>
+                      } @else {
+                        {{ orgInfo()!.departmentName }}
+                      }
+                    </div>
                   </div>
                 </div>
               </div>

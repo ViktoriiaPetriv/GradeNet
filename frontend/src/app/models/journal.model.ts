@@ -53,6 +53,8 @@ export interface JournalImportRequest {
   /** discipline_external_id → { attempt → { studentExternalId → professorId } } */
   professorOverridesByStudent?: Record<number, Record<number, Record<number, number>>>;
   selectedStudentExternalIds?: number[];
+  /** Required for disciplines with additional work assessment types (21, 22, 32, 40). */
+  commissionId?: number;
 }
 
 export interface JournalImportError {

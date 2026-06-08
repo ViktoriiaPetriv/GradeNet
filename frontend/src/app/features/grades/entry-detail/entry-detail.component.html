@@ -35,16 +35,42 @@
     <div class="info-card">
       <div class="info-grid">
         <div class="info-item">
-          <div class="info-label">Запис ID</div>
-          <div class="info-value">#{{ e.id }}</div>
+          <div class="info-label">Студент</div>
+          <div class="info-value">
+            @if (bookNumber(); as b) {
+              <a class="info-link" [routerLink]="['/profile', b.studentId]">
+                {{ b.studentLastName }} {{ b.studentFirstName }}
+              </a>
+            } @else {
+              #{{ e.bookNumberId }}
+            }
+          </div>
         </div>
         <div class="info-item">
-          <div class="info-label">Студент (book ID)</div>
-          <div class="info-value">{{ e.bookNumberId }}</div>
+          <div class="info-label">Залікова книжка</div>
+          <div class="info-value">
+            <a class="info-link" [routerLink]="['/books', e.bookNumberId]">{{ bookNumber()?.number || '—' }}</a>
+          </div>
         </div>
         <div class="info-item">
-          <div class="info-label">Дисципліна (спец.)</div>
-          <div class="info-value">{{ e.specialtyDisciplineId }}</div>
+          <div class="info-label">Дисципліна</div>
+          <div class="info-value">
+            @if (isAdminOrManager() && disciplineId()) {
+              <a class="info-link" [routerLink]="['/disciplines', disciplineId()]">{{ e.disciplineName ?? e.specialtyDisciplineId }}</a>
+            } @else {
+              {{ e.disciplineName ?? e.specialtyDisciplineId }}
+            }
+          </div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Викладач</div>
+          <div class="info-value">
+            @if (professor(); as p) {
+              <a class="info-link" [routerLink]="['/profile', p.id]">{{ p.lastName }} {{ p.firstName }}{{ p.patronymic ? ' ' + p.patronymic : '' }}</a>
+            } @else {
+              #{{ e.professorId }}
+            }
+          </div>
         </div>
         <div class="info-item">
           <div class="info-label">Навчальний рік</div>
@@ -89,7 +115,7 @@
     </div>
 
     <div class="table-container">
-      <table>
+      <table class="grades-table">
         <thead>
           <tr>
             <th>Дата</th>
@@ -117,7 +143,7 @@
             <tr>
               <td>{{ formatDateTime(g.assessmentDate) }}</td>
               <td class="grade-value">{{ g.universityGrade }}</td>
-              <td>{{ g.nationalGrade }}</td>
+              <td>{{ nationalGradeLabel(g.nationalGrade) }}</td>
               <td><span class="ects-badge">{{ g.ectsGrade }}</span></td>
               <td>{{ typeLabel(g.assessmentType) }}</td>
               @if (canEditGrades()) {

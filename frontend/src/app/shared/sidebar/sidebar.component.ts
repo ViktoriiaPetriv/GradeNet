@@ -1,7 +1,8 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, OnInit } from '@angular/core';
 import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { TokenService } from '../../core/services/token.service';
+import { UserService } from '../../core/services/user.service';
 import { User } from '../../models/user.model';
 import { AuthStateService } from '../../core/services/auth-state.service';
 import {AvatarComponent} from '../avatar/avatar.component';
@@ -13,18 +14,34 @@ import {AvatarComponent} from '../avatar/avatar.component';
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.css',
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit {
   isOpen = signal(false);
+  studentBookId = signal<number | null>(null);
+
   private authService = inject(AuthService);
   private tokenService = inject(TokenService);
+  private userService = inject(UserService);
   private router = inject(Router);
 
   private authState = inject(AuthStateService);
   isAdmin = this.authState.isAdmin;
   isAdminOrManager = this.authState.isAdminOrManager;
   isProfessor = this.authState.isProfessor;
+  isStudent = this.authState.isStudent;
 
   currentUser = this.tokenService.currentUser;
+
+  ngOnInit() {
+    if (this.authState.isStudent()) {
+      this.userService.getMyProfile().subscribe({
+        next: (p) => {
+          const book = p.books?.[0];
+          if (book) this.studentBookId.set(book.bookId);
+        },
+        error: () => {},
+      });
+    }
+  }
 
   toggle() {
     this.isOpen.update((v) => !v);

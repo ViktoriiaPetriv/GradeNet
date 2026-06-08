@@ -1,0 +1,292 @@
+<div class="page">
+  <div class="detail-layout">
+
+    <app-page-header [showBack]="true" [backLink]="'/additional-works'">
+      @if (work() && (isAdminOrManager() || canGrade())) {
+        <div actions class="header-actions">
+          @if (canGrade()) {
+          <button class="btn-grade" (click)="openGrade()">
+            <i class="pi pi-star"></i> Виставити оцінку
+          </button>
+          }
+          @if (isAdminOrManager()) {
+          <button class="btn-edit" (click)="openEdit()">
+            <i class="pi pi-file-edit"></i> Редагувати
+          </button>
+          <button class="btn-danger-outline" (click)="openDelete()">
+            <i class="pi pi-trash"></i> Видалити
+          </button>
+          }
+        </div>
+      }
+    </app-page-header>
+
+    @if (work()) {
+      <app-hero-card
+        [avatarLetter]="work()!.title[0].toUpperCase()"
+        [avatarColor]="typeAvatarColor(work()!.type)"
+        [title]="work()!.title"
+        [subtitle]="bookInfo() ? (bookInfo()!.studentLastName + ' ' + bookInfo()!.studentFirstName) : typeLabel(work()!.type)">
+        <ng-container badges>
+          <span class="type-chip" [class]="typeChipClass(work()!.type)">
+            <i [class]="typeIcon(work()!.type)"></i>
+            {{ typeLabel(work()!.type) }}
+          </span>
+          @if (work()!.courseWorkDetails?.state || work()!.qualificationDetails?.state) {
+            <span class="state-chip" [class]="stateChipClass(currentState())">
+              {{ stateLabel(currentState()) }}
+            </span>
+          }
+        </ng-container>
+      </app-hero-card>
+
+      <div class="content-grid">
+
+        <!-- Ліва колонка: деталі типу -->
+        <div class="left-col">
+
+          @if (work()!.type === 'COURSE_WORK' && work()!.courseWorkDetails) {
+            <app-info-card title="Деталі курсової роботи" icon="pi pi-book">
+              <div class="info-rows">
+                <div class="info-row">
+                  <span class="info-label">Семестр</span>
+                  <span class="info-value">{{ work()!.courseWorkDetails!.semester }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Статус</span>
+                  <span class="state-badge" [class]="stateClass(work()!.courseWorkDetails!.state)">
+                    {{ stateLabel(work()!.courseWorkDetails!.state) }}
+                  </span>
+                </div>
+                @if (work()!.courseWorkDetails!.ectsCredits != null) {
+                  <div class="info-row">
+                    <span class="info-label">Кредитів ECTS</span>
+                    <span class="info-value">{{ work()!.courseWorkDetails!.ectsCredits }}</span>
+                  </div>
+                }
+                @if (work()!.courseWorkDetails!.totalHours != null) {
+                  <div class="info-row">
+                    <span class="info-label">Годин</span>
+                    <span class="info-value">{{ work()!.courseWorkDetails!.totalHours }}</span>
+                  </div>
+                }
+              </div>
+            </app-info-card>
+          }
+
+          @if ((work()!.type === 'EDUCATIONAL_PRACTICE' || work()!.type === 'PRODUCTION_PRACTICE') && work()!.practiceDetails) {
+            <app-info-card title="Деталі практики" icon="pi pi-briefcase">
+              <div class="info-rows">
+                <div class="info-row">
+                  <span class="info-label">Організація</span>
+                  <span class="info-value">{{ work()!.practiceDetails!.organization }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Курс</span>
+                  <span class="info-value">{{ work()!.practiceDetails!.course }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Кредитів ECTS</span>
+                  <span class="info-value">{{ work()!.practiceDetails!.ectsCredits }}</span>
+                </div>
+                @if (work()!.practiceDetails!.totalHours != null) {
+                  <div class="info-row">
+                    <span class="info-label">Годин</span>
+                    <span class="info-value">{{ work()!.practiceDetails!.totalHours }}</span>
+                  </div>
+                }
+                <div class="info-row">
+                  <span class="info-label">Початок</span>
+                  <span class="info-value">{{ formatDate(work()!.practiceDetails!.startDate) }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Завершення</span>
+                  <span class="info-value">{{ formatDate(work()!.practiceDetails!.endDate) }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Керівник</span>
+                  <span class="info-value">
+                    <a class="info-link" [routerLink]="['/profile', work()!.practiceDetails!.supervisorId]">{{ professorName(work()!.practiceDetails!.supervisorId) }}</a>
+                  </span>
+                </div>
+                @if (work()!.practiceDetails!.workDescription) {
+                  <div class="info-row">
+                    <span class="info-label">Опис</span>
+                    <span class="info-value description">{{ work()!.practiceDetails!.workDescription }}</span>
+                  </div>
+                }
+              </div>
+            </app-info-card>
+          }
+
+          @if (work()!.type === 'QUALIFICATION' && work()!.qualificationDetails) {
+            <app-info-card title="Деталі кваліфікаційної роботи" icon="pi pi-star">
+              <div class="info-rows">
+                <div class="info-row">
+                  <span class="info-label">Керівник</span>
+                  <span class="info-value">
+                    <a class="info-link" [routerLink]="['/profile', work()!.qualificationDetails!.supervisorId]">{{ professorName(work()!.qualificationDetails!.supervisorId) }}</a>
+                  </span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Статус</span>
+                  <span class="state-badge" [class]="stateClass(work()!.qualificationDetails!.state)">
+                    {{ stateLabel(work()!.qualificationDetails!.state) }}
+                  </span>
+                </div>
+              </div>
+            </app-info-card>
+          }
+
+        </div>
+
+        <!-- Права колонка: загальна інформація + оцінки -->
+        <div class="right-col">
+
+          <app-info-card title="Загальна інформація" icon="pi pi-info-circle">
+            <div class="info-rows">
+              <div class="info-row">
+                <span class="info-label">Студент</span>
+                <span class="info-value">
+                  @if (bookInfo()) {
+                    <a class="info-link" [routerLink]="['/profile', bookInfo()!.studentId]">{{ bookInfo()!.studentLastName }} {{ bookInfo()!.studentFirstName }}</a>
+                  } @else {
+                    —
+                  }
+                </span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Залікова книжка</span>
+                <span class="info-value mono">
+                  @if (isAdminOrManager() && bookInfo()) {
+                    <a class="info-link" [routerLink]="['/books', work()!.bookNumberId]">{{ bookInfo()!.number }}</a>
+                  } @else {
+                    {{ bookInfo()?.number ?? work()!.bookNumberId }}
+                  }
+                </span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Комісія</span>
+                <span class="info-value commission-value">
+                  @if (isAdminOrManager()) {
+                    <a class="info-link" [routerLink]="['/commissions', work()!.commissionId]">{{ commissionLabel(work()!.commissionId) }}</a>
+                  } @else {
+                    {{ commissionLabel(work()!.commissionId) }}
+                  }
+                  @if (commissions().length) {
+                    @if (isCommissionActive(work()!.commissionId)) {
+                      <span class="comm-status-badge active">Активна</span>
+                    } @else {
+                      <span class="comm-status-badge inactive">Неактивна</span>
+                    }
+                  }
+                </span>
+              </div>
+              @if (work()!.eventDate) {
+                <div class="info-row">
+                  <span class="info-label">{{ work()!.type === 'QUALIFICATION' ? 'Дата захисту роботи' : 'Дата захисту звіту' }}</span>
+                  <span class="info-value">{{ formatDate(work()!.eventDate) }}</span>
+                </div>
+              }
+            </div>
+          </app-info-card>
+
+          @if (work()!.universityGrade != null || work()!.nationalGrade || work()!.ectsGrade) {
+            <app-info-card title="Оцінка" icon="pi pi-chart-bar">
+              <div class="grade-row">
+                @if (work()!.universityGrade != null) {
+                  <div class="grade-box">
+                    <div class="grade-num">{{ work()!.universityGrade }}</div>
+                    <div class="grade-sub">балів</div>
+                  </div>
+                }
+                @if (work()!.ectsGrade) {
+                  <div class="grade-box">
+                    <div class="grade-num">{{ work()!.ectsGrade }}</div>
+                    <div class="grade-sub">ECTS</div>
+                  </div>
+                }
+                @if (work()!.nationalGrade) {
+                  <div class="grade-box wide">
+                    <div class="grade-num sm">{{ nationalLabel(work()!.nationalGrade) }}</div>
+                    <div class="grade-sub">Національна</div>
+                  </div>
+                }
+              </div>
+            </app-info-card>
+          }
+
+        </div>
+
+      </div>
+    }
+
+  </div>
+</div>
+
+@if (gradeModalOpen() && gradeForm) {
+  <app-modal title="Виставити оцінку" (close)="closeGrade()">
+    <form [formGroup]="gradeForm" (ngSubmit)="submitGrade()">
+      <div class="grade-form">
+        <div class="grade-input-row">
+          <div class="form-group">
+            <label class="form-label">Оцінка (0–100)</label>
+            <input
+              class="form-input"
+              type="number"
+              formControlName="universityGrade"
+              placeholder="Введіть бали"
+              min="0"
+              max="100"
+            />
+          </div>
+          @if (derivedEcts) {
+            <div class="grade-derived">
+              <div class="derived-box">
+                <span class="derived-value ects">{{ derivedEcts }}</span>
+                <span class="derived-label">ECTS</span>
+              </div>
+              <div class="derived-box">
+                <span class="derived-value national">{{ nationalLabels[derivedNational!] }}</span>
+                <span class="derived-label">Національна</span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeGrade()">
+          <i class="pi pi-times"></i> Скасувати
+        </button>
+        <button type="submit" class="btn-primary">
+          <i class="pi pi-check"></i> Зберегти
+        </button>
+      </div>
+    </form>
+  </app-modal>
+}
+
+@if (editModalOpen()) {
+  <app-modal title="Редагувати роботу" size="lg" (close)="closeEdit()">
+    <app-additional-work-modal
+      [work]="work()"
+      mode="edit"
+      [commissions]="commissions()"
+      (saved)="onSaved()"
+      (cancelled)="closeEdit()"
+    />
+  </app-modal>
+}
+
+@if (deleteModalOpen()) {
+  <app-confirm-dialog
+    title="Видалення роботи"
+    [message]="'Ви впевнені, що хочете видалити роботу <strong>' + (work()?.title ?? '') + '</strong>?'"
+    subtext="Цю дію неможливо скасувати."
+    iconType="danger"
+    confirmButtonClass="btn-danger"
+    confirmLabel="Видалити"
+    (confirm)="confirmDelete()"
+    (cancel)="closeDelete()"
+  />
+}

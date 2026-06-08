@@ -19,11 +19,15 @@ export class OrgService {
     orgType?: OrgType;
     page?: number;
     size?: number;
+    sortBy?: string;
+    sortDir?: 'asc' | 'desc';
   }): Observable<PageResponse<Organization>> {
     let p = new HttpParams();
     if (params?.orgType) p = p.set('orgType', params.orgType);
     if (params?.page !== undefined) p = p.set('page', params.page);
     if (params?.size !== undefined) p = p.set('size', params.size);
+    if (params?.sortBy) p = p.set('sortBy', params.sortBy);
+    if (params?.sortDir) p = p.set('sortDir', params.sortDir);
     return this.http.get<PageResponse<Organization>>(this.apiUrl, { params: p });
   }
 

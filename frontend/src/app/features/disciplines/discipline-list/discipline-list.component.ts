@@ -25,6 +25,8 @@ export class DisciplineListComponent implements OnInit {
   disciplines = signal<DisciplineDTO[]>([]);
   filtered = signal<DisciplineDTO[]>([]);
   search = signal('');
+  sortBy = signal<string | null>(null);
+  sortDir = signal<'asc' | 'desc'>('asc');
 
   currentPage = signal(0);
   perPage = signal(10);
@@ -65,9 +67,41 @@ export class DisciplineListComponent implements OnInit {
     });
   }
 
+  toggleSort(column: string) {
+    if (this.sortBy() === column) {
+      if (this.sortDir() === 'asc') {
+        this.sortDir.set('desc');
+      } else {
+        this.sortBy.set(null);
+        this.sortDir.set('asc');
+      }
+    } else {
+      this.sortBy.set(column);
+      this.sortDir.set('asc');
+    }
+    this.applyFilter();
+  }
+
   applyFilter() {
     const s = this.search().toLowerCase();
-    this.filtered.set(this.disciplines().filter((d) => !s || d.name.toLowerCase().includes(s)));
+    const col = this.sortBy();
+    const dir = this.sortDir();
+
+    const result = this.disciplines().filter((d) => !s || d.name.toLowerCase().includes(s));
+
+    if (col) {
+      result.sort((a, b) => {
+        let aVal = (a as any)[col] ?? '';
+        let bVal = (b as any)[col] ?? '';
+        if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+        if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+        if (aVal < bVal) return dir === 'asc' ? -1 : 1;
+        if (aVal > bVal) return dir === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    this.filtered.set(result);
     this.currentPage.set(0);
   }
 

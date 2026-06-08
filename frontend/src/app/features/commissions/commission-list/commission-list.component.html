@@ -1,0 +1,142 @@
+<div class="page">
+  <app-page-header title="Комісії" subtitle="Управління екзаменаційними комісіями">
+    @if (isAdminOrManager()) {
+      <button actions class="btn-primary" (click)="openCreate()">
+        <i class="pi pi-plus"></i> Додати комісію
+      </button>
+    }
+  </app-page-header>
+
+  <div class="filters">
+    <input
+      class="search-input"
+      type="text"
+      placeholder="Пошук за датою..."
+      [value]="search()"
+      (input)="onSearch($event)"
+    />
+    <div class="status-tabs">
+      <button class="status-tab" [class.active]="statusFilter() === 'all'" (click)="statusFilter.set('all')">Всі</button>
+      <button class="status-tab" [class.active]="statusFilter() === 'active'" (click)="statusFilter.set('active')">Активні</button>
+      <button class="status-tab" [class.active]="statusFilter() === 'inactive'" (click)="statusFilter.set('inactive')">Неактивні</button>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Статус</th>
+          <th class="sortable-th" (click)="toggleSort('startDate')">
+            Дата початку
+            <span class="sort-icon">
+              @if (sortBy() === 'startDate') {
+                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+              } @else {
+                <i class="pi pi-sort-alt"></i>
+              }
+            </span>
+          </th>
+          <th class="sortable-th" (click)="toggleSort('endDate')">
+            Дата завершення
+            <span class="sort-icon">
+              @if (sortBy() === 'endDate') {
+                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+              } @else {
+                <i class="pi pi-sort-alt"></i>
+              }
+            </span>
+          </th>
+          <th class="sortable-th" (click)="toggleSort('membersCount')">
+            Кількість членів
+            <span class="sort-icon">
+              @if (sortBy() === 'membersCount') {
+                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+              } @else {
+                <i class="pi pi-sort-alt"></i>
+              }
+            </span>
+          </th>
+          <th>Дії</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (filtered().length === 0) {
+          <tr>
+            <td colspan="5">
+              <div class="empty-state">
+                <div class="empty-icon">🏛️</div>
+                <div>Комісій не знайдено</div>
+              </div>
+            </td>
+          </tr>
+        }
+        @for (commission of filtered(); track commission.id) {
+          <tr class="clickable-row" (click)="viewCommission(commission.id)">
+            <td>
+              @if (isActive(commission)) {
+                <span class="status-badge active">Активна</span>
+              } @else {
+                <span class="status-badge inactive">Неактивна</span>
+              }
+            </td>
+            <td>
+              <span class="date-badge">{{ formatDate(commission.startDate) }}</span>
+            </td>
+            <td>
+              <span class="date-badge">{{ commission.endDate ? formatDate(commission.endDate) : '—' }}</span>
+            </td>
+            <td>
+              <span class="member-count">{{ commission.members.length }}</span>
+            </td>
+            <td>
+              @if (isAdminOrManager()) {
+                <button
+                  class="action-btn edit"
+                  (click)="openEdit(commission); $event.stopPropagation()"
+                  title="Редагувати"
+                >
+                  <i class="pi pi-file-edit"></i>
+                </button>
+                <button
+                  class="action-btn delete"
+                  (click)="openDeleteModal(commission); $event.stopPropagation()"
+                  title="Видалити"
+                >
+                  <i class="pi pi-trash"></i>
+                </button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (modalOpen()) {
+  <app-modal
+    [title]="isEdit() ? 'Редагувати комісію' : 'Нова комісія'"
+    (close)="closeModal()"
+  >
+    <app-commission-modal
+      [commission]="editingCommission()"
+      [mode]="isEdit() ? 'edit' : 'create'"
+      (saved)="onSaved()"
+      (cancelled)="closeModal()"
+    />
+  </app-modal>
+}
+
+@if (deleteModalOpen()) {
+  <app-confirm-dialog
+    title="Видалення комісії"
+    [message]="'Ви впевнені, що хочете видалити комісію від <strong>' + formatDate(commissionToDelete()?.startDate ?? '') + '</strong>?'"
+    subtext="Цю дію неможливо скасувати."
+    iconType="danger"
+    confirmButtonClass="btn-danger"
+    confirmLabel="Видалити"
+    (confirm)="confirmDelete()"
+    (cancel)="closeDeleteModal()"
+  />
+}

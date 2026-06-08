@@ -40,10 +40,23 @@
         <li routerLink="/disciplines" routerLinkActive="active" (click)="close()">
             <i class="pi pi-list"></i> Дисципліни
         </li>
+        <li routerLink="/commissions" routerLinkActive="active" (click)="close()">
+            <i class="pi pi-sitemap"></i> Комісії
+        </li>
+        }
+        @if (isAdminOrManager() || isProfessor()) {
+        <li routerLink="/additional-works" routerLinkActive="active" (click)="close()">
+            <i class="pi pi-file"></i> Додаткові роботи
+        </li>
         }
         @if (isAdmin() || isProfessor()) {
         <li routerLink="/grades" routerLinkActive="active" (click)="close()">
             <i class="pi pi-star"></i> Оцінки
+        </li>
+        }
+        @if (isStudent() && studentBookId()) {
+        <li [routerLink]="['/grades/student', studentBookId()]" routerLinkActive="active" (click)="close()">
+            <i class="pi pi-star"></i> Мої оцінки
         </li>
         }
         @if (isAdminOrManager() || isProfessor()) {

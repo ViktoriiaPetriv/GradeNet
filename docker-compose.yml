@@ -98,6 +98,38 @@ services:
     networks:
       - grade-net-network
 
+  add-service-app:
+    image: ghcr.io/${GITHUB_OWNER}/gradenet-add-service:${IMAGE_TAG:-latest}
+    container_name: add-service-app
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:${ADD_APP_PORT:-8084}:8084"
+    volumes:
+      - ./logs/add_app:/logs
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/${ADD_POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SERVER_PORT: ${ADD_APP_PORT:-8084}
+      JWT_SECRET: ${JWT_SECRET}
+    networks:
+      - grade-net-network
+
+  record-book-app:
+    image: ghcr.io/${GITHUB_OWNER}/gradenet-record-book:${IMAGE_TAG:-latest}
+    container_name: record-book-app
+    restart: always
+    ports:
+      - "127.0.0.1:${RECORD_BOOK_APP_PORT:-8085}:8085"
+    networks:
+      - grade-net-network
+
   integration-service-app:
     image: ghcr.io/${GITHUB_OWNER}/gradenet-integration-service:${IMAGE_TAG:-latest}
     container_name: integration-service-app
@@ -109,12 +141,16 @@ services:
     depends_on:
       - user-service-app
       - grade-service-app
+      - add-service-app
+      - record-book-app
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SERVER_PORT: ${INTEGRATION_APP_PORT:-8083}
       USER_SERVICE_URL: http://user-service-app:${USER_APP_PORT:-8080}
       ORG_SERVICE_URL: http://org-service-app:${ORG_APP_PORT:-8081}
       GRADE_SERVICE_URL: http://grade-service-app:${GRADE_APP_PORT:-8082}
+      RECORD_BOOK_URL: http://record-book-app:${RECORD_BOOK_APP_PORT:-8085}
+      ADD_SERVICE_URL: http://add-service-app:${ADD_APP_PORT:-8084}
     networks:
       - grade-net-network
 

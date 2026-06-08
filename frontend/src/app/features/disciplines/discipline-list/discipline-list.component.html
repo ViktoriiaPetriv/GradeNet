@@ -16,8 +16,26 @@
     <table>
       <thead>
       <tr>
-        <th>#</th>
-        <th>Назва</th>
+        <th class="sortable-th" (click)="toggleSort('id')">
+          #
+          <span class="sort-icon">
+            @if (sortBy() === 'id') {
+              <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+            } @else {
+              <i class="pi pi-sort-alt"></i>
+            }
+          </span>
+        </th>
+        <th class="sortable-th" (click)="toggleSort('name')">
+          Назва
+          <span class="sort-icon">
+            @if (sortBy() === 'name') {
+              <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+            } @else {
+              <i class="pi pi-sort-alt"></i>
+            }
+          </span>
+        </th>
         @if (isAdmin()) {
           <th>Дії</th>
         }

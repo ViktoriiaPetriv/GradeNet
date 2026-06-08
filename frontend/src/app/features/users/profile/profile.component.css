@@ -134,3 +134,33 @@
     color: #6b7280;
     border: 1px solid var(--border);
 }
+
+.info-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+    transition: opacity 0.15s;
+}
+
+.info-link:hover {
+    opacity: 0.75;
+    text-decoration: underline;
+}
+
+.btn-view-grades {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--btn);
+    color: #fff;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: opacity 0.15s;
+}
+
+.btn-view-grades:hover {
+    opacity: 0.85;
+}
