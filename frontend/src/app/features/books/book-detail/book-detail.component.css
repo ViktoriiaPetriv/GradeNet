@@ -39,3 +39,15 @@
     margin-bottom: 8px;
     font-family: 'DM Mono', monospace;
 }
+
+.info-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+    transition: opacity 0.15s;
+}
+
+.info-link:hover {
+    opacity: 0.75;
+    text-decoration: underline;
+}

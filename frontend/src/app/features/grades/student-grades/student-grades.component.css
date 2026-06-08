@@ -114,6 +114,39 @@
 .stat-failed   { background: #fee2e2; color: #991b1b; }
 .stat-progress { background: #dbeafe; color: #1d4ed8; }
 
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Syne', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 1.5rem 0 0.6rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 2px solid var(--accent);
+}
+
+.section-title i {
+  color: var(--accent);
+}
+
+.work-type-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.type-COURSE_WORK { background: rgba(59,130,246,0.1); color: #3B82F6; }
+.type-PRACTICE { background: rgba(13,158,110,0.1); color: #0D9E6E; }
+.type-QUALIFICATION { background: rgba(124,58,237,0.1); color: #7C3AED; }
+
+.state-progress { color: #D97706; font-weight: 500; font-size: 0.85rem; }
+.state-completed { color: #0D9E6E; font-weight: 500; font-size: 0.85rem; }
+.state-failed { color: var(--red); font-weight: 500; font-size: 0.85rem; }
+
 .table-container {
   background: var(--surface);
   border: 1px solid var(--border);

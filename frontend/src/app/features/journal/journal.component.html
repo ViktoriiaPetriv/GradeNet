@@ -582,11 +582,33 @@
     }
   </div>
 
+  @if (hasAdditionalWorkDisciplines()) {
+  <div class="card commission-card">
+    <h3 class="card-title"><i class="pi pi-sitemap"></i> Комісія для додаткових робіт</h3>
+    <p class="card-desc">
+      Серед обраних дисциплін є практики, курсові або кваліфікаційні роботи. Оберіть комісію, до якої будуть прив'язані ці роботи.
+    </p>
+    <select class="form-select commission-select"
+            [ngModel]="selectedCommissionId()"
+            (ngModelChange)="selectedCommissionId.set($event ? +$event : null)">
+      <option [ngValue]="null">— Оберіть комісію —</option>
+      @for (c of commissions(); track c.id) {
+        <option [ngValue]="c.id">
+          {{ formatCommissionDate(c.startDate) }} — {{ c.endDate ? formatCommissionDate(c.endDate) : '...' }}
+          ({{ c.members.length }} членів)
+        </option>
+      }
+    </select>
+  </div>
+  }
+
   <div class="actions">
     <button class="btn-secondary" (click)="goToDisciplinesStep()">
       <i class="pi pi-arrow-left"></i> Назад
     </button>
-    <button class="btn-import" [disabled]="loadingImport() || loadingPreview()" (click)="executeImport()">
+    <button class="btn-import"
+            [disabled]="loadingImport() || loadingPreview() || (hasAdditionalWorkDisciplines() && !selectedCommissionId())"
+            (click)="executeImport()">
       @if (loadingImport()) { <i class="pi pi-spin pi-spinner"></i> Імпорт... }
       @else { <i class="pi pi-upload"></i> Розпочати імпорт }
     </button>

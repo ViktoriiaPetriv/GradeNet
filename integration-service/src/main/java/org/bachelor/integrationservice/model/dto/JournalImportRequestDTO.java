@@ -20,4 +20,7 @@ public class JournalImportRequestDTO {
 
     /** Journal student external IDs to include; null means all students. */
     private List<Long> selectedStudentExternalIds;
+
+    /** Commission ID for additional work types (21, 22, 32, 40). Required when such disciplines are present. */
+    private Long commissionId;
 }

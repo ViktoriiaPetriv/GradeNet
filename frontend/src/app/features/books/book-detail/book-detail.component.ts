@@ -1,6 +1,6 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { BookService } from '../../../core/services/book.service';
 import { BookNumber, BookNumberStatus } from '../../../models/book.model';
 import { SpecialtyService } from '../../../core/services/specialty.service';
@@ -14,7 +14,7 @@ import { AuthStateService } from '../../../core/services/auth-state.service';
 @Component({
   selector: 'app-book-detail',
   standalone: true,
-  imports: [CommonModule, BookModalComponent],
+  imports: [CommonModule, RouterLink, BookModalComponent],
   templateUrl: './book-detail.component.html',
   styleUrl: './book-detail.component.css',
 })

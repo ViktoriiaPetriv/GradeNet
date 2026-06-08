@@ -6,6 +6,7 @@ import { JournalService } from '../../core/services/journal.service';
 import { UserService } from '../../core/services/user.service';
 import { SpecialtyService } from '../../core/services/specialty.service';
 import { OrgService } from '../../core/services/org.service';
+import { CommissionService } from '../../core/services/commission.service';
 import { ToastService } from '../../core/services/toast.service';
 import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
 import {
@@ -18,6 +19,7 @@ import {
   STUDY_FORM_OPTIONS,
 } from '../../models/journal.model';
 import { User } from '../../models/user.model';
+import { Commission } from '../../models/commission.model';
 import { Specialty, SpecialtyOffering, SpecialtyRequest, OrganizationShort, OrgType, Degree, EduType } from '../../models/org.model';
 
 type Step = 'specialty' | 'students' | 'disciplines' | 'grade-view' | 'preview' | 'result';
@@ -50,6 +52,7 @@ export class JournalComponent implements OnInit {
   private userService = inject(UserService);
   private specialtyService = inject(SpecialtyService);
   private orgService = inject(OrgService);
+  private commissionService = inject(CommissionService);
   private toastService = inject(ToastService);
 
   step = signal<Step>('specialty');
@@ -104,6 +107,10 @@ export class JournalComponent implements OnInit {
   previewDetails = signal<JournalDisciplineDetail[]>([]);
   loadingPreview = signal(false);
 
+  // Commission (for additional work types)
+  commissions = signal<Commission[]>([]);
+  selectedCommissionId = signal<number | null>(null);
+
   // Step 6 – result
   importResult = signal<JournalImportResult | null>(null);
   tooltipText = signal('');
@@ -111,10 +118,18 @@ export class JournalComponent implements OnInit {
   tooltipY = signal(0);
   tooltipVisible = signal(false);
 
+  private readonly ADDITIONAL_WORK_TYPES = [21, 22, 32, 40];
+
   // Computed
   selectedStudentRows = computed(() => this.studentRows().filter((r) => r.selected));
   selectedDisciplineRows = computed(() => this.disciplineRows().filter((r) => r.selected));
   allStudentsSelected = computed(() => this.studentRows().every((r) => r.selected));
+
+  hasAdditionalWorkDisciplines = computed(() =>
+    this.previewDetails().some(d =>
+      d.grades.some(g => this.ADDITIONAL_WORK_TYPES.includes(g.assessmentType))
+    )
+  );
 
   canProceedFromSpecialty = computed(() => {
     const status = this.specialtyLinkStatus();
@@ -206,6 +221,7 @@ export class JournalComponent implements OnInit {
     const y = new Date().getFullYear();
     this.importAcademicYear.set(`${y}/${y + 1}`);
     this.loadSpecialties();
+    this.commissionService.getAll().subscribe(data => this.commissions.set(data));
   }
 
   // ── Step 1: Specialty ──────────────────────────────────────────────────────
@@ -663,6 +679,7 @@ export class JournalComponent implements OnInit {
     const selectedStudentExternalIds = this.selectedStudentRows().map((r) => r.student.externalId);
 
     this.loadingImport.set(true);
+    const commissionId = this.selectedCommissionId();
     this.journalService
       .importFromJournal({
         journalSpecialtyId: specialtyId,
@@ -672,6 +689,7 @@ export class JournalComponent implements OnInit {
         professorOverridesByStudent: Object.keys(professorOverridesByStudent).length
           ? professorOverridesByStudent : undefined,
         selectedStudentExternalIds,
+        commissionId: commissionId ?? undefined,
       })
       .subscribe({
         next: (result) => {
@@ -738,6 +756,12 @@ export class JournalComponent implements OnInit {
 
   professorFullName(u: User): string {
     return `${u.lastName} ${u.firstName}${u.patronymic ? ' ' + u.patronymic : ''}`;
+  }
+
+  formatCommissionDate(date: string): string {
+    if (!date) return '—';
+    const [y, m, d] = date.split('-');
+    return `${d}.${m}.${y}`;
   }
 
   degreeLabel(value: string) {

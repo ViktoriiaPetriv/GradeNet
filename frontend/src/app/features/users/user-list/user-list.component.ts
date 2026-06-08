@@ -35,6 +35,8 @@ export class UserListComponent implements OnInit {
   filtered = signal<User[]>([]);
   search = signal('');
   roleFilter = signal('');
+  sortBy = signal<string | null>(null);
+  sortDir = signal<'asc' | 'desc'>('asc');
   currentPage = signal(1);
   perPage = signal(10);
   perPageOptions = [2, 5, 10, 25, 50];
@@ -140,15 +142,45 @@ export class UserListComponent implements OnInit {
     this.router.navigate(['/profile', id]);
   }
 
+  toggleSort(column: string) {
+    if (this.sortBy() === column) {
+      if (this.sortDir() === 'asc') {
+        this.sortDir.set('desc');
+      } else {
+        this.sortBy.set(null);
+        this.sortDir.set('asc');
+      }
+    } else {
+      this.sortBy.set(column);
+      this.sortDir.set('asc');
+    }
+    this.applyFilter();
+  }
+
   applyFilter() {
     const s = this.search().toLowerCase();
     const r = this.roleFilter();
-    this.filtered.set(
-      this.users().filter((u) => {
-        const name = `${u.lastName} ${u.firstName} ${u.email}`.toLowerCase();
-        return (!s || name.includes(s)) && (!r || u.role === r);
-      }),
-    );
+    const col = this.sortBy();
+    const dir = this.sortDir();
+
+    const result = this.users().filter((u) => {
+      const name = `${u.lastName} ${u.firstName} ${u.email}`.toLowerCase();
+      return (!s || name.includes(s)) && (!r || u.role === r);
+    });
+
+    if (col) {
+      result.sort((a, b) => {
+        let aVal = (a as any)[col] ?? '';
+        let bVal = (b as any)[col] ?? '';
+        if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+        if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+        if (aVal < bVal) return dir === 'asc' ? -1 : 1;
+        if (aVal > bVal) return dir === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    this.filtered.set(result);
     this.currentPage.set(1);
   }
 

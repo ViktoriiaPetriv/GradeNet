@@ -26,6 +26,8 @@ import { GroupModalComponent } from '../group-modal/group-modal.component';
 export class GroupListComponent implements OnInit {
   groups = signal<StudentGroup[]>([]);
   search = signal('');
+  sortBy = signal<string | null>(null);
+  sortDir = signal<'asc' | 'desc'>('asc');
 
   currentPage = signal(0);
   totalPages = signal(0);
@@ -58,12 +60,31 @@ export class GroupListComponent implements OnInit {
     this.load();
   }
 
+  toggleSort(column: string) {
+    if (this.sortBy() === column) {
+      if (this.sortDir() === 'asc') {
+        this.sortDir.set('desc');
+      } else {
+        this.sortBy.set(null);
+        this.sortDir.set('asc');
+      }
+    } else {
+      this.sortBy.set(column);
+      this.sortDir.set('asc');
+    }
+    this.currentPage.set(0);
+    this.load();
+  }
+
   load() {
+    const col = this.sortBy();
     this.groupService
       .getAll({
         name: this.search() || undefined,
         page: this.currentPage(),
         size: this.perPage(),
+        sortBy: col ?? undefined,
+        sortDir: col ? this.sortDir() : undefined,
       })
       .subscribe((r) => {
         this.groups.set(r.content);

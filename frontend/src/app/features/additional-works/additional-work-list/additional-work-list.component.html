@@ -1,0 +1,158 @@
+<div class="page">
+  <app-page-header title="Додаткові роботи" subtitle="Курсові, практики та кваліфікаційні роботи">
+    @if (isAdminOrManager()) {
+      <button actions class="btn-primary" (click)="openCreate()">
+        <i class="pi pi-plus"></i> Додати роботу
+      </button>
+    }
+  </app-page-header>
+
+  <div class="filters">
+    <select class="filter-select" (change)="onFilterType($event)">
+      <option value="">Всі типи</option>
+      <option value="COURSE_WORK">Курсова робота</option>
+      <option value="EDUCATIONAL_PRACTICE">Навчальна практика</option>
+      <option value="PRODUCTION_PRACTICE">Виробнича практика</option>
+      <option value="QUALIFICATION">Кваліфікаційна робота</option>
+      <option value="COMPREHENSIVE_EXAM">Комплексний екзамен</option>
+    </select>
+
+    <select class="filter-select" (change)="onFilterCommission($event)">
+      <option value="">Всі комісії</option>
+      @for (c of sortedCommissions(); track c.id) {
+        <option [value]="c.id">
+          {{ formatDate(c.startDate) }} — {{ c.endDate ? formatDate(c.endDate) : '...' }}{{ isCommissionActive(c) ? ' ✓' : '' }}
+        </option>
+      }
+    </select>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th class="sortable-th" (click)="toggleSort('type')">
+            Тип
+            <span class="sort-icon">
+              @if (sortBy() === 'type') {
+                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+              } @else {
+                <i class="pi pi-sort-alt"></i>
+              }
+            </span>
+          </th>
+          <th class="sortable-th" (click)="toggleSort('title')">
+            Назва
+            <span class="sort-icon">
+              @if (sortBy() === 'title') {
+                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+              } @else {
+                <i class="pi pi-sort-alt"></i>
+              }
+            </span>
+          </th>
+          <th class="sortable-th" (click)="toggleSort('studentName')">
+            Студент
+            <span class="sort-icon">
+              @if (sortBy() === 'studentName') {
+                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+              } @else {
+                <i class="pi pi-sort-alt"></i>
+              }
+            </span>
+          </th>
+          <th>Комісія</th>
+          <th class="sortable-th" (click)="toggleSort('universityGrade')">
+            Оцінка
+            <span class="sort-icon">
+              @if (sortBy() === 'universityGrade') {
+                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+              } @else {
+                <i class="pi pi-sort-alt"></i>
+              }
+            </span>
+          </th>
+          <th>Дії</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (filtered().length === 0) {
+          <tr>
+            <td colspan="6">
+              <div class="empty-state">
+                <div class="empty-icon">📋</div>
+                <div>Робіт не знайдено</div>
+              </div>
+            </td>
+          </tr>
+        }
+        @for (work of filtered(); track work.id) {
+          <tr class="clickable-row" (click)="viewWork(work.id)">
+            <td>
+              <span class="type-badge" [class]="typeClass(work.type)">
+                {{ typeLabel(work.type) }}
+              </span>
+            </td>
+            <td class="title-cell" [title]="work.title">{{ work.title.length > 30 ? (work.title | slice:0:30) + '...' : work.title }}</td>
+            <td class="muted">{{ studentName(work.bookNumberId) }}</td>
+            <td class="muted">{{ commissionLabel(work.commissionId) }}</td>
+            <td>
+              @if (work.universityGrade != null) {
+                <span class="grade-badge">{{ work.universityGrade }} / {{ work.ectsGrade ?? '—' }}</span>
+              } @else {
+                <span class="muted">—</span>
+              }
+            </td>
+            <td>
+              @if (isAdminOrManager()) {
+                <button
+                  class="action-btn edit"
+                  (click)="openEdit(work); $event.stopPropagation()"
+                  title="Редагувати"
+                >
+                  <i class="pi pi-file-edit"></i>
+                </button>
+                <button
+                  class="action-btn delete"
+                  (click)="openDeleteModal(work); $event.stopPropagation()"
+                  title="Видалити"
+                >
+                  <i class="pi pi-trash"></i>
+                </button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (modalOpen()) {
+  <app-modal
+    [title]="isEdit() ? 'Редагувати роботу' : 'Нова додаткова робота'"
+    size="lg"
+    (close)="closeModal()"
+  >
+    <app-additional-work-modal
+      [work]="editingWork()"
+      [mode]="isEdit() ? 'edit' : 'create'"
+      [commissions]="commissions()"
+      (saved)="onSaved()"
+      (cancelled)="closeModal()"
+    />
+  </app-modal>
+}
+
+@if (deleteModalOpen()) {
+  <app-confirm-dialog
+    title="Видалення роботи"
+    [message]="'Ви впевнені, що хочете видалити роботу <strong>' + (workToDelete()?.title ?? '') + '</strong>?'"
+    subtext="Цю дію неможливо скасувати."
+    iconType="danger"
+    confirmButtonClass="btn-danger"
+    confirmLabel="Видалити"
+    (confirm)="confirmDelete()"
+    (cancel)="closeDeleteModal()"
+  />
+}

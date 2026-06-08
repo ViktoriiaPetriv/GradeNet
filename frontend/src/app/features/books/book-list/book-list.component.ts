@@ -17,6 +17,8 @@ import { AuthStateService } from '../../../core/services/auth-state.service';
 export class BookListComponent implements OnInit {
   books = signal<BookNumber[]>([]);
   search = signal('');
+  sortBy = signal<string | null>(null);
+  sortDir = signal<'asc' | 'desc'>('asc');
   currentPage = signal(0);
   totalPages = signal(0);
   perPage = signal(10);
@@ -75,9 +77,26 @@ export class BookListComponent implements OnInit {
     this.load();
   }
 
+  toggleSort(column: string) {
+    if (this.sortBy() === column) {
+      if (this.sortDir() === 'asc') {
+        this.sortDir.set('desc');
+      } else {
+        this.sortBy.set(null);
+        this.sortDir.set('asc');
+      }
+    } else {
+      this.sortBy.set(column);
+      this.sortDir.set('asc');
+    }
+    this.currentPage.set(0);
+    this.load();
+  }
+
   load() {
+    const col = this.sortBy();
     this.bookService
-      .findAll(this.search() || undefined, this.currentPage(), this.perPage())
+      .findAll(this.search() || undefined, this.currentPage(), this.perPage(), col ?? undefined, col ? this.sortDir() : undefined)
       .subscribe((r) => {
         this.books.set(r.content);
         this.totalPages.set(r.totalPages);

@@ -51,11 +51,56 @@
       <table>
         <thead>
         <tr>
-          <th>Код</th>
-          <th>Назва</th>
-          <th>Кафедра</th>
-          <th>Ступінь</th>
-          <th>Форма навчання</th>
+          <th class="sortable-th" (click)="toggleSort('code')">
+            Код
+            <span class="sort-icon">
+              @if (sortBy() === 'code') {
+                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+              } @else {
+                <i class="pi pi-sort-alt"></i>
+              }
+            </span>
+          </th>
+          <th class="sortable-th" (click)="toggleSort('nameUA')">
+            Назва
+            <span class="sort-icon">
+              @if (sortBy() === 'nameUA') {
+                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+              } @else {
+                <i class="pi pi-sort-alt"></i>
+              }
+            </span>
+          </th>
+          <th class="sortable-th" (click)="toggleSort('organization.name')">
+            Кафедра
+            <span class="sort-icon">
+              @if (sortBy() === 'organization.name') {
+                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+              } @else {
+                <i class="pi pi-sort-alt"></i>
+              }
+            </span>
+          </th>
+          <th class="sortable-th" (click)="toggleSort('degree')">
+            Ступінь
+            <span class="sort-icon">
+              @if (sortBy() === 'degree') {
+                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+              } @else {
+                <i class="pi pi-sort-alt"></i>
+              }
+            </span>
+          </th>
+          <th class="sortable-th" (click)="toggleSort('eduType')">
+            Форма навчання
+            <span class="sort-icon">
+              @if (sortBy() === 'eduType') {
+                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+              } @else {
+                <i class="pi pi-sort-alt"></i>
+              }
+            </span>
+          </th>
           @if (isAdmin()) {
             <th>Дії</th>
           }

@@ -6,6 +6,7 @@ import org.bachelor.integrationservice.mapper.JournalStatusMapper;
 import org.bachelor.integrationservice.model.client.*;
 import org.bachelor.integrationservice.model.dto.*;
 import org.bachelor.integrationservice.model.journal.*;
+import org.bachelor.integrationservice.service.client.AddServiceClient;
 import org.bachelor.integrationservice.service.client.GradeServiceClient;
 import org.bachelor.integrationservice.service.client.UserServiceClient;
 import org.bachelor.integrationservice.service.journal.JournalClient;
@@ -24,6 +25,7 @@ public class JournalImportService {
     private final JournalStatusMapper journalStatusMapper;
     private final GradeServiceClient gradeClient;
     private final UserServiceClient userClient;
+    private final AddServiceClient addClient;
 
     public List<JournalStudentStatusDTO> getStudentsWithStatus(long specialtyId, String authHeader) {
         List<JournalStudentDTO> journalStudents = journalClient.getStudents(specialtyId);
@@ -102,7 +104,7 @@ public class JournalImportService {
             int[] counts = processDisciplineEntry(entry.getKey(), entry.getValue(), disciplineOverrides,
                     disciplineNameById, disciplineByName, offeringId, academicYear,
                     selectedStudentIds, journalStudentById, systemUserByEmail,
-                    matchedUserIds, unmatchedStudents, errors, authHeader);
+                    matchedUserIds, unmatchedStudents, errors, request.getCommissionId(), authHeader);
             disciplinesProcessed += counts[0];
             gradesCreated += counts[1];
         }
@@ -140,7 +142,7 @@ public class JournalImportService {
             long offeringId, String academicYear, Set<Long> selectedStudentIds,
             Map<Long, JournalStudentDTO> journalStudentById, Map<String, UserDTO> systemUserByEmail,
             Set<Long> matchedUserIds, List<String> unmatchedStudents,
-            List<ImportErrorDTO> errors, String authHeader) {
+            List<ImportErrorDTO> errors, Long commissionId, String authHeader) {
 
         JournalDisciplineDetailDTO detail;
         try {
@@ -151,6 +153,24 @@ public class JournalImportService {
             return new int[]{0, 0};
         }
         detail.setName(disciplineNameById.getOrDefault(extDisciplineId, detail.getName()));
+
+        // Determine assessment type from first grade
+        Integer firstAssessmentType = detail.getGrades().stream()
+                .map(JournalStudentGradeDTO::getAssessmentType)
+                .filter(Objects::nonNull)
+                .findFirst().orElse(null);
+
+        if (isAdditionalWorkType(firstAssessmentType)) {
+            if (commissionId == null) {
+                errors.add(new ImportErrorDTO(null, detail.getName(),
+                        "Тип контролю '" + assessmentTypeLabel(firstAssessmentType) + "' є додатковою роботою — вкажіть комісію в запиті"));
+                return new int[]{0, 0};
+            }
+            int created = processAdditionalWorksForDiscipline(detail, firstAssessmentType, commissionId,
+                    selectedStudentIds, journalStudentById, systemUserByEmail,
+                    offeringId, matchedUserIds, unmatchedStudents, errors, authHeader);
+            return new int[]{1, created};
+        }
 
         SpecialtyDisciplineDTO sd;
         try {
@@ -175,6 +195,93 @@ public class JournalImportService {
             }
         }
         return new int[]{1, gradesCreated};
+    }
+
+    private int processAdditionalWorksForDiscipline(
+            JournalDisciplineDetailDTO detail, int assessmentType, long commissionId,
+            Set<Long> selectedStudentIds,
+            Map<Long, JournalStudentDTO> journalStudentById, Map<String, UserDTO> systemUserByEmail,
+            long offeringId, Set<Long> matchedUserIds,
+            List<String> unmatchedStudents, List<ImportErrorDTO> errors, String authHeader) {
+
+        String workType = additionalWorkType(assessmentType);
+        int created = 0;
+
+        for (JournalStudentGradeDTO grade : detail.getGrades()) {
+            if (selectedStudentIds != null && !selectedStudentIds.contains(grade.getStudentExternalId())) continue;
+
+            JournalStudentDTO jStudent = journalStudentById.get(grade.getStudentExternalId());
+            if (jStudent == null) {
+                unmatchedStudents.add("externalId=" + grade.getStudentExternalId());
+                continue;
+            }
+
+            UserDTO user = resolveOrCreateUser(jStudent, systemUserByEmail, authHeader);
+            if (user == null) {
+                String name = jStudent.getLastName() + " " + jStudent.getFirstName();
+                errors.add(new ImportErrorDTO(name, detail.getName(), "Не вдалося створити студента"));
+                if (!unmatchedStudents.contains(name)) unmatchedStudents.add(name);
+                continue;
+            }
+
+            BookNumberDTO book = userClient.findOrCreateBook(user.getId(), offeringId, authHeader);
+            if (book == null) {
+                String name = jStudent.getLastName() + " " + jStudent.getFirstName();
+                errors.add(new ImportErrorDTO(name, detail.getName(), "Не вдалося знайти або створити залікову книжку"));
+                continue;
+            }
+
+            matchedUserIds.add(user.getId());
+            try {
+                String[] grades = convertAdditionalWorkGrade(grade.getUniversityGrade(), assessmentType);
+                addClient.createAdditionalWork(
+                        book.getId(), commissionId, workType, detail.getName(),
+                        grade.getAssessmentDate(), grade.getUniversityGrade(),
+                        grades[0], grades[1], authHeader);
+                created++;
+            } catch (Exception e) {
+                String name = jStudent.getLastName() + " " + jStudent.getFirstName();
+                log.error("Additional work save failed for {} / {}: {}", name, detail.getName(), e.getMessage());
+                errors.add(new ImportErrorDTO(name, detail.getName(), e.getMessage()));
+            }
+        }
+        return created;
+    }
+
+    /** Returns [ectsGrade, nationalGrade] for the given universityGrade and assessmentType. */
+    private String[] convertAdditionalWorkGrade(Integer score, int assessmentType) {
+        if (score == null) return new String[]{null, null};
+        int s = score;
+
+        String ects;
+        if (s >= 90) ects = "A";
+        else if (s >= 80) ects = "B";
+        else if (s >= 70) ects = "C";
+        else if (s >= 60) ects = "D";
+        else if (s >= 50) ects = "E";
+        else if (s >= 26) ects = "FE";
+        else ects = "F";
+
+        String national;
+        if (assessmentType == 21 || assessmentType == 22) {
+            national = s >= 50 ? "PASSED" : "NOT_PASSED";
+        } else {
+            if (s >= 90) national = "FIVE";
+            else if (s >= 70) national = "FOUR";
+            else if (s >= 50) national = "THREE";
+            else national = "TWO";
+        }
+
+        return new String[]{ects, national};
+    }
+
+    private String additionalWorkType(int assessmentType) {
+        return switch (assessmentType) {
+            case 21, 22 -> "PRACTICE";
+            case 32     -> "QUALIFICATION";
+            case 40     -> "COURSE_WORK";
+            default     -> "COURSE_WORK";
+        };
     }
 
     private int processGradesForDiscipline(
@@ -232,7 +339,7 @@ public class JournalImportService {
             try {
                 GradeBookEntryDTO gbe = gradeClient.findOrCreateEntryWithAttempt(
                         book.getId(), sd.getId(), professorId, academicYear, detail.getSemester(), attempt, authHeader);
-                gradeClient.createGrade(gbe.getId(), grade.getUniversityGrade(), grade.getAssessmentDate(), authHeader);
+                gradeClient.createGrade(gbe.getId(), grade.getUniversityGrade(), grade.getAssessmentDate(), grade.getAssessmentType(), authHeader);
                 entryIdsToClose.add(gbe.getId());
                 gradesCreated++;
             } catch (Exception e) {
@@ -242,6 +349,24 @@ public class JournalImportService {
             }
         }
         return gradesCreated;
+    }
+
+    private boolean isAdditionalWorkType(Integer code) {
+        return code == 21 || code == 22 || code == 32 || code == 40;
+    }
+
+    private String assessmentTypeLabel(Integer code) {
+        if (code == null) return "невідомо";
+        return switch (code) {
+            case 11 -> "екзамен";
+            case 12 -> "залік";
+            case 21 -> "навчальна практика";
+            case 22 -> "виробнича практика";
+            case 31 -> "державний іспит";
+            case 32 -> "кваліфікаційна робота";
+            case 40 -> "курсова робота";
+            default -> "код " + code;
+        };
     }
 
     private SpecialtyDisciplineDTO resolveSpecialtyDiscipline(

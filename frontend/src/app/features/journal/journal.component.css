@@ -1226,3 +1226,25 @@
   width: fit-content;
   margin-inline: auto;
 }
+
+.commission-card {
+  margin-top: 16px;
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
+}
+
+.commission-select {
+  width: 100%;
+  max-width: 480px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  margin-top: 8px;
+  cursor: pointer;
+}
+.commission-select:focus { border-color: var(--btn); }

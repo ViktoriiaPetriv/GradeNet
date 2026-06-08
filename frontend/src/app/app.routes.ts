@@ -103,7 +103,7 @@ export const routes: Routes = [
   },
   {
     path: 'grades/student/:bookNumberId/report',
-    canActivate: [authGuard(['ADMIN', 'MANAGER', 'PROFESSOR'])],
+    canActivate: [authGuard(['ADMIN', 'MANAGER', 'PROFESSOR', 'STUDENT'])],
     loadComponent: () =>
       import('./features/grades/student-grade-report/student-grade-report.component').then(
         (m) => m.StudentGradeReportComponent,
@@ -111,7 +111,7 @@ export const routes: Routes = [
   },
   {
     path: 'grades/student/:bookNumberId',
-    canActivate: [authGuard(['ADMIN', 'MANAGER', 'PROFESSOR'])],
+    canActivate: [authGuard(['ADMIN', 'MANAGER', 'PROFESSOR', 'STUDENT'])],
     loadComponent: () =>
       import('./features/grades/student-grades/student-grades.component').then(
         (m) => m.StudentGradesComponent,
@@ -150,6 +150,38 @@ export const routes: Routes = [
     canActivate: [authGuard(['ADMIN', 'MANAGER', 'PROFESSOR'])],
     loadComponent: () =>
       import('./features/journal/journal.component').then((m) => m.JournalComponent),
+  },
+  {
+    path: 'additional-works',
+    canActivate: [authGuard(['ADMIN', 'MANAGER', 'PROFESSOR'])],
+    loadComponent: () =>
+      import('./features/additional-works/additional-work-list/additional-work-list.component').then(
+        (m) => m.AdditionalWorkListComponent,
+      ),
+  },
+  {
+    path: 'additional-works/:id',
+    canActivate: [authGuard(['ADMIN', 'MANAGER', 'PROFESSOR'])],
+    loadComponent: () =>
+      import('./features/additional-works/additional-work-detail/additional-work-detail.component').then(
+        (m) => m.AdditionalWorkDetailComponent,
+      ),
+  },
+  {
+    path: 'commissions',
+    canActivate: [authGuard(['ADMIN', 'MANAGER'])],
+    loadComponent: () =>
+      import('./features/commissions/commission-list/commission-list.component').then(
+        (m) => m.CommissionListComponent,
+      ),
+  },
+  {
+    path: 'commissions/:id',
+    canActivate: [authGuard(['ADMIN', 'MANAGER'])],
+    loadComponent: () =>
+      import('./features/commissions/commission-detail/commission-detail.component').then(
+        (m) => m.CommissionDetailComponent,
+      ),
   },
   {
     path: '',

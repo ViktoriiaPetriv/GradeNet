@@ -1,0 +1,1 @@
+ALTER TABLE commission ADD COLUMN org_id BIGINT;

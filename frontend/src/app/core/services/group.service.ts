@@ -10,12 +10,14 @@ export class GroupService {
 
   constructor(private http: HttpClient) {}
 
-  getAll(params?: { name?: string; page?: number; size?: number; specialtyOfferingId?: number }): Observable<PageResponse<StudentGroup>> {
+  getAll(params?: { name?: string; page?: number; size?: number; specialtyOfferingId?: number; sortBy?: string; sortDir?: 'asc' | 'desc' }): Observable<PageResponse<StudentGroup>> {
     let p = new HttpParams();
     if (params?.name) p = p.set('name', params.name);
     if (params?.page !== undefined) p = p.set('pageNumber', params.page);
     if (params?.size !== undefined) p = p.set('size', params.size);
     if (params?.specialtyOfferingId != null) p = p.set('specialtyOfferingId', params.specialtyOfferingId);
+    if (params?.sortBy) p = p.set('sortBy', params.sortBy);
+    if (params?.sortDir) p = p.set('sortDir', params.sortDir);
     return this.http.get<PageResponse<StudentGroup>>(this.apiUrl, { params: p });
   }
 

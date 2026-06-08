@@ -9,10 +9,12 @@ import org.bachelor.orgservice.model.dto.PageResponse;
 import org.bachelor.orgservice.model.entity.OrgType;
 import org.bachelor.orgservice.service.OrganizationService;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 @RequiredArgsConstructor
 @RestController
@@ -48,9 +50,16 @@ public class OrganizationController {
     public PageResponse<OrganizationDTO> getAll(
             @RequestParam(required = false) OrgType orgType,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "name") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir
     ) {
-        return organizationService.getAll(orgType, PageRequest.of(page, size));
+        Set<String> allowed = Set.of("name", "orgType");
+        String field = allowed.contains(sortBy) ? sortBy : "name";
+        Sort sort = sortDir.equalsIgnoreCase("desc")
+                ? Sort.by(field).descending()
+                : Sort.by(field).ascending();
+        return organizationService.getAll(orgType, PageRequest.of(page, size, sort));
     }
 
     @GetMapping("/short")

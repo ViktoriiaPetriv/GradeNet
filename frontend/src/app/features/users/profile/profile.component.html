@@ -88,7 +88,13 @@
               <div class="info-item">
                 <div class="info-label">Номер</div>
                 <div class="info-value" [class.empty]="!b.info.bookNumber">
-                  {{ b.info.bookNumber || 'Не вказано' }}
+                  @if (isAdminOrManager && b.info.bookId) {
+                    <a class="info-link" [routerLink]="['/books', b.info.bookId]">
+                      {{ b.info.bookNumber || 'Не вказано' }}
+                    </a>
+                  } @else {
+                    {{ b.info.bookNumber || 'Не вказано' }}
+                  }
                 </div>
               </div>
               <div class="info-item">
@@ -106,22 +112,47 @@
               <div class="info-item">
                 <div class="info-label">Факультет</div>
                 <div class="info-value" [class.empty]="!b.orgInfo?.facultyName">
-                  {{ b.orgInfo?.facultyName || 'Не вказано' }}
+                  @if (isAdmin && b.orgInfo?.facultyId) {
+                    <a class="info-link" [routerLink]="['/orgs', b.orgInfo!.facultyId]">
+                      {{ b.orgInfo!.facultyName }}
+                    </a>
+                  } @else {
+                    {{ b.orgInfo?.facultyName || 'Не вказано' }}
+                  }
                 </div>
               </div>
               <div class="info-item">
                 <div class="info-label">Кафедра</div>
                 <div class="info-value" [class.empty]="!b.orgInfo?.departmentName">
-                  {{ b.orgInfo?.departmentName || 'Не вказано' }}
+                  @if (isAdmin && b.orgInfo?.departmentId) {
+                    <a class="info-link" [routerLink]="['/orgs', b.orgInfo!.departmentId]">
+                      {{ b.orgInfo!.departmentName }}
+                    </a>
+                  } @else {
+                    {{ b.orgInfo?.departmentName || 'Не вказано' }}
+                  }
                 </div>
               </div>
               <div class="info-item full">
                 <div class="info-label">Спеціальність</div>
                 <div class="info-value" [class.empty]="!b.specialty">
-                  {{ b.specialty ? b.specialty.code + ' — ' + b.specialty.nameUA : 'Не вказано' }}
+                  @if (isAdminOrManager && b.specialty) {
+                    <a class="info-link" [routerLink]="['/specialties', b.specialty.id]">
+                      {{ b.specialty.code + ' — ' + b.specialty.nameUA }}
+                    </a>
+                  } @else {
+                    {{ b.specialty ? b.specialty.code + ' — ' + b.specialty.nameUA : 'Не вказано' }}
+                  }
                 </div>
               </div>
             </div>
+            @if (isOwner && p.role === 'STUDENT' && b.info.bookId) {
+              <div style="margin-top: 12px;">
+                <a class="btn-view-grades" [routerLink]="['/grades/student', b.info.bookId]">
+                  <i class="pi pi-star"></i> Переглянути оцінки
+                </a>
+              </div>
+            }
           </div>
         }
       } @else if (p.role === 'STUDENT') {

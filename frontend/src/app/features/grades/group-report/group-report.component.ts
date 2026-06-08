@@ -10,6 +10,7 @@ import { PageHeaderComponent } from '../../../shared/page-header/page-header.com
 import { SpecialtyDisciplineDTO } from '../../../models/discipline.model';
 import { BulkGradeEntryDTO } from '../../../models/grade.model';
 import { StudentGroup, StudentGroupMember } from '../../../models/group.model';
+import { nationalGradeLabel } from '../../../shared/grade-labels';
 
 interface ReportRow {
   member: StudentGroupMember;
@@ -112,16 +113,7 @@ export class GroupReportComponent implements OnInit {
   }
 
   nationalLabel(row: ReportRow): string {
-    if (!row.entry?.latestGrade?.nationalGrade) return '—';
-    const map: Record<string, string> = {
-      EXCELLENT: 'Відмінно',
-      GOOD: 'Добре',
-      SATISFACTORY: 'Задовільно',
-      UNSATISFACTORY: 'Незадовільно',
-      CREDIT: 'Зараховано',
-      NO_CREDIT: 'Не зараховано',
-    };
-    return map[row.entry.latestGrade.nationalGrade] ?? row.entry.latestGrade.nationalGrade;
+    return nationalGradeLabel(row.entry?.latestGrade?.nationalGrade);
   }
 
   statusLabel(row: ReportRow): string {

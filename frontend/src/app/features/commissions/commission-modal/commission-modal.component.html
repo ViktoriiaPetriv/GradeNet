@@ -1,0 +1,36 @@
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <div class="form-grid">
+    <div class="form-group">
+      <label class="form-label">
+        Дата початку *
+        @if (isInvalid('startDate')) {
+          <span class="form-error-inline">(обов'язкове)</span>
+        }
+      </label>
+      <input
+        class="form-input"
+        type="date"
+        formControlName="startDate"
+        [class.error]="isInvalid('startDate')"
+      />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Дата завершення</label>
+      <input
+        class="form-input"
+        type="date"
+        formControlName="endDate"
+      />
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn-cancel" (click)="cancelled.emit()">
+      <i class="pi pi-times"></i> Скасувати
+    </button>
+    <button type="submit" class="btn-primary">
+      {{ isEdit ? 'Зберегти' : 'Створити' }}
+    </button>
+  </div>
+</form>

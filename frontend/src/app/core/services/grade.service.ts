@@ -21,7 +21,7 @@ export class GradeService {
 
   constructor(private http: HttpClient) {}
 
-  getEntries(filter: GradeBookEntryFilter = {}, page = 0, size = 20): Observable<PageResponse<GradeBookEntryDTO>> {
+  getEntries(filter: GradeBookEntryFilter = {}, page = 0, size = 20, sortBy?: string, sortDir?: 'asc' | 'desc'): Observable<PageResponse<GradeBookEntryDTO>> {
     let params = new HttpParams().set('pageNumber', page).set('size', size);
     if (filter.bookNumberId != null) params = params.set('bookNumberId', filter.bookNumberId);
     if (filter.specialtyDisciplineId != null) params = params.set('specialtyDisciplineId', filter.specialtyDisciplineId);
@@ -29,6 +29,8 @@ export class GradeService {
     if (filter.academicYear) params = params.set('academicYear', filter.academicYear);
     if (filter.status) params = params.set('status', filter.status);
     if (filter.result) params = params.set('result', filter.result);
+    if (sortBy) params = params.set('sortBy', sortBy);
+    if (sortDir) params = params.set('sortDir', sortDir);
     return this.http.get<PageResponse<GradeBookEntryDTO>>(this.recordsUrl, { params });
   }
 

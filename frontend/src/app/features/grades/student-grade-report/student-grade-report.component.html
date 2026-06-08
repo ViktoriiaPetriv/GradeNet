@@ -76,9 +76,7 @@
                 @if (latestGrade(d); as g) { {{ g.ectsGrade }} } @else { — }
               </td>
               <td class="text-center">
-                @if (latestGrade(d); as g) {
-                 {{ g.universityGrade }}
-                } @else { — }
+                @if (latestGrade(d); as g) { {{ g.universityGrade }} } @else { — }
               </td>
               <td class="text-center">{{ nationalLabel(latestGrade(d)?.nationalGrade) }}</td>
               <td>{{ formatProfessor(d.professorName) }}</td>
@@ -93,6 +91,160 @@
   @if (semesterGroups().length === 0) {
     <div class="empty-state">Залікових записів не знайдено</div>
   }
+
+  <!-- Курсові роботи -->
+  @if (courseWorks().length > 0) {
+    <div class="semester-block">
+      <div class="semester-title">Курсові роботи</div>
+      <table class="grade-table">
+        <thead>
+          <tr>
+            <th class="col-num">№</th>
+            <th class="col-discipline">Назва роботи</th>
+            <th class="col-assessment">Форма контролю</th>
+            <th class="col-ects">кредити ECTS</th>
+            <th class="col-hours">Заг. години</th>
+            <th class="col-ects-grade">Оцінка ECTS</th>
+            <th class="col-grade">Оцінка</th>
+            <th class="col-national">Нац. оцінка</th>
+            <th class="col-professor">Члени комісії</th>
+            <th class="col-date">Дата</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (w of courseWorks(); track w.id; let i = $index) {
+            <tr [class]="workRowClass(w)">
+              <td class="text-center">{{ i + 1 }}</td>
+              <td class="col-discipline-cell">{{ w.title }}</td>
+              <td class="text-center">{{ workAssessmentLabel(w.type) }}</td>
+              <td class="text-center">{{ w.courseWorkDetails?.ectsCredits ?? '—' }}</td>
+              <td class="text-center">{{ workTotalHours(w) }}</td>
+              <td class="text-center">{{ w.ectsGrade ?? '—' }}</td>
+              <td class="text-center">{{ w.universityGrade ?? '—' }}</td>
+              <td class="text-center">{{ workNationalLabel(w.nationalGrade) }}</td>
+              <td>{{ commissionMembersText(w) }}</td>
+              <td class="text-center">{{ formatDate(w.eventDate ?? null) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- Практики -->
+  @if (practices().length > 0) {
+    <div class="semester-block">
+      <div class="semester-title">Практики</div>
+      <table class="grade-table">
+        <thead>
+          <tr>
+            <th class="col-num">№</th>
+            <th class="col-discipline">Назва практики</th>
+            <th class="col-ects">кредити ECTS</th>
+            <th class="col-hours">Заг. години</th>
+            <th class="col-ects-grade">Оцінка ECTS</th>
+            <th class="col-grade">Оцінка</th>
+            <th class="col-national">Нац. оцінка</th>
+            <th class="col-professor">Члени комісії</th>
+            <th class="col-date">Дата</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (w of practices(); track w.id; let i = $index) {
+            <tr [class]="workRowClass(w)">
+              <td class="text-center">{{ i + 1 }}</td>
+              <td class="col-discipline-cell">{{ w.title }}</td>
+              <td class="text-center">{{ w.practiceDetails?.ectsCredits ?? '—' }}</td>
+              <td class="text-center">{{ workTotalHours(w) }}</td>
+              <td class="text-center">{{ w.ectsGrade ?? '—' }}</td>
+              <td class="text-center">{{ w.universityGrade ?? '—' }}</td>
+              <td class="text-center">{{ workNationalLabel(w.nationalGrade) }}</td>
+              <td>{{ commissionMembersText(w) }}</td>
+              <td class="text-center">{{ formatDate(w.eventDate ?? null) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- Підсумкова атестація -->
+  @if (qualifications().length > 0 || comprehensiveExams().length > 0) {
+    <div class="semester-block">
+      <div class="semester-title">Підсумкова атестація</div>
+
+      @if (qualifications().length > 0) {
+        <div class="subsection-title">Випускна кваліфікаційна робота (проєкт)</div>
+        <table class="grade-table">
+          <thead>
+            <tr>
+              <th class="col-num">№</th>
+              <th class="col-discipline">Назва роботи</th>
+              <th class="col-ects">кредити ECTS</th>
+              <th class="col-hours">Заг. години</th>
+              <th class="col-ects-grade">Оцінка ECTS</th>
+              <th class="col-grade">Оцінка</th>
+              <th class="col-national">Нац. оцінка</th>
+              <th class="col-professor">Члени комісії</th>
+              <th class="col-date">Дата захисту</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (w of qualifications(); track w.id; let i = $index) {
+              <tr [class]="workRowClass(w)">
+                <td class="text-center">{{ i + 1 }}</td>
+                <td class="col-discipline-cell">{{ w.title }}</td>
+                <td class="text-center">—</td>
+                <td class="text-center">—</td>
+                <td class="text-center">{{ w.ectsGrade ?? '—' }}</td>
+                <td class="text-center">{{ w.universityGrade ?? '—' }}</td>
+                <td class="text-center">{{ workNationalLabel(w.nationalGrade) }}</td>
+                <td>{{ commissionMembersText(w) }}</td>
+                <td class="text-center">{{ formatDate(w.eventDate ?? null) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+
+      @if (comprehensiveExams().length > 0) {
+        <div class="subsection-title">Комплексний екзамен</div>
+        <table class="grade-table">
+          <thead>
+            <tr>
+              <th class="col-num">№</th>
+              <th class="col-discipline">Назва екзамену</th>
+              <th class="col-ects">кредити ECTS</th>
+              <th class="col-hours">Заг. години</th>
+              <th class="col-ects-grade">Оцінка ECTS</th>
+              <th class="col-grade">Оцінка</th>
+              <th class="col-national">Нац. оцінка</th>
+              <th class="col-professor">Члени комісії</th>
+              <th class="col-date">Дата складання</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (w of comprehensiveExams(); track w.id; let i = $index) {
+              <tr [class]="workRowClass(w)">
+                <td class="text-center">{{ i + 1 }}</td>
+                <td class="col-discipline-cell">{{ w.title }}</td>
+                <td class="text-center">—</td>
+                <td class="text-center">—</td>
+                <td class="text-center">{{ w.ectsGrade ?? '—' }}</td>
+                <td class="text-center">{{ w.universityGrade ?? '—' }}</td>
+                <td class="text-center">{{ workNationalLabel(w.nationalGrade) }}</td>
+                <td>{{ commissionMembersText(w) }}</td>
+                <td class="text-center">{{ formatDate(w.eventDate ?? null) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+
+    </div>
+  }
+
+
 
   <div class="report-footer">
     <div class="footer-stamp">Підпис деканату: ___________________</div>
