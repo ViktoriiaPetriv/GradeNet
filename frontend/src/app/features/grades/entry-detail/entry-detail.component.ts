@@ -47,11 +47,18 @@ export class EntryDetailComponent implements OnInit {
 
   isAdmin = this.authState.isAdmin;
   isAdminOrManager = this.authState.isAdminOrManager;
+  isProfessor = this.authState.isProfessor;
+  currentUserId = this.authState.currentUserId;
 
   isReportDatePast = computed(() => {
     const e = this.entry();
     if (!e?.reportDate) return false;
     return new Date(e.reportDate) < new Date(new Date().toDateString());
+  });
+
+  isOwnEntry = computed(() => {
+    const e = this.entry();
+    return !!e && e.professorId === this.currentUserId();
   });
 
   canEditGrades = computed(() => {
@@ -60,6 +67,12 @@ export class EntryDetailComponent implements OnInit {
     if (e.status === 'COMPLETED') return false;
     if (this.isReportDatePast() && !this.isAdmin()) return false;
     return true;
+  });
+
+  canCloseEntry = computed(() => {
+    const e = this.entry();
+    if (!e || e.status !== 'IN_PROGRESS' || this.grades().length === 0) return false;
+    return this.isAdmin() || (this.isProfessor() && this.isOwnEntry());
   });
 
   ngOnInit() {

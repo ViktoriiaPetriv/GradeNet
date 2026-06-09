@@ -1,17 +1,22 @@
 package org.bachelor.addservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.bachelor.addservice.config.UserServiceClient;
 import org.bachelor.addservice.exception.NotFoundException;
 import org.bachelor.addservice.mapper.AdditionalWorkMapper;
 import org.bachelor.addservice.model.dto.AdditionalWorkCreateDTO;
 import org.bachelor.addservice.model.dto.AdditionalWorkDTO;
 import org.bachelor.addservice.model.dto.AuthenticatedUser;
 import org.bachelor.addservice.model.dto.GradeWorkDTO;
+import org.bachelor.addservice.model.dto.PageResponse;
 import org.bachelor.addservice.model.entity.AdditionalWork;
 import org.bachelor.addservice.model.entity.Commission;
 import org.bachelor.addservice.repository.AdditionalWorkRepository;
 import org.bachelor.addservice.repository.CommissionRepository;
 import org.bachelor.addservice.service.AdditionalWorkService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,13 +31,46 @@ public class AdditionalWorkServiceImpl implements AdditionalWorkService {
     private final AdditionalWorkRepository additionalWorkRepository;
     private final CommissionRepository commissionRepository;
     private final AdditionalWorkMapper additionalWorkMapper;
+    private final UserServiceClient userServiceClient;
 
     @Override
-    public List<AdditionalWorkDTO> getAll() {
+    public List<AdditionalWorkDTO> getAll(AuthenticatedUser user) {
+        if (user.isProfessor()) {
+            return additionalWorkRepository.findAllByProfessor(user.userId())
+                    .stream()
+                    .map(additionalWorkMapper::toDTO)
+                    .toList();
+        }
+        if (user.isManager()) {
+            List<Long> bookNumberIds = userServiceClient.getManagerBookNumberIds();
+            if (bookNumberIds.isEmpty()) return List.of();
+            return additionalWorkRepository.findAllByBookNumberIdIn(bookNumberIds)
+                    .stream()
+                    .map(additionalWorkMapper::toDTO)
+                    .toList();
+        }
         return additionalWorkRepository.findAll()
                 .stream()
                 .map(additionalWorkMapper::toDTO)
                 .toList();
+    }
+
+    @Override
+    public PageResponse<AdditionalWorkDTO> getPage(AuthenticatedUser user, int page, int size, String type, Long commissionId, String sortBy, String sortDir) {
+        String typeParam = (type == null || type.isBlank()) ? null : type;
+        Sort sort = buildSort(sortBy, sortDir);
+        PageRequest pageable = PageRequest.of(page, size, sort);
+        Page<AdditionalWork> result;
+        if (user.isProfessor()) {
+            result = additionalWorkRepository.findPagedByProfessor(user.userId(), typeParam, commissionId, pageable);
+        } else if (user.isManager()) {
+            List<Long> bookNumberIds = userServiceClient.getManagerBookNumberIds();
+            if (bookNumberIds.isEmpty()) return PageResponse.empty();
+            result = additionalWorkRepository.findPagedByManager(bookNumberIds, typeParam, commissionId, pageable);
+        } else {
+            result = additionalWorkRepository.findPagedAll(typeParam, commissionId, pageable);
+        }
+        return PageResponse.of(result.map(additionalWorkMapper::toDTO));
     }
 
     @Override
@@ -120,5 +158,11 @@ public class AdditionalWorkServiceImpl implements AdditionalWorkService {
     private AdditionalWork findById(Long id) {
         return additionalWorkRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Додаткову роботу не знайдено"));
+    }
+
+    private Sort buildSort(String sortBy, String sortDir) {
+        String field = (sortBy == null || sortBy.isBlank()) ? "id" : sortBy;
+        Sort.Direction dir = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        return Sort.by(dir, field);
     }
 }

@@ -8,6 +8,7 @@ import org.bachelor.userservice.model.dto.AdminSetupRequestDTO;
 import org.bachelor.userservice.model.dto.AuthenticatedUser;
 import org.bachelor.userservice.model.dto.ChangePasswordRequestDTO;
 import org.bachelor.userservice.model.dto.ImportStudentRequestDTO;
+import org.bachelor.userservice.model.dto.SelfUpdateRequestDTO;
 import org.bachelor.userservice.model.dto.StudentInfoDTO;
 import org.bachelor.userservice.model.dto.UserDTO;
 import org.bachelor.userservice.model.dto.UserProfileDTO;
@@ -56,10 +57,23 @@ public class UserServiceImpl implements UserService {
         }
 
         if (currentUser.isManager()) {
+            if (role == Role.PROFESSOR) {
+                return userRepository.findAll().stream()
+                        .filter(u -> u.getRole() == Role.PROFESSOR)
+                        .map(userMapper::toDto)
+                        .toList();
+            }
             Set<Long> allIds = accessControlService.getAllowedUserIdsForManager();
             if (allIds.isEmpty()) return List.of();
             return userRepository.findAllById(allIds).stream()
                     .filter(u -> role == null || u.getRole() == role)
+                    .map(userMapper::toDto)
+                    .toList();
+        }
+
+        if (currentUser.isProfessor()) {
+            return userRepository.findAll().stream()
+                    .filter(u -> u.getRole() == Role.PROFESSOR)
                     .map(userMapper::toDto)
                     .toList();
         }
@@ -122,6 +136,21 @@ public class UserServiceImpl implements UserService {
             updateManagerOrganization(user, request.orgId());
         }
 
+        return userMapper.toDto(userRepository.save(user));
+    }
+
+    @Override
+    @Transactional
+    public UserDTO updateSelf(Long id, SelfUpdateRequestDTO request) {
+        AuthenticatedUser currentUser = SecurityUtils.getCurrentUser();
+        if (!currentUser.getUserId().equals(id)) {
+            throw new AccessDeniedException("Ви можете редагувати тільки свій профіль");
+        }
+        User user = getUserOrThrow(id);
+        if (request.firstName() != null) user.setFirstName(request.firstName());
+        if (request.lastName() != null) user.setLastName(request.lastName());
+        if (request.patronymic() != null) user.setPatronymic(request.patronymic());
+        if (request.birthDate() != null) user.setBirthDate(request.birthDate());
         return userMapper.toDto(userRepository.save(user));
     }
 

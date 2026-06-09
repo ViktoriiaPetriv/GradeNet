@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Commission, CommissionMember, CommissionMemberRequest, CommissionRequest } from '../../models/commission.model';
+import { PageResponse } from '../../models/page.model';
 
 @Injectable({ providedIn: 'root' })
 export class CommissionService {
@@ -11,6 +12,13 @@ export class CommissionService {
 
   getAll(): Observable<Commission[]> {
     return this.http.get<Commission[]>(this.apiUrl);
+  }
+
+  getPage(page: number, size: number, status: string, sortBy?: string, sortDir?: string): Observable<PageResponse<Commission>> {
+    let params = new HttpParams().set('page', page).set('size', size).set('status', status);
+    if (sortBy) params = params.set('sortBy', sortBy);
+    if (sortDir) params = params.set('sortDir', sortDir);
+    return this.http.get<PageResponse<Commission>>(`${this.apiUrl}/paged`, { params });
   }
 
   getById(id: number): Observable<Commission> {

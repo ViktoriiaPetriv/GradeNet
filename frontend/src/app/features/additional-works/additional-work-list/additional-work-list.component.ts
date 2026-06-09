@@ -14,11 +14,12 @@ import { PageHeaderComponent } from '../../../shared/page-header/page-header.com
 import { ModalComponent } from '../../../shared/modal/modal.component';
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
 import { AdditionalWorkModalComponent } from '../additional-work-modal/additional-work-modal.component';
+import { PaginationComponent } from '../../../shared/pagination/pagination.component';
 
 @Component({
   selector: 'app-additional-work-list',
   standalone: true,
-  imports: [SlicePipe, PageHeaderComponent, ModalComponent, ConfirmDialogComponent, AdditionalWorkModalComponent],
+  imports: [SlicePipe, PageHeaderComponent, ModalComponent, ConfirmDialogComponent, AdditionalWorkModalComponent, PaginationComponent],
   templateUrl: './additional-work-list.component.html',
   styleUrl: './additional-work-list.component.css',
 })
@@ -31,6 +32,12 @@ export class AdditionalWorkListComponent implements OnInit {
   filterCommissionId = signal<number | null>(null);
   sortBy = signal<string | null>(null);
   sortDir = signal<'asc' | 'desc'>('asc');
+
+  currentPage = signal(0);
+  totalPages = signal(0);
+  totalElements = signal(0);
+  perPage = signal(10);
+  perPageOptions = [5, 10, 25, 50];
 
   modalOpen = signal(false);
   isEdit = signal(false);
@@ -49,37 +56,29 @@ export class AdditionalWorkListComponent implements OnInit {
 
   isAdminOrManager = this.authState.isAdminOrManager;
 
-  filtered = computed(() => {
-    let list = this.works();
-    const t = this.filterType();
-    const cId = this.filterCommissionId();
-    if (t) list = list.filter(w => w.type === t);
-    if (cId) list = list.filter(w => w.commissionId === cId);
+  currentPageUi = computed(() => this.currentPage() + 1);
 
-    const col = this.sortBy();
-    const dir = this.sortDir();
-    if (col) {
-      list = [...list].sort((a, b) => {
-        let aVal: any;
-        let bVal: any;
-        if (col === 'studentName') {
-          aVal = this.studentName(a.bookNumberId).toLowerCase();
-          bVal = this.studentName(b.bookNumberId).toLowerCase();
-        } else {
-          aVal = (a as any)[col] ?? '';
-          bVal = (b as any)[col] ?? '';
-          if (typeof aVal === 'string') aVal = aVal.toLowerCase();
-          if (typeof bVal === 'string') bVal = bVal.toLowerCase();
-        }
-        if (aVal < bVal) return dir === 'asc' ? -1 : 1;
-        if (aVal > bVal) return dir === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
-    return list;
+  paginationInfo = computed(() => {
+    const total = this.totalPages();
+    if (total === 0) return 'Немає записів';
+    return `Сторінка ${this.currentPageUi()} з ${total}`;
   });
 
   toggleSort(column: string) {
+    if (column === 'studentName') {
+      if (this.sortBy() === column) {
+        if (this.sortDir() === 'asc') {
+          this.sortDir.set('desc');
+        } else {
+          this.sortBy.set(null);
+          this.sortDir.set('asc');
+        }
+      } else {
+        this.sortBy.set(column);
+        this.sortDir.set('asc');
+      }
+      return;
+    }
     if (this.sortBy() === column) {
       if (this.sortDir() === 'asc') {
         this.sortDir.set('desc');
@@ -91,7 +90,22 @@ export class AdditionalWorkListComponent implements OnInit {
       this.sortBy.set(column);
       this.sortDir.set('asc');
     }
+    this.currentPage.set(0);
+    this.load();
   }
+
+  sortedWorks = computed(() => {
+    const col = this.sortBy();
+    const dir = this.sortDir();
+    if (col !== 'studentName') return this.works();
+    return [...this.works()].sort((a, b) => {
+      const aVal = this.studentName(a.bookNumberId).toLowerCase();
+      const bVal = this.studentName(b.bookNumberId).toLowerCase();
+      if (aVal < bVal) return dir === 'asc' ? -1 : 1;
+      if (aVal > bVal) return dir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  });
 
   ngOnInit() {
     const commissionId = this.route.snapshot.queryParamMap.get('commissionId');
@@ -101,9 +115,20 @@ export class AdditionalWorkListComponent implements OnInit {
   }
 
   load() {
-    this.workService.getAll().subscribe(data => {
-      this.works.set(data);
-      this.loadBookMap(data);
+    const sortBy = this.sortBy();
+    const serverSortBy = (sortBy && sortBy !== 'studentName') ? sortBy : undefined;
+    this.workService.getPage(
+      this.currentPage(),
+      this.perPage(),
+      this.filterType() || undefined,
+      this.filterCommissionId() ?? undefined,
+      serverSortBy,
+      serverSortBy ? this.sortDir() : undefined
+    ).subscribe(r => {
+      this.works.set(r.content);
+      this.totalPages.set(r.totalPages);
+      this.totalElements.set(r.totalElements);
+      this.loadBookMap(r.content);
     });
   }
 
@@ -125,11 +150,26 @@ export class AdditionalWorkListComponent implements OnInit {
 
   onFilterType(e: Event) {
     this.filterType.set((e.target as HTMLSelectElement).value as WorkType | '');
+    this.currentPage.set(0);
+    this.load();
   }
 
   onFilterCommission(e: Event) {
     const val = (e.target as HTMLSelectElement).value;
     this.filterCommissionId.set(val ? Number(val) : null);
+    this.currentPage.set(0);
+    this.load();
+  }
+
+  onPageChange(page: number) {
+    this.currentPage.set(page - 1);
+    this.load();
+  }
+
+  onPerPageChange(size: number) {
+    this.perPage.set(size);
+    this.currentPage.set(0);
+    this.load();
   }
 
   openCreate() {

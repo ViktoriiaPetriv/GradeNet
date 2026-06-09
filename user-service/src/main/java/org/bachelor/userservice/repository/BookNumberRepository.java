@@ -29,4 +29,7 @@ public interface BookNumberRepository extends JpaRepository<BookNumber, Long>, J
             @Param("enrollYear") int enrollYear);
 
     List<BookNumber> findAllBySpecialtyOfferingId(Long specialtyOfferingId);
+
+    @Query("SELECT b.id FROM BookNumber b WHERE b.specialtyOfferingId IN :offeringIds")
+    List<Long> findIdsBySpecialtyOfferingIdIn(@Param("offeringIds") List<Long> offeringIds);
 }

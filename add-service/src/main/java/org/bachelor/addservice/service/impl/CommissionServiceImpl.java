@@ -5,15 +5,20 @@ import org.bachelor.addservice.exception.NotFoundException;
 import org.bachelor.addservice.exception.RestException;
 import org.bachelor.addservice.mapper.CommissionMapper;
 import org.bachelor.addservice.mapper.CommissionMemberMapper;
+import org.bachelor.addservice.model.dto.AuthenticatedUser;
 import org.bachelor.addservice.model.dto.CommissionCreateDTO;
 import org.bachelor.addservice.model.dto.CommissionDTO;
 import org.bachelor.addservice.model.dto.CommissionMemberCreateDTO;
 import org.bachelor.addservice.model.dto.CommissionMemberDTO;
+import org.bachelor.addservice.model.dto.PageResponse;
 import org.bachelor.addservice.model.entity.Commission;
 import org.bachelor.addservice.model.entity.CommissionMember;
 import org.bachelor.addservice.repository.CommissionMemberRepository;
 import org.bachelor.addservice.repository.CommissionRepository;
 import org.bachelor.addservice.service.CommissionService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,11 +35,30 @@ public class CommissionServiceImpl implements CommissionService {
     private final CommissionMemberMapper memberMapper;
 
     @Override
-    public List<CommissionDTO> getAll() {
+    public List<CommissionDTO> getAll(AuthenticatedUser user) {
+        if (user.isProfessor()) {
+            return commissionRepository.findAllByProfessor(user.userId())
+                    .stream()
+                    .map(commissionMapper::toDTO)
+                    .toList();
+        }
         return commissionRepository.findAll()
                 .stream()
                 .map(commissionMapper::toDTO)
                 .toList();
+    }
+
+    @Override
+    public PageResponse<CommissionDTO> getPage(AuthenticatedUser user, int page, int size, String status, String sortBy, String sortDir) {
+        Sort sort = buildSort(sortBy, sortDir, "startDate");
+        PageRequest pageable = PageRequest.of(page, size, sort);
+        Page<Commission> result;
+        if (user.isProfessor()) {
+            result = commissionRepository.findPagedByProfessor(user.userId(), status, pageable);
+        } else {
+            result = commissionRepository.findPagedAll(status, pageable);
+        }
+        return PageResponse.of(result.map(commissionMapper::toDTO));
     }
 
     @Override
@@ -101,5 +125,11 @@ public class CommissionServiceImpl implements CommissionService {
     private Commission findCommissionById(Long id) {
         return commissionRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Комісію не знайдено"));
+    }
+
+    private Sort buildSort(String sortBy, String sortDir, String defaultField) {
+        String field = (sortBy == null || sortBy.isBlank()) ? defaultField : sortBy;
+        Sort.Direction dir = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        return Sort.by(dir, field);
     }
 }

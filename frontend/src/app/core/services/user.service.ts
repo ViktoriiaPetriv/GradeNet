@@ -38,6 +38,10 @@ export class UserService {
     return this.http.get<UserProfile>(`${this.apiUrl}/me/profile`);
   }
 
+  updateSelf(id: number, request: { firstName?: string; lastName?: string; patronymic?: string; birthDate?: string }): Observable<User> {
+    return this.http.patch<User>(`${this.apiUrl}/${id}/self`, request);
+  }
+
   changePassword(id: number, request: ChangePasswordRequest): Observable<void> {
     return this.http.patch<void>(`${this.apiUrl}/${id}/password`, request);
   }

@@ -11,9 +11,11 @@ public interface BookNumberService {
     PageResponse<BookNumberDTO> findAll(String number, Pageable pageable);
     BookNumberDTO findById(Long id);
     List<BookNumberDTO> findByStudentId(Long studentId);
+    List<BookNumberDTO> findByOfferingId(Long offeringId);
     BookNumberDTO create(BookNumberRequestDTO request);
     BookNumberDTO update(Long id, BookNumberRequestDTO request);
     void delete(Long id);
     BookNumberDTO markAsFilled(Long id);
     BookNumberDTO markAsHanded(Long id);
+    List<Long> getManagerBookNumberIds();
 }

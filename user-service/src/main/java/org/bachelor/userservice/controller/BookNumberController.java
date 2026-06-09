@@ -59,6 +59,11 @@ public class BookNumberController {
         return bookNumberService.findByStudentId(studentId);
     }
 
+    @GetMapping("/by-offering/{offeringId}")
+    public List<BookNumberDTO> findByOfferingId(@PathVariable Long offeringId) {
+        return bookNumberService.findByOfferingId(offeringId);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public BookNumberDTO create(@Valid @RequestBody BookNumberRequestDTO request) {
@@ -76,6 +81,11 @@ public class BookNumberController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         bookNumberService.delete(id);
+    }
+
+    @GetMapping("/allowed-ids")
+    public List<Long> getAllowedIds() {
+        return bookNumberService.getManagerBookNumberIds();
     }
 
     @PatchMapping("/{id}/fill")

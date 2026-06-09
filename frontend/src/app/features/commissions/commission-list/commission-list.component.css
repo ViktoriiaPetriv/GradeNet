@@ -148,3 +148,7 @@ tbody tr:last-child td { border-bottom: none; }
 .sortable-th:hover .sort-icon {
   opacity: 1;
 }
+
+.pagination-wrap {
+  margin-top: 16px;
+}

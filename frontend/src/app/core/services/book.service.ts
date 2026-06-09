@@ -26,6 +26,10 @@ export class BookService {
     return this.http.get<BookNumber[]>(`${this.apiUrl}/student/${studentId}`);
   }
 
+  findByOffering(offeringId: number): Observable<BookNumber[]> {
+    return this.http.get<BookNumber[]>(`${this.apiUrl}/by-offering/${offeringId}`);
+  }
+
   create(request: BookNumberRequest): Observable<BookNumber> {
     return this.http.post<BookNumber>(this.apiUrl, request);
   }

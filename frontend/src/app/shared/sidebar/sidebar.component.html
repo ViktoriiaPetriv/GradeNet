@@ -40,15 +40,18 @@
         <li routerLink="/disciplines" routerLinkActive="active" (click)="close()">
             <i class="pi pi-list"></i> Дисципліни
         </li>
+        }
+        @if (isAdminOrManager() || isProfessor()) {
         <li routerLink="/commissions" routerLinkActive="active" (click)="close()">
             <i class="pi pi-sitemap"></i> Комісії
         </li>
-        }
-        @if (isAdminOrManager() || isProfessor()) {
         <li routerLink="/additional-works" routerLinkActive="active" (click)="close()">
             <i class="pi pi-file"></i> Додаткові роботи
         </li>
         }
+        <li [routerLink]="['/profile', currentUser()?.id]" routerLinkActive="active" (click)="close()">
+            <i class="pi pi-user"></i> Мій профіль
+        </li>
         @if (isAdmin() || isProfessor()) {
         <li routerLink="/grades" routerLinkActive="active" (click)="close()">
             <i class="pi pi-star"></i> Оцінки
@@ -59,7 +62,7 @@
             <i class="pi pi-star"></i> Мої оцінки
         </li>
         }
-        @if (isAdminOrManager() || isProfessor()) {
+        @if (isAdminOrManager()) {
         <li routerLink="/import" routerLinkActive="active" (click)="close()">
             <i class="pi pi-file-import"></i> Імпорт
         </li>
@@ -69,14 +72,6 @@
         }
     </ul>
 
-    <div class="nav-divider"></div>
-
-    <div class="nav-section">Інші</div>
-    <ul class="nav-links">
-        <li routerLink="/settings" routerLinkActive="active" (click)="close()">
-            <i class="pi pi-cog"></i> Налаштування
-        </li>
-    </ul>
 
   <div class="nav-bottom">
     <div class="user-card" (click)="goToProfile()" style="cursor: pointer;">

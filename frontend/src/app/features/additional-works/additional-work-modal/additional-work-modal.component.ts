@@ -6,6 +6,7 @@ import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { AdditionalWorkService } from '../../../core/services/additional-work.service';
 import { UserService } from '../../../core/services/user.service';
+import { BookService } from '../../../core/services/book.service';
 import { AdditionalWork, WorkType } from '../../../models/additional-work.model';
 import { Commission } from '../../../models/commission.model';
 import { User, StudentInfo } from '../../../models/user.model';
@@ -56,6 +57,7 @@ export class AdditionalWorkModalComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private workService = inject(AdditionalWorkService);
   private userService = inject(UserService);
+  private bookService = inject(BookService);
   private toastService = inject(ToastService);
   private fb = inject(FormBuilder);
 
@@ -186,10 +188,19 @@ export class AdditionalWorkModalComponent implements OnInit, OnDestroy {
     this.studentSearch.reset('');
     this.changingStudent.set(false);
     this.baseForm.patchValue({ bookNumberId: null });
-    this.userService.getProfile(student.id).subscribe(profile => {
-      this.studentBooks.set(profile.books ?? []);
-      if (profile.books?.length === 1) {
-        this.baseForm.patchValue({ bookNumberId: profile.books[0].bookId });
+    this.bookService.findByStudentId(student.id).subscribe(books => {
+      const infos: StudentInfo[] = books.map(b => ({
+        bookId: b.id,
+        bookNumber: b.number,
+        bookNumberStatus: b.status,
+        startDate: b.regStartDate,
+        endDate: b.regEndDate,
+        specialtyOfferingId: b.specialtyOfferingId ?? 0,
+        orgId: 0,
+      }));
+      this.studentBooks.set(infos);
+      if (books.length === 1) {
+        this.baseForm.patchValue({ bookNumberId: books[0].id });
       }
     });
   }

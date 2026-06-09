@@ -49,7 +49,7 @@ export const routes: Routes = [
   },
   {
     path: 'profile/:id',
-    canActivate: [authGuard],
+    canActivate: [authGuard()],
     loadComponent: () =>
       import('./features/users/profile/profile.component').then((m) => m.ProfileComponent),
   },
@@ -141,7 +141,7 @@ export const routes: Routes = [
   },
   {
     path: 'import',
-    canActivate: [authGuard(['ADMIN', 'MANAGER', 'PROFESSOR'])],
+    canActivate: [authGuard(['ADMIN', 'MANAGER'])],
     loadComponent: () =>
       import('./features/import/import.component').then((m) => m.ImportComponent),
   },
@@ -169,7 +169,7 @@ export const routes: Routes = [
   },
   {
     path: 'commissions',
-    canActivate: [authGuard(['ADMIN', 'MANAGER'])],
+    canActivate: [authGuard(['ADMIN', 'MANAGER', 'PROFESSOR'])],
     loadComponent: () =>
       import('./features/commissions/commission-list/commission-list.component').then(
         (m) => m.CommissionListComponent,
@@ -177,7 +177,7 @@ export const routes: Routes = [
   },
   {
     path: 'commissions/:id',
-    canActivate: [authGuard(['ADMIN', 'MANAGER'])],
+    canActivate: [authGuard(['ADMIN', 'MANAGER', 'PROFESSOR'])],
     loadComponent: () =>
       import('./features/commissions/commission-detail/commission-detail.component').then(
         (m) => m.CommissionDetailComponent,

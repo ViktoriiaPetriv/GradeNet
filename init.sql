@@ -1,17 +1,9 @@
--- Ініціалізація баз даних для GradeNet (виконується тільки при першому створенні кластера)
-
-CREATE DATABASE org_db;
-CREATE DATABASE user_db;
-CREATE DATABASE grade_db;
-CREATE DATABASE add_db;
+SELECT 'CREATE DATABASE org_db' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'org_db')\gexec
+SELECT 'CREATE DATABASE user_db' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'user_db')\gexec
+SELECT 'CREATE DATABASE grade_db' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'grade_db')\gexec
+SELECT 'CREATE DATABASE add_db' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'add_db')\gexec
 
 GRANT ALL PRIVILEGES ON DATABASE org_db TO CURRENT_USER;
 GRANT ALL PRIVILEGES ON DATABASE user_db TO CURRENT_USER;
 GRANT ALL PRIVILEGES ON DATABASE grade_db TO CURRENT_USER;
 GRANT ALL PRIVILEGES ON DATABASE add_db TO CURRENT_USER;
-
--- Перевірка
-SELECT 'org_db created' AS status;
-SELECT 'user_db created' AS status;
-SELECT 'grade_db created' AS status;
-SELECT 'add_db created' AS status;

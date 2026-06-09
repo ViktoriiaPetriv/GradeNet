@@ -10,7 +10,7 @@
             <i class="pi pi-plus"></i> Додати оцінку
           </button>
         }
-        @if (isAdmin() && e.status === 'IN_PROGRESS' && grades().length > 0) {
+        @if (canCloseEntry()) {
           <button class="btn-warning" (click)="closeEntryModalOpen.set(true)">
             <i class="pi pi-lock"></i> Закрити запис
           </button>
@@ -41,6 +41,8 @@
               <a class="info-link" [routerLink]="['/profile', b.studentId]">
                 {{ b.studentLastName }} {{ b.studentFirstName }}
               </a>
+            } @else if (e.studentName) {
+              {{ e.studentName }}
             } @else {
               #{{ e.bookNumberId }}
             }

@@ -5,15 +5,19 @@ import { GradeService } from '../../../core/services/grade.service';
 import { DisciplineService } from '../../../core/services/discipline.service';
 import { GroupService } from '../../../core/services/group.service';
 import { UserService } from '../../../core/services/user.service';
+import { BookService } from '../../../core/services/book.service';
 import { SpecialtyService } from '../../../core/services/specialty.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { AuthStateService } from '../../../core/services/auth-state.service';
 import { SpecialtyDisciplineDTO } from '../../../models/discipline.model';
 import { StudentGroup, StudentGroupMember } from '../../../models/group.model';
+import { BookNumber } from '../../../models/book.model';
 import { User } from '../../../models/user.model';
 import { Specialty, SpecialtyOffering } from '../../../models/org.model';
 
 interface StudentRow {
   bookNumberId: number;
+  bookNumber?: string;
   studentId?: number;
   studentName?: string;
   studentEmail?: string;
@@ -64,22 +68,46 @@ export class EntryCreateWizardComponent implements OnInit {
   private disciplineService = inject(DisciplineService);
   private groupService = inject(GroupService);
   private userService = inject(UserService);
+  private bookService = inject(BookService);
   private specialtyService = inject(SpecialtyService);
   private toastService = inject(ToastService);
+  private authState = inject(AuthStateService);
+
+  isProfessor = this.authState.isProfessor;
+
+  currentProfessorName = computed(() => {
+    const u = this.authState.currentUser();
+    if (!u) return '—';
+    return [u.lastName, u.firstName, u.patronymic].filter(Boolean).join(' ');
+  });
 
   ngOnInit() {
     this.loading.set(true);
-    forkJoin({
-      specialties: this.specialtyService.getAll({ size: 200 }),
-      disciplines: this.disciplineService.getAllSpecialtyDisciplines(),
-      users: this.userService.findAll(),
-      groups: this.groupService.getAll({ size: 200 }),
-    }).subscribe({
-      next: ({ specialties, disciplines, users, groups }) => {
-        this.specialties.set(specialties.content ?? []);
-        this.allSpecialtyDisciplines.set(disciplines);
-        this.professors.set(users.filter((u) => u.role === 'PROFESSOR'));
-        this.groups.set(groups.content ?? []);
+    const currentUser = this.authState.currentUser();
+    const isProfessor = this.isProfessor();
+
+    const requests$ = isProfessor
+      ? forkJoin({
+          specialties: this.specialtyService.getAll({ size: 200 }),
+          disciplines: this.disciplineService.getAllSpecialtyDisciplines(),
+        })
+      : forkJoin({
+          specialties: this.specialtyService.getAll({ size: 200 }),
+          disciplines: this.disciplineService.getAllSpecialtyDisciplines(),
+          users: this.userService.findAll(),
+        });
+
+    requests$.subscribe({
+      next: (result: any) => {
+        this.specialties.set(result.specialties.content ?? []);
+        this.allSpecialtyDisciplines.set(result.disciplines);
+
+        if (isProfessor && currentUser) {
+          this.professors.set([currentUser as any]);
+          this.selectedProfessorId.set(currentUser.id);
+        } else {
+          this.professors.set((result.users ?? []).filter((u: User) => u.role === 'PROFESSOR'));
+        }
         this.loading.set(false);
       },
       error: () => {
@@ -95,28 +123,27 @@ export class EntryCreateWizardComponent implements OnInit {
     this.selectedDisciplineId.set(null);
     this.selectedGroupIds.set(new Set());
     this.offerings.set([]);
+    this.groups.set([]);
     if (id) {
       this.specialtyService.getOfferings(id).subscribe((offs) => this.offerings.set(offs));
     }
-    this.reloadGroups(null);
   }
 
   onOfferingChange(id: number | null) {
     this.selectedOfferingId.set(id);
     this.selectedDisciplineId.set(null);
     this.selectedGroupIds.set(new Set());
-    this.reloadGroups(id);
-  }
-
-  private reloadGroups(specialtyOfferingId: number | null) {
-    this.groupsLoading.set(true);
-    this.groupService.getAll({ size: 200, specialtyOfferingId: specialtyOfferingId ?? undefined }).subscribe({
-      next: (page) => {
-        this.groups.set(page.content ?? []);
-        this.groupsLoading.set(false);
-      },
-      error: () => this.groupsLoading.set(false),
-    });
+    this.groups.set([]);
+    if (id) {
+      this.groupsLoading.set(true);
+      this.groupService.getAll({ size: 200, specialtyOfferingId: id }).subscribe({
+        next: (page) => {
+          this.groups.set(page.content ?? []);
+          this.groupsLoading.set(false);
+        },
+        error: () => this.groupsLoading.set(false),
+      });
+    }
   }
 
   toggleGroup(id: number) {
@@ -131,6 +158,10 @@ export class EntryCreateWizardComponent implements OnInit {
   }
 
   goToStep2() {
+    if (!this.selectedOfferingId()) {
+      this.toastService.error('Виберіть рік випуску');
+      return;
+    }
     if (!this.selectedDisciplineId()) {
       this.toastService.error('Виберіть дисципліну');
       return;
@@ -143,12 +174,17 @@ export class EntryCreateWizardComponent implements OnInit {
       this.toastService.error('Вкажіть навчальний рік');
       return;
     }
-    const groupIds = [...this.selectedGroupIds()];
-    if (groupIds.length === 0) {
-      this.toastService.error('Виберіть хоча б одну групу');
-      return;
-    }
 
+    const groupIds = [...this.selectedGroupIds()];
+
+    if (groupIds.length > 0) {
+      this.loadFromGroups(groupIds);
+    } else {
+      this.loadFromOffering();
+    }
+  }
+
+  private loadFromGroups(groupIds: number[]) {
     this.loading.set(true);
     forkJoin(groupIds.map((id) => this.groupService.getMembers(id))).subscribe({
       next: (results) => {
@@ -174,6 +210,30 @@ export class EntryCreateWizardComponent implements OnInit {
           });
         });
 
+        this.students.set(rows);
+        this.loading.set(false);
+        this.step.set(2);
+      },
+      error: () => {
+        this.toastService.error('Помилка завантаження студентів');
+        this.loading.set(false);
+      },
+    });
+  }
+
+  private loadFromOffering() {
+    this.loading.set(true);
+    const offeringId = this.selectedOfferingId()!;
+    this.bookService.findByOffering(offeringId).subscribe({
+      next: (books) => {
+        const rows: StudentRow[] = books.map((b: BookNumber) => ({
+          bookNumberId: b.id,
+          bookNumber: b.number,
+          studentId: b.studentId,
+          studentName: [b.studentLastName, b.studentFirstName].filter(Boolean).join(' ') || undefined,
+          groupName: '—',
+          excluded: false,
+        }));
         this.students.set(rows);
         this.loading.set(false);
         this.step.set(2);

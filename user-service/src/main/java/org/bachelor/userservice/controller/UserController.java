@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.bachelor.userservice.model.dto.ChangePasswordRequestDTO;
 import org.bachelor.userservice.model.dto.ImportStudentRequestDTO;
+import org.bachelor.userservice.model.dto.SelfUpdateRequestDTO;
 import org.bachelor.userservice.model.dto.UserDTO;
 import org.bachelor.userservice.model.dto.UserProfileDTO;
 import org.bachelor.userservice.model.dto.UserRequestDTO;
@@ -11,6 +12,7 @@ import org.bachelor.userservice.service.UserService;
 import org.springframework.web.bind.annotation.*;
 
 import org.bachelor.userservice.model.entity.Role;
+import org.bachelor.userservice.utils.SecurityUtils;
 
 import java.util.List;
 
@@ -49,9 +51,19 @@ public class UserController {
         userService.delete(id);
     }
 
+    @GetMapping("/me/profile")
+    public UserProfileDTO getMyProfile() {
+        return userService.getProfile(SecurityUtils.getCurrentUserId());
+    }
+
     @GetMapping("/{id}/profile")
     public UserProfileDTO getProfile(@PathVariable Long id) {
         return userService.getProfile(id);
+    }
+
+    @PatchMapping("/{id}/self")
+    public UserDTO updateSelf(@PathVariable Long id, @Valid @RequestBody SelfUpdateRequestDTO request) {
+        return userService.updateSelf(id, request);
     }
 
     @PatchMapping("/{id}/password")

@@ -8,17 +8,10 @@
   </app-page-header>
 
   <div class="filters">
-    <input
-      class="search-input"
-      type="text"
-      placeholder="Пошук за датою..."
-      [value]="search()"
-      (input)="onSearch($event)"
-    />
     <div class="status-tabs">
-      <button class="status-tab" [class.active]="statusFilter() === 'all'" (click)="statusFilter.set('all')">Всі</button>
-      <button class="status-tab" [class.active]="statusFilter() === 'active'" (click)="statusFilter.set('active')">Активні</button>
-      <button class="status-tab" [class.active]="statusFilter() === 'inactive'" (click)="statusFilter.set('inactive')">Неактивні</button>
+      <button class="status-tab" [class.active]="statusFilter() === 'all'" (click)="onStatusFilter('all')">Всі</button>
+      <button class="status-tab" [class.active]="statusFilter() === 'active'" (click)="onStatusFilter('active')">Активні</button>
+      <button class="status-tab" [class.active]="statusFilter() === 'inactive'" (click)="onStatusFilter('inactive')">Неактивні</button>
     </div>
   </div>
 
@@ -47,21 +40,12 @@
               }
             </span>
           </th>
-          <th class="sortable-th" (click)="toggleSort('membersCount')">
-            Кількість членів
-            <span class="sort-icon">
-              @if (sortBy() === 'membersCount') {
-                <i [class]="sortDir() === 'asc' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
-              } @else {
-                <i class="pi pi-sort-alt"></i>
-              }
-            </span>
-          </th>
+          <th>Кількість членів</th>
           <th>Дії</th>
         </tr>
       </thead>
       <tbody>
-        @if (filtered().length === 0) {
+        @if (commissions().length === 0) {
           <tr>
             <td colspan="5">
               <div class="empty-state">
@@ -71,7 +55,7 @@
             </td>
           </tr>
         }
-        @for (commission of filtered(); track commission.id) {
+        @for (commission of commissions(); track commission.id) {
           <tr class="clickable-row" (click)="viewCommission(commission.id)">
             <td>
               @if (isActive(commission)) {
@@ -112,6 +96,20 @@
       </tbody>
     </table>
   </div>
+
+  @if (totalPages() > 0) {
+    <div class="pagination-wrap">
+      <app-pagination
+        [currentPage]="currentPageUi()"
+        [totalPages]="totalPages()"
+        [perPage]="perPage()"
+        [perPageOptions]="perPageOptions"
+        [info]="paginationInfo()"
+        (pageChange)="onPageChange($event)"
+        (perPageChange)="onPerPageChange($event)"
+      />
+    </div>
+  }
 </div>
 
 @if (modalOpen()) {

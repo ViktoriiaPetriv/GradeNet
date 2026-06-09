@@ -36,16 +36,9 @@ public class UserServiceClient {
                     .retrieve()
                     .body(BookNumberResponse.class);
 
-            if (book == null || book.studentId() == null) return fallbackName(bookNumberId);
+            if (book == null) return fallbackName(bookNumberId);
 
-            UserResponse user = userServiceRestClient.get()
-                    .uri("/api/users/{id}", book.studentId())
-                    .retrieve()
-                    .body(UserResponse.class);
-
-            if (user == null) return fallbackName(bookNumberId);
-
-            String name = Stream.of(user.lastName(), user.firstName(), user.patronymic())
+            String name = Stream.of(book.studentLastName(), book.studentFirstName())
                     .filter(s -> s != null && !s.isBlank())
                     .collect(Collectors.joining(" "));
 
