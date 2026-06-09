@@ -15,6 +15,7 @@ import { AvatarComponent } from '../../../shared/avatar/avatar.component';
 import { BadgeComponent } from '../../../shared/badge/badge.component';
 import { ModalComponent } from '../../../shared/modal/modal.component';
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
+import { EditProfileModalComponent } from '../edit-profile/edit-profile-modal.component';
 
 interface BookWithDetails {
   info: StudentInfo;
@@ -30,6 +31,7 @@ interface BookWithDetails {
     RouterLink,
     UserModalComponent,
     ChangePasswordModalComponent,
+    EditProfileModalComponent,
     AvatarComponent,
     BadgeComponent,
     ModalComponent,
@@ -43,6 +45,7 @@ export class ProfileComponent implements OnInit {
   books = signal<BookWithDetails[]>([]);
   editModalOpen = signal(false);
   editingUser = signal<User | null>(null);
+  editSelfModalOpen = signal(false);
   deleteModalOpen = signal(false);
   changePasswordModalOpen = signal(false);
 
@@ -173,6 +176,10 @@ export class ProfileComponent implements OnInit {
     return this.isAdmin || (this.isManager && this.profile()?.role === 'STUDENT');
   }
 
+  get canEditSelf(): boolean {
+    return this.isOwner && this.isManager;
+  }
+
   get canChangePassword(): boolean {
     return this.isOwner && !this.isAdmin;
   }
@@ -193,6 +200,11 @@ export class ProfileComponent implements OnInit {
 
   onSaved() {
     this.editModalOpen.set(false);
+    this.loadProfile(this.profile()!.id);
+  }
+
+  onSelfSaved() {
+    this.editSelfModalOpen.set(false);
     this.loadProfile(this.profile()!.id);
   }
 

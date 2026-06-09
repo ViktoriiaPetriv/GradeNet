@@ -76,7 +76,7 @@
         </tr>
       </thead>
       <tbody>
-        @if (filtered().length === 0) {
+        @if (sortedWorks().length === 0) {
           <tr>
             <td colspan="6">
               <div class="empty-state">
@@ -86,7 +86,7 @@
             </td>
           </tr>
         }
-        @for (work of filtered(); track work.id) {
+        @for (work of sortedWorks(); track work.id) {
           <tr class="clickable-row" (click)="viewWork(work.id)">
             <td>
               <span class="type-badge" [class]="typeClass(work.type)">
@@ -126,6 +126,20 @@
       </tbody>
     </table>
   </div>
+
+  @if (totalPages() > 0) {
+    <div class="pagination-wrap">
+      <app-pagination
+        [currentPage]="currentPageUi()"
+        [totalPages]="totalPages()"
+        [perPage]="perPage()"
+        [perPageOptions]="perPageOptions"
+        [info]="paginationInfo()"
+        (pageChange)="onPageChange($event)"
+        (perPageChange)="onPerPageChange($event)"
+      />
+    </div>
+  }
 </div>
 
 @if (modalOpen()) {

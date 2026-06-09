@@ -13,6 +13,11 @@
             <i class="pi pi-file-edit"></i> Редагувати
           </button>
         }
+        @if (canEditSelf) {
+          <button class="btn-edit" (click)="editSelfModalOpen.set(true)">
+            <i class="pi pi-file-edit"></i> Редагувати профіль
+          </button>
+        }
         @if (canChangePassword) {
           <button class="btn-edit" (click)="changePassword()">
             <i class="pi pi-lock"></i> Змінити пароль
@@ -175,6 +180,15 @@
 @if (editModalOpen()) {
   <app-modal title="Редагувати профіль" (close)="editModalOpen.set(false)">
     <app-user-modal [user]="editingUser()" mode="edit" (saved)="onSaved()" (cancelled)="editModalOpen.set(false)" />
+  </app-modal>
+}
+
+@if (editSelfModalOpen()) {
+  <app-modal title="Редагувати профіль" (close)="editSelfModalOpen.set(false)">
+    <app-edit-profile-modal
+      [profile]="profile()!"
+      (saved)="onSelfSaved()"
+      (cancelled)="editSelfModalOpen.set(false)" />
   </app-modal>
 }
 

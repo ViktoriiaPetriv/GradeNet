@@ -143,9 +143,9 @@
 .type-PRACTICE { background: rgba(13,158,110,0.1); color: #0D9E6E; }
 .type-QUALIFICATION { background: rgba(124,58,237,0.1); color: #7C3AED; }
 
-.state-progress { color: #D97706; font-weight: 500; font-size: 0.85rem; }
-.state-completed { color: #0D9E6E; font-weight: 500; font-size: 0.85rem; }
-.state-failed { color: var(--red); font-weight: 500; font-size: 0.85rem; }
+.state-progress  { background: #fef3c7; color: #92400e; }
+.state-completed { background: #dcfce7; color: #166534; }
+.state-failed    { background: #fee2e2; color: #991b1b; }
 
 .table-container {
   background: var(--surface);

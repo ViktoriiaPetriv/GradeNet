@@ -26,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -59,9 +58,7 @@ public class BookNumberServiceImpl implements BookNumberService {
     @Override
     @Transactional(readOnly = true)
     public BookNumberDTO findById(Long id) {
-        BookNumber bookNumber = getBookOrThrow(id);
-        accessControlService.requireAdminOrManagerOfSpecialty(bookNumber.getSpecialtyOfferingId());
-        return bookNumberMapper.toDto(bookNumber);
+        return bookNumberMapper.toDto(getBookOrThrow(id));
     }
 
     @Override
@@ -75,10 +72,6 @@ public class BookNumberServiceImpl implements BookNumberService {
         }
 
         if (currentUser.isManager()) {
-            Set<Long> allowedIds = accessControlService.getAllowedUserIdsForManager();
-            if (!allowedIds.contains(studentId)) {
-                throw new AccessDeniedException("Немає доступу до цього студента");
-            }
             return bookNumberRepository.findAllByStudentId(studentId)
                     .stream().map(bookNumberMapper::toDto).toList();
         }
@@ -204,6 +197,23 @@ public class BookNumberServiceImpl implements BookNumberService {
         bookNumber.setStatus(BookNumberStatus.HANDED);
         bookNumber.setHandedDate(Instant.now());
         return bookNumberMapper.toDto(bookNumberRepository.save(bookNumber));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Long> getManagerBookNumberIds() {
+        List<Long> offeringIds = accessControlService.getManagerSpecialtyOfferingIds();
+        if (offeringIds.isEmpty()) return List.of();
+        return bookNumberRepository.findIdsBySpecialtyOfferingIdIn(offeringIds);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BookNumberDTO> findByOfferingId(Long offeringId) {
+        return bookNumberRepository.findAllBySpecialtyOfferingId(offeringId)
+                .stream()
+                .map(bookNumberMapper::toDto)
+                .toList();
     }
 
     private BookNumber getBookOrThrow(Long id) {

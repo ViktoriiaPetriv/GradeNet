@@ -1,0 +1,44 @@
+<form [formGroup]="form">
+  <div class="form-grid">
+    <div class="form-group">
+      <label class="form-label">Прізвище</label>
+      <input class="form-input" formControlName="lastName" [class.error]="isInvalid('lastName')" />
+      @if (isNameInvalid('lastName')) {
+        <span class="field-hint">Тільки літери, апостроф та дефіс</span>
+      }
+      @if (form.get('lastName')?.errors?.['maxlength'] && form.get('lastName')?.dirty) {
+        <span class="field-hint">Максимум 50 символів</span>
+      }
+    </div>
+    <div class="form-group">
+      <label class="form-label">Ім'я</label>
+      <input class="form-input" formControlName="firstName" [class.error]="isInvalid('firstName')" />
+      @if (isNameInvalid('firstName')) {
+        <span class="field-hint">Тільки літери, апостроф та дефіс</span>
+      }
+      @if (form.get('firstName')?.errors?.['maxlength'] && form.get('firstName')?.dirty) {
+        <span class="field-hint">Максимум 50 символів</span>
+      }
+    </div>
+    <div class="form-group full">
+      <label class="form-label">По батькові</label>
+      <input class="form-input" formControlName="patronymic" />
+      @if (isNameInvalid('patronymic')) {
+        <span class="field-hint">Тільки літери, апостроф та дефіс</span>
+      }
+    </div>
+    <div class="form-group full">
+      <label class="form-label">Дата народження</label>
+      <input class="form-input" formControlName="birthDate" type="date" />
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn-cancel" (click)="cancel()">
+      <i class="pi pi-times"></i> Скасувати
+    </button>
+    <button type="button" class="btn-primary" (click)="submit()">
+      Зберегти
+    </button>
+  </div>
+</form>

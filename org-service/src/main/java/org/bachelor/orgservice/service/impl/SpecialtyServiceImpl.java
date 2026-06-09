@@ -81,8 +81,6 @@ public class SpecialtyServiceImpl implements SpecialtyService {
 
     @Override
     public SpecialtyDTO getById(Long id) {
-        SecurityUtils.requireAdminOrManager();
-
         return specialtyRepository.findById(id)
                 .map(specialtyMapper::toDto)
                 .orElseThrow(() -> new NotFoundException("Спеціальність не знайдено"));
@@ -90,8 +88,6 @@ public class SpecialtyServiceImpl implements SpecialtyService {
 
     @Override
     public PageResponse<SpecialtyDTO> getAll(Degree degree, EduType eduType, Pageable pageable) {
-        SecurityUtils.requireAdminOrManager();
-
         Specification<Specialty> spec = SpecialtySpecification.hasDegree(degree)
                 .and(SpecialtySpecification.hasEduType(eduType));
 

@@ -8,20 +8,26 @@ import { PageHeaderComponent } from '../../../shared/page-header/page-header.com
 import { ModalComponent } from '../../../shared/modal/modal.component';
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
 import { CommissionModalComponent } from '../commission-modal/commission-modal.component';
+import { PaginationComponent } from '../../../shared/pagination/pagination.component';
 
 @Component({
   selector: 'app-commission-list',
   standalone: true,
-  imports: [PageHeaderComponent, ModalComponent, ConfirmDialogComponent, CommissionModalComponent],
+  imports: [PageHeaderComponent, ModalComponent, ConfirmDialogComponent, CommissionModalComponent, PaginationComponent],
   templateUrl: './commission-list.component.html',
   styleUrl: './commission-list.component.css',
 })
 export class CommissionListComponent implements OnInit {
   commissions = signal<Commission[]>([]);
-  search = signal('');
   statusFilter = signal<'all' | 'active' | 'inactive'>('all');
   sortBy = signal<string | null>(null);
   sortDir = signal<'asc' | 'desc'>('asc');
+
+  currentPage = signal(0);
+  totalPages = signal(0);
+  totalElements = signal(0);
+  perPage = signal(10);
+  perPageOptions = [5, 10, 25, 50];
 
   modalOpen = signal(false);
   isEdit = signal(false);
@@ -38,37 +44,12 @@ export class CommissionListComponent implements OnInit {
   isAdmin = this.authState.isAdmin;
   isAdminOrManager = this.authState.isAdminOrManager;
 
-  filtered = computed(() => {
-    const s = this.search().toLowerCase();
-    const sf = this.statusFilter();
-    let list = this.commissions().filter(c => {
-      if (s && !this.formatDate(c.startDate).includes(s) && !this.formatDate(c.endDate ?? '').includes(s)) return false;
-      if (sf === 'active') return this.isActive(c);
-      if (sf === 'inactive') return !this.isActive(c);
-      return true;
-    });
+  currentPageUi = computed(() => this.currentPage() + 1);
 
-    const col = this.sortBy();
-    const dir = this.sortDir();
-    if (col) {
-      list = [...list].sort((a, b) => {
-        let aVal: any;
-        let bVal: any;
-        if (col === 'membersCount') {
-          aVal = a.members.length;
-          bVal = b.members.length;
-        } else {
-          aVal = (a as any)[col] ?? '';
-          bVal = (b as any)[col] ?? '';
-          if (typeof aVal === 'string') aVal = aVal.toLowerCase();
-          if (typeof bVal === 'string') bVal = bVal.toLowerCase();
-        }
-        if (aVal < bVal) return dir === 'asc' ? -1 : 1;
-        if (aVal > bVal) return dir === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
-    return list;
+  paginationInfo = computed(() => {
+    const total = this.totalPages();
+    if (total === 0) return 'Немає записів';
+    return `Сторінка ${this.currentPageUi()} з ${total}`;
   });
 
   toggleSort(column: string) {
@@ -83,6 +64,8 @@ export class CommissionListComponent implements OnInit {
       this.sortBy.set(column);
       this.sortDir.set('asc');
     }
+    this.currentPage.set(0);
+    this.load();
   }
 
   isActive(c: Commission): boolean {
@@ -95,11 +78,35 @@ export class CommissionListComponent implements OnInit {
   }
 
   load() {
-    this.commissionService.getAll().subscribe(data => this.commissions.set(data));
+    const sortBy = this.sortBy();
+    this.commissionService.getPage(
+      this.currentPage(),
+      this.perPage(),
+      this.statusFilter(),
+      sortBy ?? undefined,
+      sortBy ? this.sortDir() : undefined
+    ).subscribe(r => {
+      this.commissions.set(r.content);
+      this.totalPages.set(r.totalPages);
+      this.totalElements.set(r.totalElements);
+    });
   }
 
-  onSearch(e: Event) {
-    this.search.set((e.target as HTMLInputElement).value);
+  onStatusFilter(status: 'all' | 'active' | 'inactive') {
+    this.statusFilter.set(status);
+    this.currentPage.set(0);
+    this.load();
+  }
+
+  onPageChange(page: number) {
+    this.currentPage.set(page - 1);
+    this.load();
+  }
+
+  onPerPageChange(size: number) {
+    this.perPage.set(size);
+    this.currentPage.set(0);
+    this.load();
   }
 
   openCreate() {

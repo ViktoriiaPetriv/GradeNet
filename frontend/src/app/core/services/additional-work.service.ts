@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   AdditionalWork,
@@ -11,6 +11,7 @@ import {
   QualificationDetails,
   QualificationDetailsRequest,
 } from '../../models/additional-work.model';
+import { PageResponse } from '../../models/page.model';
 
 @Injectable({ providedIn: 'root' })
 export class AdditionalWorkService {
@@ -21,6 +22,15 @@ export class AdditionalWorkService {
   // Additional Work
   getAll(): Observable<AdditionalWork[]> {
     return this.http.get<AdditionalWork[]>(this.workUrl);
+  }
+
+  getPage(page: number, size: number, type?: string, commissionId?: number, sortBy?: string, sortDir?: string): Observable<PageResponse<AdditionalWork>> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (type) params = params.set('type', type);
+    if (commissionId != null) params = params.set('commissionId', commissionId);
+    if (sortBy) params = params.set('sortBy', sortBy);
+    if (sortDir) params = params.set('sortDir', sortDir);
+    return this.http.get<PageResponse<AdditionalWork>>(`${this.workUrl}/paged`, { params });
   }
 
   getById(id: number): Observable<AdditionalWork> {

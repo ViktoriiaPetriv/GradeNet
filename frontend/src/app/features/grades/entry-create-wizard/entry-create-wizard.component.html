@@ -6,7 +6,7 @@
   <div class="wizard-body">
     <div class="step-header">
       <span class="step-badge">Крок 1 з 2</span>
-      <p class="step-desc">Оберіть параметри запису та групи студентів</p>
+      <p class="step-desc">Оберіть параметри запису</p>
     </div>
 
     <div class="form-group">
@@ -22,6 +22,27 @@
           <option [value]="s.id">{{ specialtyLabel(s) }}</option>
         }
       </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Рік випуску (набір) *</label>
+      <select
+        class="form-input"
+        [ngModel]="selectedOfferingId()"
+        (ngModelChange)="onOfferingChange($event ? +$event : null)"
+        name="offering"
+      >
+        <option [ngValue]="null">— Оберіть рік випуску —</option>
+        @for (o of offerings(); track o.id) {
+          <option [value]="o.id">{{ offeringLabel(o) }}</option>
+        }
+      </select>
+      @if (selectedSpecialtyId() && offerings().length === 0) {
+        <span class="field-hint">Для цієї спеціальності немає наборів</span>
+      }
+      @if (!selectedSpecialtyId()) {
+        <span class="field-hint">Спочатку оберіть спеціальність</span>
+      }
     </div>
 
     <div class="form-group">
@@ -44,17 +65,26 @@
 
     <div class="form-group">
       <label class="form-label">Викладач *</label>
-      <select
-        class="form-input"
-        [ngModel]="selectedProfessorId()"
-        (ngModelChange)="selectedProfessorId.set($event ? +$event : null)"
-        name="professor"
-      >
-        <option [ngValue]="null">— Оберіть викладача —</option>
-        @for (p of professors(); track p.id) {
-          <option [value]="p.id">{{ professorLabel(p) }}</option>
-        }
-      </select>
+      @if (isProfessor()) {
+        <input
+          class="form-input"
+          type="text"
+          [value]="currentProfessorName()"
+          disabled
+        />
+      } @else {
+        <select
+          class="form-input"
+          [ngModel]="selectedProfessorId()"
+          (ngModelChange)="selectedProfessorId.set($event ? +$event : null)"
+          name="professor"
+        >
+          <option [ngValue]="null">— Оберіть викладача —</option>
+          @for (p of professors(); track p.id) {
+            <option [value]="p.id">{{ professorLabel(p) }}</option>
+          }
+        </select>
+      }
     </div>
 
     <div class="form-row">
@@ -95,26 +125,26 @@
 
     <div class="form-group">
       <label class="form-label">
-        Групи *
+        Групи (необов'язково — для фільтрації студентів)
         @if (groupsLoading()) {
           <i class="pi pi-spin pi-spinner" style="font-size: 12px; margin-left: 6px;"></i>
-        } @else if (selectedSpecialtyId()) {
-          <span class="field-hint-inline">— відфільтровано по спеціальності</span>
         }
       </label>
-      <div class="group-grid">
-        @if (groups().length === 0 && !groupsLoading()) {
-          <div class="empty-hint">
-            {{ selectedSpecialtyId() ? 'Немає груп для цієї спеціальності' : 'Груп не знайдено' }}
-          </div>
-        }
-        @for (g of groups(); track g.id) {
-          <label class="group-chip" [class.selected]="isGroupSelected(g.id)">
-            <input type="checkbox" [checked]="isGroupSelected(g.id)" (change)="toggleGroup(g.id)" />
-            {{ g.name }}
-          </label>
-        }
-      </div>
+      @if (!selectedOfferingId()) {
+        <div class="empty-hint">Спочатку оберіть рік випуску</div>
+      } @else if (groups().length === 0 && !groupsLoading()) {
+        <div class="empty-hint">Для цього набору немає груп — студентів буде завантажено за набором</div>
+      } @else {
+        <div class="group-hint">Якщо групи не вибрані — будуть завантажені всі студенти набору</div>
+        <div class="group-grid">
+          @for (g of groups(); track g.id) {
+            <label class="group-chip" [class.selected]="isGroupSelected(g.id)">
+              <input type="checkbox" [checked]="isGroupSelected(g.id)" (change)="toggleGroup(g.id)" />
+              {{ g.name }}
+            </label>
+          }
+        </div>
+      }
     </div>
   </div>
 
@@ -140,7 +170,7 @@
 
     <div class="student-list">
       @if (students().length === 0) {
-        <div class="empty-hint">У вибраних групах немає студентів</div>
+        <div class="empty-hint">У вибраному наборі немає студентів із залікової книжкою</div>
       }
       @for (row of students(); track row.bookNumberId) {
         <div class="student-row" [class.excluded]="row.excluded">
@@ -149,8 +179,10 @@
               {{ row.studentName || row.studentEmail || 'Студент #' + row.studentId }}
             </div>
             <div class="student-meta">
-              <span class="meta-tag">Заліковка: {{ row.bookNumberId }}</span>
-              <span class="meta-tag">{{ row.groupName }}</span>
+              <span class="meta-tag">Заліковка: {{ row.bookNumber || row.bookNumberId }}</span>
+              @if (row.groupName && row.groupName !== '—') {
+                <span class="meta-tag">{{ row.groupName }}</span>
+              }
             </div>
           </div>
           <button

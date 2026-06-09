@@ -166,9 +166,11 @@ public class GradeBookEntryServiceImpl implements GradeBookEntryService {
 
     @Override
     public GradeBookEntryDTO getById(Long id) {
-        return entryRepository.findById(id)
-                .map(entryMapper::toDTO)
+        GradeBookEntry entry = entryRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Запис не знайдено"));
+        GradeBookEntryDTO dto = entryMapper.toDTO(entry);
+        dto.setStudentName(userServiceClient.getStudentName(entry.getBookNumberId()));
+        return dto;
     }
 
     @Override

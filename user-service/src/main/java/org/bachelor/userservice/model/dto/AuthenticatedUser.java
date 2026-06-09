@@ -13,5 +13,6 @@ public class AuthenticatedUser {
 
     public boolean isAdmin() { return role == Role.ADMIN; }
     public boolean isManager() { return role == Role.MANAGER; }
+    public boolean isProfessor() { return role == Role.PROFESSOR; }
     public boolean isStudent() { return role == Role.STUDENT; }
 }

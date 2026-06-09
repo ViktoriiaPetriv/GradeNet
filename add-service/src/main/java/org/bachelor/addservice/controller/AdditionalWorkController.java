@@ -6,6 +6,7 @@ import org.bachelor.addservice.model.dto.AdditionalWorkCreateDTO;
 import org.bachelor.addservice.model.dto.AdditionalWorkDTO;
 import org.bachelor.addservice.model.dto.AuthenticatedUser;
 import org.bachelor.addservice.model.dto.GradeWorkDTO;
+import org.bachelor.addservice.model.dto.PageResponse;
 import org.bachelor.addservice.service.AdditionalWorkService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,8 +22,20 @@ public class AdditionalWorkController {
     private final AdditionalWorkService additionalWorkService;
 
     @GetMapping
-    public List<AdditionalWorkDTO> getAll() {
-        return additionalWorkService.getAll();
+    public List<AdditionalWorkDTO> getAll(@AuthenticationPrincipal AuthenticatedUser user) {
+        return additionalWorkService.getAll(user);
+    }
+
+    @GetMapping("/paged")
+    public PageResponse<AdditionalWorkDTO> getPaged(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) Long commissionId,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir) {
+        return additionalWorkService.getPage(user, page, size, type, commissionId, sortBy, sortDir);
     }
 
     @GetMapping("/{id}")

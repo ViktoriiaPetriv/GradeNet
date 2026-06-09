@@ -4,21 +4,19 @@
       <i class="pi pi-arrow-left"></i> Назад
     </button>
     @if (book(); as b) {
-      <div class="student-info">
-        <div class="student-avatar">
-          <i class="pi pi-user"></i>
-        </div>
-        <div>
-          <div class="student-name-title">{{ studentName() || 'Студент' }}</div>
-          <div class="book-number-label">Залікова книжка:
-            @if (isStudent()) {
-              <span>{{ b.number }}</span>
-            } @else {
+      @if (!isStudent()) {
+        <div class="student-info">
+          <div class="student-avatar">
+            <i class="pi pi-user"></i>
+          </div>
+          <div>
+            <div class="student-name-title">{{ studentName() || 'Студент' }}</div>
+            <div class="book-number-label">Залікова книжка:
               <button class="nav-link" (click)="goToBook()">{{ b.number }}</button>
-            }
+            </div>
           </div>
         </div>
-      </div>
+      }
     }
     @if (!isStudent()) {
       <button class="report-btn" (click)="openReport()" title="Академічні результати PDF">
@@ -134,11 +132,7 @@
             </td>
             <td class="text-sm text-center">{{ row.nationalGradeLabel }}</td>
             <td class="text-center">
-              @if (row.kind === 'discipline') {
-                <span class="status-badge {{ row.statusCss }}">{{ row.statusLabel }}</span>
-              } @else {
-                <span [class]="row.statusCss">{{ row.statusLabel }}</span>
-              }
+              <span class="status-badge {{ row.statusCss }}">{{ row.statusLabel }}</span>
             </td>
             <td class="text-center">
               @if (row.result) {

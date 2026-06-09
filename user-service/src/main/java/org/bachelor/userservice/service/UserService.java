@@ -3,6 +3,7 @@ package org.bachelor.userservice.service;
 import org.bachelor.userservice.model.dto.AdminSetupRequestDTO;
 import org.bachelor.userservice.model.dto.ChangePasswordRequestDTO;
 import org.bachelor.userservice.model.dto.ImportStudentRequestDTO;
+import org.bachelor.userservice.model.dto.SelfUpdateRequestDTO;
 import org.bachelor.userservice.model.dto.UserDTO;
 import org.bachelor.userservice.model.dto.UserProfileDTO;
 import org.bachelor.userservice.model.dto.UserRequestDTO;
@@ -15,6 +16,7 @@ public interface UserService {
     UserDTO findById(Long id);
     UserDTO create(UserRequestDTO request);
     UserDTO update(Long id, UserRequestDTO request);
+    UserDTO updateSelf(Long id, SelfUpdateRequestDTO request);
     void delete(Long id);
     UserProfileDTO getProfile(Long id);
     void changePassword(Long id, ChangePasswordRequestDTO request);
